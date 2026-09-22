@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>素问语料阅读器</title>
+<!-- Inline favicon: avoids a 404 when served from a bare static server. -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238a5a2b'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23fff' font-family='serif'>素</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <strong>素问语料</strong>
+    <span class="muted" id="countLabel">加载中…</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="theses">论断</button>
+    <button class="tab" data-view="rejects">他反对什么</button>
+    <button class="tab" data-view="checklist">提问清单</button>
+    <button class="tab" data-view="drift">立场漂移</button>
+  </nav>
+  <button id="themeBtn" class="ghost" title="切换深色/浅色">◐</button>
+</header>
+
+<div class="toolbar" id="toolbar">
+  <input type="search" id="search" placeholder="搜索问题、论断、正文…  （/ 聚焦）" autocomplete="off">
+  <select id="domain"><option value="">全部领域</option></select>
+  <select id="year"><option value="">全部年份</option></select>
+  <select id="sort">
+    <option value="date-desc">最新优先</option>
+    <option value="date-asc">最早优先</option>
+    <option value="len-desc">最长优先</option>
+    <option value="len-asc">最短优先</option>
+  </select>
+  <label class="chk"><input type="checkbox" id="onlyRejects"> 只看有「反对」的</label>
+  <span class="muted" id="resultLabel"></span>
+</div>
+
+<main id="main">
+  <section id="view-list" class="view">
+    <div id="list" class="list"></div>
+    <div id="sentinel" class="sentinel"></div>
+  </section>
+
+  <section id="view-checklist" class="view hidden">
+    <div id="checklist" class="checklist"></div>
+  </section>
+
+  <section id="view-drift" class="view hidden">
+    <div id="drift" class="drift"></div>
+  </section>
+</main>
+
+<aside id="panel" class="panel hidden" aria-live="polite">
+  <button class="panel-close" id="panelClose" title="关闭 (Esc)">×</button>
+  <div id="panelBody"></div>
+</aside>
+<div id="scrim" class="scrim hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

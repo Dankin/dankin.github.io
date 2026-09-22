@@ -1,0 +1,339 @@
+/* Local reading UI for the sooon corpus. No framework, no build step — the
+   dataset is a static JSON file, so a single stylesheet keeps it openable
+   straight from the filesystem. */
+
+:root {
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --surface-2: #f4f2ee;
+  --border: #e3ded6;
+  --text: #21201d;
+  --text-dim: #6b6862;
+  --text-faint: #9a968e;
+  --accent: #8a5a2b;
+  --accent-soft: #f2e8dc;
+  --reject: #9c3d3d;
+  --reject-soft: #f8e9e7;
+  --radius: 10px;
+  --maxw: 1180px;
+  --serif: "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", Georgia, serif;
+  --sans: -apple-system, "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #17181a;
+  --surface: #1f2124;
+  --surface-2: #262930;
+  --border: #33373d;
+  --text: #e9e7e3;
+  --text-dim: #a5a29c;
+  --text-faint: #76797e;
+  --accent: #d9a46a;
+  --accent-soft: #33291d;
+  --reject: #e0857f;
+  --reject-soft: #35201f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.muted { color: var(--text-dim); font-size: 13px; font-weight: 400; }
+.hidden { display: none !important; }
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 22px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand strong { font-family: var(--serif); font-size: 17px; letter-spacing: .04em; }
+
+.tabs { display: flex; gap: 4px; margin-left: auto; }
+
+.tab {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tab:hover { background: var(--surface-2); color: var(--text); }
+.tab.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.ghost {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.ghost:hover { color: var(--text); }
+
+/* ---------- toolbar ---------- */
+
+.toolbar {
+  position: sticky;
+  top: 57px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 22px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+#search {
+  flex: 1 1 280px;
+  min-width: 200px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+#search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+select {
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.chk {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-dim); cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ---------- list ---------- */
+
+main { max-width: var(--maxw); margin: 0 auto; padding: 20px 22px 80px; }
+
+.list { display: flex; flex-direction: column; gap: 11px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px 17px;
+  cursor: pointer;
+  transition: border-color .12s, transform .12s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+.card-q {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.card-q .qtext { flex: 1; }
+
+.card-thesis {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.card-reject {
+  margin-top: 10px;
+  padding: 8px 11px;
+  background: var(--reject-soft);
+  border-left: 3px solid var(--reject);
+  border-radius: 0 6px 6px 0;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.card-reject b { color: var(--reject); font-weight: 600; margin-right: 5px; }
+
+.meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; align-items: center; }
+
+.pill {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.pill.domain { background: var(--accent-soft); color: var(--accent); }
+
+mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; }
+[data-theme="dark"] mark { background: #5d4a1f; color: #f5e6c0; }
+
+.sentinel { height: 40px; }
+
+.empty { text-align: center; color: var(--text-faint); padding: 60px 20px; }
+
+/* ---------- detail panel ---------- */
+
+.panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(680px, 94vw);
+  z-index: 60;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 26px 30px 70px;
+  box-shadow: -14px 0 40px rgba(0,0,0,.13);
+}
+
+.panel-close {
+  position: sticky;
+  top: 0; float: right;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  width: 30px; height: 30px;
+  border-radius: 7px; cursor: pointer; font-size: 17px; line-height: 1;
+}
+
+.scrim {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,.34);
+}
+
+.panel h2 {
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.45;
+  margin: 6px 0 14px;
+}
+
+.panel .body {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.panel .block {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 11px 0;
+  font-size: 14.5px;
+}
+.panel .block .label {
+  font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-faint); display: block; margin-bottom: 5px;
+}
+.panel ul { margin: 7px 0; padding-left: 20px; }
+.panel li { margin: 5px 0; font-size: 14.5px; }
+.panel a { color: var(--accent); }
+
+/* ---------- checklist ---------- */
+
+.checklist { max-width: 780px; }
+.checklist .intro {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 15px 18px;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 26px;
+}
+.checklist h3 {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--accent);
+  margin: 26px 0 11px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.move {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  margin-bottom: 9px;
+}
+.move input { margin-top: 5px; flex: none; cursor: pointer; }
+.move > span { display: block; }
+.move .q { display: block; font-family: var(--serif); font-size: 16px; line-height: 1.5; }
+.move .blocks { display: block; font-size: 13px; color: var(--text-dim); margin-top: 5px; }
+.move.done .q { opacity: .45; text-decoration: line-through; }
+
+/* ---------- drift ---------- */
+
+.drift { max-width: 900px; }
+.drift .intro { color: var(--text-dim); font-size: 14px; margin-bottom: 22px; }
+.drift-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 11px;
+}
+.drift-row h4 { margin: 0 0 10px; font-size: 15px; font-family: var(--serif); }
+.bars { display: flex; flex-direction: column; gap: 5px; }
+.bar-row { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.bar-row .yr { width: 38px; color: var(--text-dim); flex: none; }
+/* display:block is required — these are spans, and inline elements ignore
+   width/height, which rendered every bar as an empty track. */
+.bar-row .track {
+  display: block;
+  flex: 1; height: 15px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-row .fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 4px;
+}
+.bar-row { cursor: pointer; }
+.bar-row:hover .track { outline: 1px solid var(--accent); }
+.bar-row .n { width: 34px; text-align: right; color: var(--text-dim); flex: none; }
+
+@media (max-width: 720px) {
+  .topbar { flex-wrap: wrap; gap: 10px; }
+  .tabs { margin-left: 0; width: 100%; overflow-x: auto; }
+  .toolbar { top: 104px; }
+  main { padding: 16px 14px 60px; }
+  .panel { padding: 20px 18px 60px; }
+}
