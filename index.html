@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>素问语料阅读器</title>
-<meta name="description" content="素问语料阅读器：3848 条论断、3651 条「他反对什么」，可按领域与年份检索，另附提问清单与立场漂移视图。">
+<meta name="description" content="素问语料阅读器：3848 条论断、3651 条「反对」，可按领域与年份检索，另附提问清单。">
 <meta property="og:title" content="素问语料阅读器">
-<meta property="og:description" content="3848 条论断、3651 条「他反对什么」，按领域与年份检索，另附提问清单与立场漂移视图。">
+<meta property="og:description" content="3848 条论断、3651 条「反对」，按领域与年份检索，另附提问清单。">
 <!-- Before first paint: reading the saved theme in app.js (end of body) meant
      dark-mode readers got a light flash on every load. -->
 <script>
@@ -23,32 +23,42 @@
 </head>
 <body>
 
-<header class="topbar">
-  <div class="brand">
-    <h1>素问语料</h1>
-    <span class="muted" id="countLabel">加载中…</span>
-  </div>
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-view="theses">论断</button>
-    <button class="tab" data-view="rejects">他反对什么</button>
-    <button class="tab" data-view="checklist">提问清单</button>
-    <button class="tab" data-view="drift">立场漂移</button>
-  </nav>
-  <button id="themeBtn" class="ghost" title="切换深色/浅色">◐</button>
-</header>
+<!-- One sticky container for both rows: the toolbar used to sticky at a
+     hardcoded top offset, which broke every time the tab row changed height. -->
+<div class="sticky-head" id="stickyHead">
+  <header class="topbar">
+    <div class="brand">
+      <h1>素问语料</h1>
+      <span class="muted" id="countLabel">加载中…</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="theses">论断</button>
+      <button class="tab" data-view="checklist">提问清单</button>
+    </nav>
+    <button id="themeBtn" class="ghost" title="切换深色/浅色">◐</button>
+  </header>
 
-<div class="toolbar" id="toolbar" role="search">
-  <input type="search" id="search" aria-label="搜索问题、论断、标题" placeholder="搜索问题、论断、标题…  （/ 聚焦）" autocomplete="off">
-  <select id="domain" aria-label="按领域筛选"><option value="">全部领域</option></select>
-  <select id="year" aria-label="按年份筛选"><option value="">全部年份</option></select>
-  <select id="sort" aria-label="排序方式">
-    <option value="date-desc">最新优先</option>
-    <option value="date-asc">最早优先</option>
-    <option value="len-desc">最长优先</option>
-    <option value="len-asc">最短优先</option>
-  </select>
-  <label class="chk"><input type="checkbox" id="onlyRejects"> 只看有「反对」的</label>
-  <span class="muted" id="resultLabel"></span>
+  <div class="toolbar" id="toolbar" role="search">
+    <div class="toolbar-main">
+      <input type="search" id="search" aria-label="搜索问题、论断、标题" placeholder="搜索问题、论断、标题…" autocomplete="off">
+      <!-- Stays out of the collapsible row: the hit count is the one number
+           worth seeing while typing, on any screen width. -->
+      <span class="muted" id="resultLabel"></span>
+      <!-- Only shown on narrow screens; on wide ones the filter row is always open. -->
+      <button type="button" id="filterBtn" class="ghost wide" aria-expanded="false" aria-controls="filters">筛选</button>
+    </div>
+    <div class="filters" id="filters">
+      <select id="domain" aria-label="按领域筛选"><option value="">全部领域</option></select>
+      <select id="year" aria-label="按年份筛选"><option value="">全部年份</option></select>
+      <select id="sort" aria-label="排序方式">
+        <option value="date-desc">最新优先</option>
+        <option value="date-asc">最早优先</option>
+        <option value="len-desc">最长优先</option>
+        <option value="len-asc">最短优先</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="onlyRejects"> 只看有「反对」的</label>
+    </div>
+  </div>
 </div>
 
 <main id="main">
@@ -60,17 +70,16 @@
   <section id="view-checklist" class="view hidden">
     <div id="checklist" class="checklist"></div>
   </section>
-
-  <section id="view-drift" class="view hidden">
-    <div id="drift" class="drift"></div>
-  </section>
 </main>
 
 <!-- aria-live is deliberately absent: on the whole panel it made screen readers
      re-read the entire article every time the body finished loading. -->
 <aside id="panel" class="panel hidden" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1">
-  <button class="panel-close" id="panelClose" title="关闭 (Esc)">×</button>
-  <div id="panelBody"></div>
+  <div class="panel-head">
+    <button class="panel-back" id="panelClose" aria-label="返回" title="返回 (Esc)"></button>
+    <div class="panel-head-meta" id="panelHeadMeta"></div>
+  </div>
+  <div class="panel-inner" id="panelBody"></div>
 </aside>
 <div id="scrim" class="scrim hidden"></div>
 

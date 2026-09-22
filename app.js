@@ -1,5 +1,5 @@
-/* Reader for the sooon corpus: theses, rejected views, question checklist, drift.
-   Plain DOM, no dependencies.
+/* Reader for the sooon corpus: theses (with what he rejects) and the question
+   checklist. Plain DOM, no dependencies.
 
    Data is split by build-split.js: index.json holds every item minus the full
    article text, and bodies/NN.json shards carry the text, fetched only when a
@@ -14,9 +14,6 @@ const state = {
   view: 'theses',
   checklist: null,
   shards: 64,
-  // The rejects view forces the "only rejects" filter on; this remembers what
-  // the user actually ticked so leaving the view restores their choice.
-  userOnlyRejects: false,
   done: new Set(JSON.parse(localStorage.getItem('sooon.done') ?? '[]')),
 };
 const PAGE = 60;
@@ -100,7 +97,7 @@ function apply() {
   const terms = tokenize($('search').value);
   const domain = $('domain').value;
   const year = $('year').value;
-  const onlyRejects = $('onlyRejects').checked; // setView keeps this in sync with the view
+  const onlyRejects = $('onlyRejects').checked;
 
   state.filtered = state.items.filter((it) => {
     if (domain && it.domain !== domain) return false;
@@ -130,19 +127,18 @@ function more() {
     return;
   }
   const q = $('search').value.trim();
-  const showRejectFirst = state.view === 'rejects';
 
   $('list').insertAdjacentHTML(
     'beforeend',
     slice
       .map((it) => {
         const reject = it.rejects
-          ? `<div class="card-reject"><b>他反对</b>${highlight(it.rejects, q)}</div>`
+          ? `<div class="card-reject"><b>反对</b>${highlight(it.rejects, q)}</div>`
           : '';
-        const thesis = `<div class="card-thesis">${highlight(it.thesis, q)}</div>`;
         return `<article class="card" data-id="${it.id}" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="card-q"><span class="qtext">${highlight(it.question, q)}</span></div>
-        ${showRejectFirst ? reject + thesis : thesis + reject}
+        <div class="card-thesis">${highlight(it.thesis, q)}</div>
+        ${reject}
         <div class="meta">
           <span class="pill domain">${esc(it.domain)}</span>
           <span class="pill">${esc(it.date)}</span>
@@ -161,31 +157,43 @@ function more() {
 
 let detailSeq = 0; // a slow shard must not overwrite a panel the user opened later
 let lastFocus = null; // the card that opened the panel, to hand focus back to
+/* Whether the open panel owns a history entry. On phones the panel fills the
+   screen, so the system back gesture has to close it instead of leaving the
+   site — and closing from the UI has to consume that entry again. */
+let pushed = false;
 
 /* Everything the modal panel covers. `inert` does the job a hand-written focus
    trap would: while it is set, Tab can't reach the background and clicks on it
    do nothing. */
-const backdrop = () => [document.querySelector('.topbar'), $('toolbar'), $('main')];
+const backdrop = () => [$('stickyHead'), $('main')];
+
+/** Article text arrives as blank-line separated paragraphs; render them as such. */
+const paragraphs = (body) =>
+  String(body ?? '')
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
+    .join('');
 
 /** Paints everything already in the index, then fills in the article text. */
 async function openDetail(id) {
   const it = state.items.find((x) => x.id === id);
   if (!it) return;
   const seq = ++detailSeq;
+  const firstOpen = $('panel').classList.contains('hidden');
   // Only on the first open — reopening from inside would record the panel itself.
-  if ($('panel').classList.contains('hidden')) lastFocus = document.activeElement;
+  if (firstOpen) lastFocus = document.activeElement;
 
+  $('panelHeadMeta').innerHTML = `
+    <span class="pill domain">${esc(it.domain)}</span>
+    <span class="pill">${esc(it.date)}</span>
+    <span class="pill">${it.chars} 字</span>`;
   $('panelBody').innerHTML = `
-    <div class="meta">
-      <span class="pill domain">${esc(it.domain)}</span>
-      <span class="pill">${esc(it.date)}</span>
-      <span class="pill">${it.chars} 字</span>
-      <span class="pill">${esc(it.id.slice(0, 8))}</span>
-    </div>
     <h2 id="panelTitle">${esc(it.question)}</h2>
     ${it.title ? `<p class="muted">标题：${esc(it.title)}</p>` : ''}
     <div class="block"><span class="label">核心论断</span>${esc(it.thesis)}</div>
-    ${it.rejects ? `<div class="card-reject"><b>他反对</b>${esc(it.rejects)}</div>` : ''}
+    ${it.rejects ? `<div class="card-reject"><b>反对</b>${esc(it.rejects)}</div>` : ''}
     <div id="detailRest" class="loading">正在加载正文…</div>`;
   $('panel').classList.remove('hidden');
   $('scrim').classList.remove('hidden');
@@ -193,6 +201,12 @@ async function openDetail(id) {
   for (const el of backdrop()) el.inert = true;
   document.body.classList.add('panel-open');
   $('panel').focus();
+  // One entry per panel session, not per card: opening a second card from
+  // inside the panel must not stack up entries the user has to back through.
+  if (firstOpen && !pushed) {
+    history.pushState({ sooonPanel: 1 }, '');
+    pushed = true;
+  }
 
   let heavy;
   try {
@@ -212,11 +226,12 @@ async function openDetail(id) {
   $('detailRest').className = '';
   $('detailRest').innerHTML = `
     ${principles}
-    <p class="muted">${heavy.url ? `<a href="${esc(heavy.url)}" target="_blank" rel="noreferrer noopener">原始链接</a> · ` : ''}文件：${esc(heavy.file ?? '')}</p>
-    <div class="body">${esc(heavy.body ?? '')}</div>`;
+    <div class="body">${paragraphs(heavy.body)}</div>
+    <p class="muted panel-src">${heavy.url ? `<a href="${esc(heavy.url)}" target="_blank" rel="noreferrer noopener">原始链接</a> · ` : ''}文件：${esc(heavy.file ?? '')}</p>`;
 }
 
-function closeDetail() {
+/** The DOM half of closing; reached either from the UI or from a back gesture. */
+function hidePanel() {
   if ($('panel').classList.contains('hidden')) return; // stray Esc must not steal focus
   $('panel').classList.add('hidden');
   $('scrim').classList.add('hidden');
@@ -225,6 +240,23 @@ function closeDetail() {
   lastFocus?.focus(); // a no-op if the list re-rendered and the card is gone
   lastFocus = null;
 }
+
+/* Closing from the UI goes through history so the pushed entry is consumed;
+   popstate then does the hiding. Without this, back would reopen the panel. */
+function closeDetail() {
+  if ($('panel').classList.contains('hidden')) return;
+  if (pushed) {
+    pushed = false;
+    history.back();
+    return;
+  }
+  hidePanel();
+}
+
+window.addEventListener('popstate', () => {
+  pushed = false;
+  hidePanel();
+});
 
 /* ---------- checklist ---------- */
 
@@ -240,13 +272,7 @@ function renderChecklist() {
     byCat.get(m.category).push(m);
   }
   el.innerHTML =
-    `<div class="intro">
-      <strong>为什么是提问，而不是结论。</strong><br>
-      评测显示这套语料里真正可迁移的是他的<b>推理方法</b>（method +105%，两轮实验里唯一统计显著的提升），
-      而不是他的判断（立场命中率只有 43%）。所以这里给的是他反复使用的质问动作，由你自己去问、自己判断。<br><br>
-      从 ${state.checklist.sampled} 条「他反对的常规看法」中提炼。决策前从上往下过一遍——
-      多数处境只有两三条命中，命中的那几条通常就是你卡住的地方。勾选状态存在本地。
-    </div>` +
+    `<div class="intro">决策前从上往下过一遍，命中的那两三条通常就是你卡住的地方。勾选存在本地。</div>` +
     [...byCat]
       .map(
         ([cat, moves]) =>
@@ -266,48 +292,6 @@ function renderChecklist() {
       .join('');
 }
 
-/* ---------- drift ---------- */
-
-function renderDrift() {
-  // Per-year volume for recurring topics: the corpus spans nine years, so a
-  // stance stated in 2018 may not be the one he holds now. This shows where
-  // enough material exists on both ends to be worth reading chronologically.
-  const topics = [
-    ['孩子 / 教育', /孩子|儿子|女儿|家长|教育|学习|老师|上学/],
-    ['亲密关系', /恋爱|结婚|婚姻|伴侣|男友|女友|女朋友|男朋友|前任|离婚|喜欢/],
-    ['职场', /工作|职场|领导|同事|上司|辞职|老板|公司|加班/],
-    ['心理状态', /抑郁|焦虑|自卑|痛苦|情绪|难受|内耗/],
-    ['金钱', /钱|收入|工资|财务|理财|贫穷|富/],
-    ['人际边界', /朋友|拒绝|边界|人情|社交|亲戚/],
-  ];
-  const years = [...new Set(state.items.map((i) => i.year).filter(Boolean))].sort();
-
-  $('drift').innerHTML =
-    `<div class="intro">
-      语料跨 ${years[0]}–${years.at(-1)} 共 ${years.length} 个年份。同一议题的早期与近期回答可能并不一致——
-      <b>他的近期立场才是更相关的那个</b>。下面按年份显示各议题的文章数量；
-      点某一年的条目会筛出那一年的文章，可以按时间顺序对照读。
-    </div>` +
-    topics
-      .map(([name, re]) => {
-        const hits = state.items.filter((i) => re.test(i.question) || re.test(i.thesis));
-        const counts = years.map((y) => [y, hits.filter((h) => h.year === y).length]);
-        const max = Math.max(1, ...counts.map((c) => c[1]));
-        return `<div class="drift-row">
-          <h4>${esc(name)} · 共 ${hits.length} 篇</h4>
-          <div class="bars">${counts
-            .map(
-              ([y, n]) => `<div class="bar-row" data-year="${y}" data-topic="${esc(name)}">
-              <span class="yr">${y}</span>
-              <span class="track"><span class="fill" style="width:${(n / max) * 100}%"></span></span>
-              <span class="n">${n}</span></div>`,
-            )
-            .join('')}</div>
-        </div>`;
-      })
-      .join('');
-}
-
 /* ---------- view switching ---------- */
 
 function setView(view) {
@@ -318,18 +302,12 @@ function setView(view) {
     if (on) t.setAttribute('aria-current', 'page');
     else t.removeAttribute('aria-current');
   }
-  // The rejects view *is* that filter, so show the box locked on instead of
-  // leaving it unticked while the filter silently applies.
-  $('onlyRejects').checked = view === 'rejects' || state.userOnlyRejects;
-  $('onlyRejects').disabled = view === 'rejects';
-  const isList = view === 'theses' || view === 'rejects';
+  const isList = view === 'theses';
   $('view-list').classList.toggle('hidden', !isList);
-  $('view-checklist').classList.toggle('hidden', view !== 'checklist');
-  $('view-drift').classList.toggle('hidden', view !== 'drift');
+  $('view-checklist').classList.toggle('hidden', isList);
   $('toolbar').classList.toggle('hidden', !isList);
-  if (view === 'checklist') renderChecklist();
-  else if (view === 'drift') renderDrift();
-  else apply();
+  if (isList) apply();
+  else renderChecklist();
 }
 
 /* ---------- events ---------- */
@@ -339,10 +317,13 @@ $('search').addEventListener('input', () => {
   clearTimeout(t);
   t = setTimeout(apply, 160);
 });
-for (const id of ['domain', 'year', 'sort']) $(id).addEventListener('change', apply);
-$('onlyRejects').addEventListener('change', (e) => {
-  state.userOnlyRejects = e.target.checked;
-  apply();
+for (const id of ['domain', 'year', 'sort', 'onlyRejects']) $(id).addEventListener('change', apply);
+
+// Narrow screens hide the filter row behind this button; on wide ones the row is
+// always visible and the button is display:none, so the class is harmless there.
+$('filterBtn').addEventListener('click', () => {
+  const open = $('toolbar').classList.toggle('filters-open');
+  $('filterBtn').setAttribute('aria-expanded', String(open));
 });
 
 $('tabs').addEventListener('click', (e) => {
@@ -374,13 +355,6 @@ $('checklist').addEventListener('change', (e) => {
   localStorage.setItem('sooon.done', JSON.stringify([...state.done]));
 });
 
-$('drift').addEventListener('click', (e) => {
-  const row = e.target.closest('.bar-row');
-  if (!row) return;
-  $('year').value = row.dataset.year;
-  setView('theses');
-});
-
 $('panelClose').addEventListener('click', closeDetail);
 $('scrim').addEventListener('click', closeDetail);
 
@@ -397,7 +371,7 @@ document.addEventListener('keydown', (e) => {
 // scroll doesn't visibly stall at the bottom of each page.
 new IntersectionObserver(
   (es) => {
-    if (es[0].isIntersecting && state.view !== 'checklist' && state.view !== 'drift') more();
+    if (es[0].isIntersecting && state.view === 'theses') more();
   },
   { rootMargin: '600px' },
 ).observe($('sentinel'));
