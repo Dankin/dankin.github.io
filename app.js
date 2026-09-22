@@ -14,6 +14,9 @@ const state = {
   view: 'theses',
   checklist: null,
   shards: 64,
+  // The rejects view forces the "only rejects" filter on; this remembers what
+  // the user actually ticked so leaving the view restores their choice.
+  userOnlyRejects: false,
   done: new Set(JSON.parse(localStorage.getItem('sooon.done') ?? '[]')),
 };
 const PAGE = 60;
@@ -21,11 +24,22 @@ const PAGE = 60;
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* Filtering and highlighting split the query the same way now. They used to
+   disagree: the filter tested the whole raw string, so `孩子 教育` matched
+   nothing while highlight() was already splitting on whitespace. */
+const tokenize = (query) => query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
+/* Every term filters, but a lone ASCII letter isn't worth marking up — `a`
+   would paint half the page. A single CJK character is a real query. */
+const markable = (t) => t.length > 1 || /[^\x00-\x7f]/.test(t);
+
 /** Highlights query terms without letting user input become markup. */
 function highlight(text, query) {
   const safe = esc(text);
   if (!query) return safe;
-  const terms = query.split(/\s+/).filter((t) => t.length > 1).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const terms = tokenize(query)
+    .filter(markable)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   if (!terms.length) return safe;
   return safe.replace(new RegExp(`(${terms.join('|')})`, 'gi'), '<mark>$1</mark>');
 }
@@ -83,17 +97,16 @@ async function heavyOf(id) {
 }
 
 function apply() {
-  const q = $('search').value.trim().toLowerCase();
+  const terms = tokenize($('search').value);
   const domain = $('domain').value;
   const year = $('year').value;
-  const onlyRejects = $('onlyRejects').checked || state.view === 'rejects';
+  const onlyRejects = $('onlyRejects').checked; // setView keeps this in sync with the view
 
   state.filtered = state.items.filter((it) => {
     if (domain && it.domain !== domain) return false;
     if (year && it.year !== year) return false;
     if (onlyRejects && !it.rejects) return false;
-    if (!q) return true;
-    return it.hay.includes(q);
+    return terms.every((t) => it.hay.includes(t)); // vacuously true with no query
   });
 
   const [key, dir] = $('sort').value.split('-');
@@ -127,7 +140,7 @@ function more() {
           ? `<div class="card-reject"><b>他反对</b>${highlight(it.rejects, q)}</div>`
           : '';
         const thesis = `<div class="card-thesis">${highlight(it.thesis, q)}</div>`;
-        return `<article class="card" data-id="${it.id}">
+        return `<article class="card" data-id="${it.id}" tabindex="0" role="button" aria-haspopup="dialog">
         <div class="card-q"><span class="qtext">${highlight(it.question, q)}</span></div>
         ${showRejectFirst ? reject + thesis : thesis + reject}
         <div class="meta">
@@ -147,21 +160,29 @@ function more() {
 /* ---------- detail ---------- */
 
 let detailSeq = 0; // a slow shard must not overwrite a panel the user opened later
+let lastFocus = null; // the card that opened the panel, to hand focus back to
+
+/* Everything the modal panel covers. `inert` does the job a hand-written focus
+   trap would: while it is set, Tab can't reach the background and clicks on it
+   do nothing. */
+const backdrop = () => [document.querySelector('.topbar'), $('toolbar'), $('main')];
 
 /** Paints everything already in the index, then fills in the article text. */
 async function openDetail(id) {
   const it = state.items.find((x) => x.id === id);
   if (!it) return;
   const seq = ++detailSeq;
+  // Only on the first open — reopening from inside would record the panel itself.
+  if ($('panel').classList.contains('hidden')) lastFocus = document.activeElement;
 
   $('panelBody').innerHTML = `
     <div class="meta">
       <span class="pill domain">${esc(it.domain)}</span>
       <span class="pill">${esc(it.date)}</span>
       <span class="pill">${it.chars} 字</span>
-      <span class="pill">${esc(it.short)}</span>
+      <span class="pill">${esc(it.id.slice(0, 8))}</span>
     </div>
-    <h2>${esc(it.question)}</h2>
+    <h2 id="panelTitle">${esc(it.question)}</h2>
     ${it.title ? `<p class="muted">标题：${esc(it.title)}</p>` : ''}
     <div class="block"><span class="label">核心论断</span>${esc(it.thesis)}</div>
     ${it.rejects ? `<div class="card-reject"><b>他反对</b>${esc(it.rejects)}</div>` : ''}
@@ -169,6 +190,9 @@ async function openDetail(id) {
   $('panel').classList.remove('hidden');
   $('scrim').classList.remove('hidden');
   $('panel').scrollTop = 0;
+  for (const el of backdrop()) el.inert = true;
+  document.body.classList.add('panel-open');
+  $('panel').focus();
 
   let heavy;
   try {
@@ -193,8 +217,13 @@ async function openDetail(id) {
 }
 
 function closeDetail() {
+  if ($('panel').classList.contains('hidden')) return; // stray Esc must not steal focus
   $('panel').classList.add('hidden');
   $('scrim').classList.add('hidden');
+  for (const el of backdrop()) el.inert = false;
+  document.body.classList.remove('panel-open');
+  lastFocus?.focus(); // a no-op if the list re-rendered and the card is gone
+  lastFocus = null;
 }
 
 /* ---------- checklist ---------- */
@@ -245,10 +274,10 @@ function renderDrift() {
   // enough material exists on both ends to be worth reading chronologically.
   const topics = [
     ['孩子 / 教育', /孩子|儿子|女儿|家长|教育|学习|老师|上学/],
-    ['亲密关系', /恋爱|结婚|婚姻|伴侣|男friend|女朋友|男朋友|前任|离婚|喜欢/],
+    ['亲密关系', /恋爱|结婚|婚姻|伴侣|男友|女友|女朋友|男朋友|前任|离婚|喜欢/],
     ['职场', /工作|职场|领导|同事|上司|辞职|老板|公司|加班/],
     ['心理状态', /抑郁|焦虑|自卑|痛苦|情绪|难受|内耗/],
-    ['金钱', /钱|收入|工资|financial|理财|贫穷|富/],
+    ['金钱', /钱|收入|工资|财务|理财|贫穷|富/],
     ['人际边界', /朋友|拒绝|边界|人情|社交|亲戚/],
   ];
   const years = [...new Set(state.items.map((i) => i.year).filter(Boolean))].sort();
@@ -283,7 +312,16 @@ function renderDrift() {
 
 function setView(view) {
   state.view = view;
-  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('active', t.dataset.view === view);
+  for (const t of document.querySelectorAll('.tab')) {
+    const on = t.dataset.view === view;
+    t.classList.toggle('active', on);
+    if (on) t.setAttribute('aria-current', 'page');
+    else t.removeAttribute('aria-current');
+  }
+  // The rejects view *is* that filter, so show the box locked on instead of
+  // leaving it unticked while the filter silently applies.
+  $('onlyRejects').checked = view === 'rejects' || state.userOnlyRejects;
+  $('onlyRejects').disabled = view === 'rejects';
   const isList = view === 'theses' || view === 'rejects';
   $('view-list').classList.toggle('hidden', !isList);
   $('view-checklist').classList.toggle('hidden', view !== 'checklist');
@@ -301,7 +339,11 @@ $('search').addEventListener('input', () => {
   clearTimeout(t);
   t = setTimeout(apply, 160);
 });
-for (const id of ['domain', 'year', 'sort', 'onlyRejects']) $(id).addEventListener('change', apply);
+for (const id of ['domain', 'year', 'sort']) $(id).addEventListener('change', apply);
+$('onlyRejects').addEventListener('change', (e) => {
+  state.userOnlyRejects = e.target.checked;
+  apply();
+});
 
 $('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('.tab');
@@ -311,6 +353,15 @@ $('tabs').addEventListener('click', (e) => {
 $('list').addEventListener('click', (e) => {
   const card = e.target.closest('.card');
   if (card) openDetail(card.dataset.id);
+});
+
+// The cards are focusable, so they have to answer the keys a button answers.
+$('list').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const card = e.target.closest('.card');
+  if (!card) return;
+  e.preventDefault(); // Space would page the list down instead
+  openDetail(card.dataset.id);
 });
 
 $('checklist').addEventListener('change', (e) => {
@@ -342,16 +393,22 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Infinite scroll keeps the DOM small; 3848 cards at once would stutter.
-new IntersectionObserver((es) => {
-  if (es[0].isIntersecting && state.view !== 'checklist' && state.view !== 'drift') more();
-}).observe($('sentinel'));
+// rootMargin starts the next page before the sentinel is on screen, so the
+// scroll doesn't visibly stall at the bottom of each page.
+new IntersectionObserver(
+  (es) => {
+    if (es[0].isIntersecting && state.view !== 'checklist' && state.view !== 'drift') more();
+  },
+  { rootMargin: '600px' },
+).observe($('sentinel'));
 
+// The initial theme is applied by the inline script in index.html's <head> —
+// doing it here meant a light flash before this file ran.
 $('themeBtn').addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
   localStorage.setItem('sooon.theme', next);
 });
-document.documentElement.dataset.theme = localStorage.getItem('sooon.theme') ?? 'light';
 
 load().catch((err) => {
   $('list').innerHTML = `<div class="empty">加载失败：${esc(err.message)}<br><br>

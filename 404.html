@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>页面不存在 · 素问语料阅读器</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238a5a2b'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23fff' font-family='serif'>素</text></svg>">
+<link rel="stylesheet" href="style.css">
+<!-- Same pre-paint theme read as index.html, so arriving here doesn't flash. -->
+<script>
+  document.documentElement.dataset.theme =
+    localStorage.getItem('sooon.theme') ??
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+</script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><h1>素问语料</h1></div>
+</header>
+
+<main>
+  <div class="empty">
+    <p>这个地址没有对应的页面。</p>
+    <p><a href="/">回到语料首页</a></p>
+  </div>
+</main>
+
+</body>
+</html>

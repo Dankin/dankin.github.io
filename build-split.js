@@ -8,9 +8,11 @@
    Output:
      index.json      every item minus the heavy fields — the only blocking fetch
      bodies/NN.json  64 shards of {body, principles, url, file, tension},
-                     keyed by id, fetched on demand when a detail panel opens
+                     keyed by short id, fetched on demand when a panel opens
 
-   The split is lossless: every field of data.json lands in one of the two.
+   Two fields are dropped rather than split: `short`, which is just the first 8
+   chars of `id`, and `type`, which nothing on the page reads. Every other field
+   of data.json lands in one of the two outputs.
    Run after regenerating data.json, then commit index.json and bodies/. */
 
 const fs = require('fs');
@@ -22,14 +24,32 @@ const OUT_BODIES = 'bodies';
 /** Shard for an item, derived from its id so the client computes it without a map. */
 const shardOf = (id) => parseInt(id.slice(0, 2), 16) % SHARDS;
 
-const LIGHT = ['id', 'short', 'title', 'question', 'thesis', 'rejects', 'domain', 'date', 'year', 'chars', 'type'];
+/* ids are UUIDs, and at 36 chars they were 147KB of index.json by themselves.
+   The first 8 hex digits are exactly what the UI already displayed as `short`,
+   and they're unique across the corpus, so that prefix becomes the id
+   everywhere downstream — index items and shard keys alike. */
+const ID_LEN = 8;
+const shortId = (id) => id.slice(0, ID_LEN);
+
+// `short` was this same prefix, and `type` is never read by the page.
+const LIGHT = ['title', 'question', 'thesis', 'rejects', 'domain', 'date', 'year', 'chars'];
 const HEAVY = ['body', 'principles', 'url', 'file', 'tension'];
 
 const data = JSON.parse(fs.readFileSync('data.json', 'utf8'));
 const items = data.items;
 
+/* A prefix collision would quietly drop one of the two items from its shard —
+   the detail panel would open on empty. Fail the build instead; raise ID_LEN if
+   the corpus ever grows into one. */
+const seen = new Map();
+for (const it of items) {
+  const s = shortId(it.id);
+  if (seen.has(s)) throw new Error(`id prefix collision on ${s}: ${seen.get(s)} vs ${it.id}`);
+  seen.set(s, it.id);
+}
+
 const light = items.map((it) => {
-  const out = {};
+  const out = { id: shortId(it.id) };
   for (const k of LIGHT) if (it[k] != null && it[k] !== '') out[k] = it[k];
   // The list only tests `tension` for truthiness; the string itself lives in the shard.
   if (it.tension) out.tension = 1;
@@ -58,7 +78,7 @@ const shards = Array.from({ length: SHARDS }, () => ({}));
 for (const it of items) {
   const rec = {};
   for (const k of HEAVY) if (it[k] != null && it[k] !== '' && !(Array.isArray(it[k]) && !it[k].length)) rec[k] = it[k];
-  shards[shardOf(it.id)][it.id] = rec;
+  shards[shardOf(it.id)][shortId(it.id)] = rec;
 }
 
 fs.rmSync(OUT_BODIES, { recursive: true, force: true });

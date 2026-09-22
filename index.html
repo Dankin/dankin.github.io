@@ -3,7 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>素问语料阅读器</title>
+<meta name="description" content="素问语料阅读器：3848 条论断、3651 条「他反对什么」，可按领域与年份检索，另附提问清单与立场漂移视图。">
+<meta property="og:title" content="素问语料阅读器">
+<meta property="og:description" content="3848 条论断、3651 条「他反对什么」，按领域与年份检索，另附提问清单与立场漂移视图。">
+<!-- Before first paint: reading the saved theme in app.js (end of body) meant
+     dark-mode readers got a light flash on every load. -->
+<script>
+  document.documentElement.dataset.theme =
+    localStorage.getItem('sooon.theme') ??
+    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+</script>
 <!-- Inline favicon: avoids a 404 when served from a bare static server. -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238a5a2b'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23fff' font-family='serif'>素</text></svg>">
 <link rel="stylesheet" href="style.css">
@@ -14,7 +25,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <strong>素问语料</strong>
+    <h1>素问语料</h1>
     <span class="muted" id="countLabel">加载中…</span>
   </div>
   <nav class="tabs" id="tabs">
@@ -26,11 +37,11 @@
   <button id="themeBtn" class="ghost" title="切换深色/浅色">◐</button>
 </header>
 
-<div class="toolbar" id="toolbar">
-  <input type="search" id="search" placeholder="搜索问题、论断、标题…  （/ 聚焦）" autocomplete="off">
-  <select id="domain"><option value="">全部领域</option></select>
-  <select id="year"><option value="">全部年份</option></select>
-  <select id="sort">
+<div class="toolbar" id="toolbar" role="search">
+  <input type="search" id="search" aria-label="搜索问题、论断、标题" placeholder="搜索问题、论断、标题…  （/ 聚焦）" autocomplete="off">
+  <select id="domain" aria-label="按领域筛选"><option value="">全部领域</option></select>
+  <select id="year" aria-label="按年份筛选"><option value="">全部年份</option></select>
+  <select id="sort" aria-label="排序方式">
     <option value="date-desc">最新优先</option>
     <option value="date-asc">最早优先</option>
     <option value="len-desc">最长优先</option>
@@ -55,7 +66,9 @@
   </section>
 </main>
 
-<aside id="panel" class="panel hidden" aria-live="polite">
+<!-- aria-live is deliberately absent: on the whole panel it made screen readers
+     re-read the entire article every time the body finished loading. -->
+<aside id="panel" class="panel hidden" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1">
   <button class="panel-close" id="panelClose" title="关闭 (Esc)">×</button>
   <div id="panelBody"></div>
 </aside>

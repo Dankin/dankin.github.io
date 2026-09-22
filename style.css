@@ -49,6 +49,7 @@ html, body {
 
 .muted { color: var(--text-dim); font-size: 13px; font-weight: 400; }
 .hidden { display: none !important; }
+a { color: var(--accent); }
 
 /* ---------- top bar ---------- */
 
@@ -66,7 +67,8 @@ html, body {
 }
 
 .brand { display: flex; align-items: baseline; gap: 10px; }
-.brand strong { font-family: var(--serif); font-size: 17px; letter-spacing: .04em; }
+/* An <h1> so the page has one; sized back down to what the <strong> looked like. */
+.brand h1 { font-family: var(--serif); font-size: 17px; font-weight: 700; letter-spacing: .04em; margin: 0; }
 
 .tabs { display: flex; gap: 4px; margin-left: auto; }
 
@@ -153,6 +155,8 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 20px 22px 80px; }
   transition: border-color .12s, transform .12s;
 }
 .card:hover { border-color: var(--accent); transform: translateY(-1px); }
+/* Cards are reachable by Tab now, so the focus ring has to be unmissable. */
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
 
 .card-q {
   font-size: 13px;
@@ -206,6 +210,10 @@ mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; 
 
 /* ---------- detail panel ---------- */
 
+/* The panel is modal, so the list behind it shouldn't scroll along. Spec'd
+   behaviour: body's overflow propagates to the viewport while html's is visible. */
+body.panel-open { overflow: hidden; }
+
 .panel {
   position: fixed;
   top: 0; right: 0; bottom: 0;
@@ -217,6 +225,9 @@ mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; 
   padding: 26px 30px 70px;
   box-shadow: -14px 0 40px rgba(0,0,0,.13);
 }
+/* It takes focus on open so screen readers land inside it; a ring around the
+   whole panel would just be noise, and the next Tab reaches the close button. */
+.panel:focus-visible { outline: none; }
 
 .panel-close {
   position: sticky;
@@ -263,7 +274,6 @@ mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; 
 }
 .panel ul { margin: 7px 0; padding-left: 20px; }
 .panel li { margin: 5px 0; font-size: 14.5px; }
-.panel a { color: var(--accent); }
 
 /* ---------- checklist ---------- */
 
