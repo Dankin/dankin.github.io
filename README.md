@@ -36,23 +36,3 @@ URL 参数：
 ```sh
 python3 -m http.server 8080
 ```
-
-必须走 http，`file://` 下 `fetch` 会被浏览器拦住。「复制链接 / 复制引用」需要安全上下文，`localhost` 和 `127.0.0.1` 算，其他裸 http 地址不算。
-
-## 数据构建
-
-`data.json` 是构建输入，页面不加载它。每次重新生成后跑一次拆分：
-
-```sh
-node build-split.js
-```
-
-产出 `index.json`（全部条目的轻字段，首屏加载）和 `bodies/NN.json`（64 个分片，装正文，点开详情才按 id 前缀拉一片）。不跑这步，站点仍在用旧的 `index.json`。
-
-重新生成 `checklist.json` 时要带上每条 move 的 `id`（`q01`–`q34`）——勾选状态按 id 存，丢了 id 就退回按文本存，改一个字读者的勾就全丢。
-
-## 发版
-
-改四处 `?v=`：`index.html` 里三处（`style.css`、`app.js`、`index.json` 预加载），`404.html` 里一处（`style.css`）。版本号跟 tag 保持一致。
-
-`app.js` 会把自己 script 标签上的 `?v=` 接到后面每一个 fetch 上，所以数据文件不用单独改。少改一处会让新旧构建的文件混在一起，详情面板打不开。
