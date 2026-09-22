@@ -1,5 +1,10 @@
 /* Reader for the sooon corpus: theses, rejected views, question checklist, drift.
-   Plain DOM, no dependencies — data.json is static so this runs from file://. */
+   Plain DOM, no dependencies.
+
+   Data is split by build-split.js: index.json holds every item minus the full
+   article text, and bodies/NN.json shards carry the text, fetched only when a
+   detail panel opens. Search therefore covers question/thesis/rejects/title —
+   not the article bodies, which are never all in memory at once. */
 
 const $ = (id) => document.getElementById(id);
 const state = {
@@ -8,6 +13,7 @@ const state = {
   rendered: 0,
   view: 'theses',
   checklist: null,
+  shards: 64,
   done: new Set(JSON.parse(localStorage.getItem('sooon.done') ?? '[]')),
 };
 const PAGE = 60;
@@ -28,25 +34,52 @@ function highlight(text, query) {
 
 async function load() {
   const [data, checklist] = await Promise.all([
-    fetch('data.json').then((r) => r.json()),
+    fetch('index.json').then((r) => r.json()),
     fetch('checklist.json').then((r) => r.json()).catch(() => null),
   ]);
   state.items = data.items;
   state.checklist = checklist;
+  state.shards = data.shards;
+
+  // One lowercase haystack per item, built once: re-lowercasing four fields on
+  // 3848 items at every keystroke was the other thing making typing feel slow.
+  for (const it of state.items) {
+    it.hay = `${it.question}\n${it.thesis}\n${it.rejects ?? ''}\n${it.title ?? ''}`.toLowerCase();
+  }
 
   $('countLabel').textContent =
-    `${data.count} 条论断 · ${data.corpus_total} 篇文章 · ${data.items.filter((i) => i.rejects).length} 条「反对」`;
+    `${data.count} 条论断 · ${data.corpus_total} 篇文章 · ${data.rejects_count} 条「反对」`;
 
-  const domains = [...new Set(state.items.map((i) => i.domain))]
-    .map((d) => [d, state.items.filter((i) => i.domain === d).length])
-    .sort((a, b) => b[1] - a[1]);
-  for (const [d, n] of domains) {
-    $('domain').insertAdjacentHTML('beforeend', `<option value="${esc(d)}">${esc(d)} (${n})</option>`);
-  }
-  for (const y of [...new Set(state.items.map((i) => i.year).filter(Boolean))].sort().reverse()) {
-    $('year').insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
-  }
+  // domains/years are tallied at build time.
+  $('domain').insertAdjacentHTML(
+    'beforeend',
+    data.domains.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} (${n})</option>`).join(''),
+  );
+  $('year').insertAdjacentHTML('beforeend', data.years.map((y) => `<option value="${y}">${y}</option>`).join(''));
   apply();
+}
+
+/* Article text, principles, url and file live in a shard picked by id prefix.
+   The promise is cached so repeated opens and concurrent clicks share one fetch. */
+const shardCache = new Map();
+
+async function heavyOf(id) {
+  const n = String(parseInt(id.slice(0, 2), 16) % state.shards).padStart(2, '0');
+  if (!shardCache.has(n)) {
+    shardCache.set(
+      n,
+      fetch(`bodies/${n}.json`)
+        .then((r) => {
+          if (!r.ok) throw new Error(`bodies/${n}.json ${r.status}`);
+          return r.json();
+        })
+        .catch((err) => {
+          shardCache.delete(n); // let the next click retry
+          throw err;
+        }),
+    );
+  }
+  return (await shardCache.get(n))[id] ?? {};
 }
 
 function apply() {
@@ -60,13 +93,7 @@ function apply() {
     if (year && it.year !== year) return false;
     if (onlyRejects && !it.rejects) return false;
     if (!q) return true;
-    return (
-      it.question.toLowerCase().includes(q) ||
-      it.thesis.toLowerCase().includes(q) ||
-      (it.rejects ?? '').toLowerCase().includes(q) ||
-      (it.title ?? '').toLowerCase().includes(q) ||
-      it.body.toLowerCase().includes(q)
-    );
+    return it.hay.includes(q);
   });
 
   const [key, dir] = $('sort').value.split('-');
@@ -119,14 +146,13 @@ function more() {
 
 /* ---------- detail ---------- */
 
-function openDetail(id) {
+let detailSeq = 0; // a slow shard must not overwrite a panel the user opened later
+
+/** Paints everything already in the index, then fills in the article text. */
+async function openDetail(id) {
   const it = state.items.find((x) => x.id === id);
   if (!it) return;
-  const principles = it.principles?.length
-    ? `<div class="block"><span class="label">抽取出的规范性主张（${it.principles.length}）</span><ul>${it.principles
-        .map((p) => `<li>${esc(p.principle)}${p.tension ? `<br><span class="muted">张力：${esc(p.tension)}</span>` : ''}</li>`)
-        .join('')}</ul></div>`
-    : '';
+  const seq = ++detailSeq;
 
   $('panelBody').innerHTML = `
     <div class="meta">
@@ -139,12 +165,31 @@ function openDetail(id) {
     ${it.title ? `<p class="muted">标题：${esc(it.title)}</p>` : ''}
     <div class="block"><span class="label">核心论断</span>${esc(it.thesis)}</div>
     ${it.rejects ? `<div class="card-reject"><b>他反对</b>${esc(it.rejects)}</div>` : ''}
-    ${principles}
-    <p class="muted">${it.url ? `<a href="${esc(it.url)}" target="_blank" rel="noreferrer noopener">原始链接</a> · ` : ''}文件：${esc(it.file ?? '')}</p>
-    <div class="body">${esc(it.body)}</div>`;
+    <div id="detailRest" class="loading">正在加载正文…</div>`;
   $('panel').classList.remove('hidden');
   $('scrim').classList.remove('hidden');
   $('panel').scrollTop = 0;
+
+  let heavy;
+  try {
+    heavy = await heavyOf(id);
+  } catch (err) {
+    if (seq === detailSeq) $('detailRest').innerHTML = `<div class="empty">正文加载失败：${esc(err.message)}</div>`;
+    return;
+  }
+  if (seq !== detailSeq) return;
+
+  const principles = heavy.principles?.length
+    ? `<div class="block"><span class="label">抽取出的规范性主张（${heavy.principles.length}）</span><ul>${heavy.principles
+        .map((p) => `<li>${esc(p.principle)}${p.tension ? `<br><span class="muted">张力：${esc(p.tension)}</span>` : ''}</li>`)
+        .join('')}</ul></div>`
+    : '';
+
+  $('detailRest').className = '';
+  $('detailRest').innerHTML = `
+    ${principles}
+    <p class="muted">${heavy.url ? `<a href="${esc(heavy.url)}" target="_blank" rel="noreferrer noopener">原始链接</a> · ` : ''}文件：${esc(heavy.file ?? '')}</p>
+    <div class="body">${esc(heavy.body ?? '')}</div>`;
 }
 
 function closeDetail() {
@@ -310,6 +355,7 @@ document.documentElement.dataset.theme = localStorage.getItem('sooon.theme') ?? 
 
 load().catch((err) => {
   $('list').innerHTML = `<div class="empty">加载失败：${esc(err.message)}<br><br>
-    需要通过本地服务器打开（file:// 下 fetch 会被浏览器阻止）：<br>
-    <code>cd reader && python3 -m http.server 8080</code></div>`;
+    index.json 还没生成？运行 <code>node build-split.js</code><br>
+    另外需要通过本地服务器打开（file:// 下 fetch 会被浏览器阻止）：<br>
+    <code>python3 -m http.server 8080</code></div>`;
 });

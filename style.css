@@ -199,6 +199,11 @@ mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; 
 
 .empty { text-align: center; color: var(--text-faint); padding: 60px 20px; }
 
+/* Shown while index.json or a bodies/ shard is in flight. */
+.loading { text-align: center; color: var(--text-faint); padding: 40px 20px; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .loading { animation: none; } }
+
 /* ---------- detail panel ---------- */
 
 .panel {
