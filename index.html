@@ -27,13 +27,13 @@
 <!-- ?v= is the cache buster. GitHub Pages serves every file with max-age=600 and
      gives no way to set headers, so a reader can otherwise keep a stale app.js
      next to a fresh index.json (or the reverse) and the page just breaks. Bump
-     these three together on every release; app.js reuses the same ?v= for the
-     JSON it fetches, so this is the only place the version is written. -->
-<link rel="stylesheet" href="style.css?v=1.4">
+     all three here plus the one in 404.html on every release; app.js reuses the
+     same ?v= for the JSON it fetches, so those are the only four spellings. -->
+<link rel="stylesheet" href="style.css?v=1.5">
 <!-- Starts the index fetch during head parsing instead of waiting for app.js.
      The URL has to match app.js's fetch exactly, ?v= included, or the preload
      is wasted and the file is requested twice. -->
-<link rel="preload" href="index.json?v=1.4" as="fetch" type="application/json" crossorigin="anonymous">
+<link rel="preload" href="index.json?v=1.5" as="fetch" type="application/json" crossorigin="anonymous">
 </head>
 <body>
 
@@ -54,10 +54,16 @@
 
   <div class="toolbar" id="toolbar" role="search">
     <div class="toolbar-main">
-      <input type="search" id="search" aria-label="搜索问题、论断、标题" placeholder="搜索问题、论断、标题…" autocomplete="off">
-      <!-- Stays out of the collapsible row: the hit count is the one number
-           worth seeing while typing, on any screen width. -->
-      <span class="muted" id="resultLabel"></span>
+      <!-- Serves both views; app.js rewrites the placeholder and label on the
+           checklist tab. title carries the shortcuts, which have nowhere else
+           to be announced without a help panel nobody asked for. -->
+      <input type="search" id="search" aria-label="搜索问题、论断、标题" placeholder="搜索问题、论断、标题…"
+        title="/ 聚焦搜索 · j/k 上下条 · Esc 关闭" autocomplete="off">
+      <!-- Stays out of the collapsible row: the hit count is the one number worth
+           seeing while typing, on any screen width. Announced too, since it is the
+           only feedback that a query did anything — polite so it waits for a pause
+           in the typing, atomic so it isn't read out as a bare changed digit. -->
+      <span class="muted" id="resultLabel" role="status" aria-live="polite" aria-atomic="true"></span>
       <!-- Only shown on narrow screens; on wide ones the filter row is always open. -->
       <button type="button" id="filterBtn" class="ghost wide" aria-expanded="false" aria-controls="filters">筛选</button>
     </div>
@@ -71,6 +77,7 @@
         <option value="len-asc">最短优先</option>
       </select>
       <label class="chk"><input type="checkbox" id="onlyRejects"> 只看有「反对」的</label>
+      <label class="chk"><input type="checkbox" id="onlyTension"> 只看有张力的</label>
     </div>
   </div>
 </div>
@@ -97,6 +104,6 @@
 </aside>
 <div id="scrim" class="scrim hidden"></div>
 
-<script src="app.js?v=1.4"></script>
+<script src="app.js?v=1.5"></script>
 </body>
 </html>

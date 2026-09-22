@@ -120,6 +120,12 @@ a { color: var(--accent); }
 /* Wide screens show the filter row unconditionally, so the toggle is dead weight. */
 #filterBtn { display: none; }
 
+/* On the checklist tab the search box still works — it filters the moves — but
+   domain/year/sort have nothing to act on. !important because the phone media
+   query below turns the toggle back on. */
+.toolbar.checklist-mode .filters,
+.toolbar.checklist-mode #filterBtn { display: none !important; }
+
 #search {
   flex: 1 1 280px;
   min-width: 0;
@@ -166,18 +172,35 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 20px 22px 80px; }
   transition: border-color .12s, transform .12s;
 }
 .card:hover { border-color: var(--accent); transform: translateY(-1px); }
-/* Cards are reachable by Tab now, so the focus ring has to be unmissable. */
-.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+/* The ring belongs to the card even though the focus lands on the button inside
+   it — the card is the thing the reader sees themselves moving between. */
+.card:has(.card-open:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; border-color: var(--accent); }
+
+/* The question, thesis and rejects are one real button: Enter and Space work
+   without help, and the filter pills below stay separately reachable. */
+.card-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.card-open:focus-visible { outline: none; } /* the card wears it, see above */
 
 .card-q {
+  display: flex; align-items: baseline; gap: 8px;
   font-size: 13px;
   color: var(--text-dim);
   margin-bottom: 7px;
-  display: flex; align-items: baseline; gap: 8px;
 }
 .card-q .qtext { flex: 1; }
 
 .card-thesis {
+  display: block;
   font-family: var(--serif);
   font-size: 17px;
   line-height: 1.55;
@@ -185,6 +208,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 20px 22px 80px; }
 }
 
 .card-reject {
+  display: block;
   margin-top: 10px;
   padding: 8px 11px;
   background: var(--reject-soft);
@@ -206,6 +230,17 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 20px 22px 80px; }
   white-space: nowrap;
 }
 .pill.domain { background: var(--accent-soft); color: var(--accent); }
+
+/* Domain, year and 张力 are buttons that set the matching filter. Styled like the
+   inert pills on purpose — an obviously clickable pill row would compete with the
+   thesis for attention, and hover is enough of a hint for something this optional. */
+button.pill {
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+button.pill:hover { border-color: var(--accent); color: var(--accent); }
+button.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 mark { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; }
 [data-theme="dark"] mark { background: #5d4a1f; color: #f5e6c0; }
@@ -295,6 +330,11 @@ body.panel-open { overflow: hidden; }
   margin: 2px 0 14px;
 }
 
+/* Above the thesis rather than at the foot of the article: what gets quoted is
+   the thesis, and reaching it shouldn't mean scrolling past the whole body. */
+.panel-actions { display: flex; gap: 8px; margin: 0 0 14px; }
+.panel-actions .ghost { height: 30px; }
+
 /* The article text arrives blank-line separated and is rendered as real
    paragraphs — as one pre-wrap block it read as an undifferentiated wall. */
 .panel .body {
@@ -333,6 +373,21 @@ body.panel-open { overflow: hidden; }
   color: var(--text-dim);
   margin-bottom: 18px;
 }
+/* How far through the 34 questions you are, which the checkboxes alone never
+   said — and the only way back to a clean slate. */
+.cl-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.cl-bar .muted { white-space: nowrap; }
+.cl-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.cl-track > span { display: block; height: 100%; background: var(--accent); transition: width .18s; }
+@media (prefers-reduced-motion: reduce) { .cl-track > span { transition: none; } }
+.ghost[disabled] { opacity: .45; cursor: default; }
+
 .checklist h3 {
   font-family: var(--serif);
   font-size: 16px;
