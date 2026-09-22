@@ -8,18 +8,32 @@
 <meta name="description" content="素问语料阅读器：3848 条论断、3651 条「反对」，可按领域与年份检索，另附提问清单。">
 <meta property="og:title" content="素问语料阅读器">
 <meta property="og:description" content="3848 条论断、3651 条「反对」，按领域与年份检索，另附提问清单。">
+<!-- Not indexed on purpose. robots.txt deliberately leaves this page crawlable
+     so compliant bots can read this line; blocking it there instead would let
+     the bare URL linger in results with no way to signal noindex. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
 <!-- Before first paint: reading the saved theme in app.js (end of body) meant
-     dark-mode readers got a light flash on every load. -->
+     dark-mode readers got a light flash on every load. Wrapped because reading
+     localStorage throws outright in some privacy modes. -->
 <script>
-  document.documentElement.dataset.theme =
-    localStorage.getItem('sooon.theme') ??
-    (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  try {
+    document.documentElement.dataset.theme =
+      localStorage.getItem('sooon.theme') ??
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  } catch {}
 </script>
 <!-- Inline favicon: avoids a 404 when served from a bare static server. -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238a5a2b'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23fff' font-family='serif'>素</text></svg>">
-<link rel="stylesheet" href="style.css">
-<!-- Starts the index fetch during head parsing instead of waiting for app.js. -->
-<link rel="preload" href="index.json" as="fetch" type="application/json" crossorigin="anonymous">
+<!-- ?v= is the cache buster. GitHub Pages serves every file with max-age=600 and
+     gives no way to set headers, so a reader can otherwise keep a stale app.js
+     next to a fresh index.json (or the reverse) and the page just breaks. Bump
+     these three together on every release; app.js reuses the same ?v= for the
+     JSON it fetches, so this is the only place the version is written. -->
+<link rel="stylesheet" href="style.css?v=1.4">
+<!-- Starts the index fetch during head parsing instead of waiting for app.js.
+     The URL has to match app.js's fetch exactly, ?v= included, or the preload
+     is wasted and the file is requested twice. -->
+<link rel="preload" href="index.json?v=1.4" as="fetch" type="application/json" crossorigin="anonymous">
 </head>
 <body>
 
@@ -83,6 +97,6 @@
 </aside>
 <div id="scrim" class="scrim hidden"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=1.4"></script>
 </body>
 </html>

@@ -7,6 +7,34 @@
    not the article bodies, which are never all in memory at once. */
 
 const $ = (id) => document.getElementById(id);
+
+/* Every fetch inherits the ?v= that index.html put on this script tag, so the
+   version is written in one place and code and data can't come from different
+   builds. GitHub Pages serves everything with max-age=600 and no way to set
+   headers, so a stale copy is the browser's call, not ours — a fresh id is the
+   only reliable way to get out of a cache we don't control. */
+const VER = new URL(document.currentScript?.src ?? location.href).search;
+const url = (path) => path + VER;
+
+/** Throws on a non-2xx instead of letting an error page fail as bad JSON. */
+async function getJSON(path, opts) {
+  const r = await fetch(url(path), opts);
+  if (!r.ok) throw new Error(`${path} ${r.status}`);
+  return r.json();
+}
+
+/* Reading this used to happen inline in `state`, at top level: one malformed
+   value — a half-written string, something another tab wrote — threw before any
+   listener was attached, so the page died silently with no error to show. */
+function savedDone() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('sooon.done') ?? '[]');
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch {
+    return new Set(); // the next tick overwrites the bad value anyway
+  }
+}
+
 const state = {
   items: [],
   filtered: [],
@@ -14,7 +42,7 @@ const state = {
   view: 'theses',
   checklist: null,
   shards: 64,
-  done: new Set(JSON.parse(localStorage.getItem('sooon.done') ?? '[]')),
+  done: savedDone(),
 };
 const PAGE = 60;
 
@@ -43,10 +71,11 @@ function highlight(text, query) {
 
 /* ---------- data ---------- */
 
-async function load() {
+/** `opts` carries cache:'reload' when the retry button bypasses a bad cache entry. */
+async function load(opts) {
   const [data, checklist] = await Promise.all([
-    fetch('index.json').then((r) => r.json()),
-    fetch('checklist.json').then((r) => r.json()).catch(() => null),
+    getJSON('index.json', opts),
+    getJSON('checklist.json', opts).catch(() => null),
   ]);
   state.items = data.items;
   state.checklist = checklist;
@@ -61,7 +90,10 @@ async function load() {
   $('countLabel').textContent =
     `${data.count} 条论断 · ${data.corpus_total} 篇文章 · ${data.rejects_count} 条「反对」`;
 
-  // domains/years are tallied at build time.
+  // domains/years are tallied at build time. Truncating to the leading "全部"
+  // option first keeps this idempotent — the retry path runs load() twice.
+  $('domain').length = 1;
+  $('year').length = 1;
   $('domain').insertAdjacentHTML(
     'beforeend',
     data.domains.map(([d, n]) => `<option value="${esc(d)}">${esc(d)} (${n})</option>`).join(''),
@@ -79,15 +111,10 @@ async function heavyOf(id) {
   if (!shardCache.has(n)) {
     shardCache.set(
       n,
-      fetch(`bodies/${n}.json`)
-        .then((r) => {
-          if (!r.ok) throw new Error(`bodies/${n}.json ${r.status}`);
-          return r.json();
-        })
-        .catch((err) => {
-          shardCache.delete(n); // let the next click retry
-          throw err;
-        }),
+      getJSON(`bodies/${n}.json`).catch((err) => {
+        shardCache.delete(n); // let the next click retry
+        throw err;
+      }),
     );
   }
   return (await shardCache.get(n))[id] ?? {};
@@ -121,6 +148,13 @@ function apply() {
 }
 
 function more() {
+  /* Nothing to page in until the index lands — and if it never lands, nothing
+     ever. The scroll observer fires on an empty list either way, and without
+     this it overwrote the loading and error states (retry button included) with
+     "没有匹配的条目", which is only the right message once there are items to
+     filter. */
+  if (!state.items.length) return;
+
   const slice = state.filtered.slice(state.rendered, state.rendered + PAGE);
   if (!slice.length) {
     if (!state.rendered) $('list').innerHTML = '<div class="empty">没有匹配的条目</div>';
@@ -384,9 +418,20 @@ $('themeBtn').addEventListener('click', () => {
   localStorage.setItem('sooon.theme', next);
 });
 
-load().catch((err) => {
+/* A failed load is most often a stale or truncated cache entry, and a plain
+   reload can hand back the exact same bad bytes; cache:'reload' is the one way
+   from script to go past it without asking the reader for Cmd+Shift+R. */
+function showLoadError(err) {
   $('list').innerHTML = `<div class="empty">加载失败：${esc(err.message)}<br><br>
+    <button type="button" id="retryBtn" class="ghost">绕过缓存重新加载</button><br><br>
     index.json 还没生成？运行 <code>node build-split.js</code><br>
     另外需要通过本地服务器打开（file:// 下 fetch 会被浏览器阻止）：<br>
     <code>python3 -m http.server 8080</code></div>`;
-});
+  $('retryBtn').addEventListener('click', () => {
+    $('list').innerHTML = '<div class="loading">正在重新加载…</div>';
+    shardCache.clear(); // the shards came from the same suspect cache
+    load({ cache: 'reload' }).catch(showLoadError);
+  });
+}
+
+load().catch(showLoadError);

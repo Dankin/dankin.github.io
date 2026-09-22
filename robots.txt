@@ -1,0 +1,56 @@
+# 这个站点不想被搜索引擎收录。
+#
+# HTML 页面故意不写 Disallow：爬虫必须能抓到页面，才能读到里面的
+# <meta name="robots" content="noindex">。反过来用 robots.txt 拦掉首页，
+# Google 仍可能凭外链把这个 URL 以「没有摘要」的样子留在结果里，
+# 而且它永远看不到 noindex，也就永远不会主动撤下来。
+#
+# 数据文件没有插 meta 的地方，只能靠这里挡；注意 robots.txt 只对守规矩的
+# 爬虫有效，文件本身照样能被直接下载。
+
+User-agent: *
+Disallow: /data.json
+Disallow: /index.json
+Disallow: /checklist.json
+Disallow: /checklist.md
+Disallow: /bodies/
+
+# 语料训练与内容抓取类，整站拒绝。
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Claude-User
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
