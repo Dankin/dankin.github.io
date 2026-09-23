@@ -1,5 +1,6 @@
 # dankin.github.io
-
+## 说明
+语料数据均来源于sooon.ai，作者q9adg
 
 ## 功能
 
@@ -18,16 +19,6 @@
 | `j` / `k` | 上下条。列表里移动焦点，走到底自动翻页；面板打开时直接翻到上一条/下一条 |
 | `Esc` | 关闭面板 |
 
-URL 参数：
-
-| | |
-|---|---|
-| `?q=` | 搜索词 |
-| `?domain=` `?year=` | 领域、年份 |
-| `?sort=` | `date-desc`（默认） `date-asc` `len-desc` `len-asc` |
-| `?rejects=1` `?tension=1` | 只看有「反对」的 / 有张力的 |
-| `?view=checklist` | 提问清单页 |
-| `#<8 位短 id>` | 打开某条论断 |
 
 ## 本地预览
 
