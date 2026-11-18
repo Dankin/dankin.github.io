@@ -1,0 +1,1495 @@
+{
+ "xiaomi_finale": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": "npc:xiaomi",
+   "zoom": 1.35,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "xiaomi",
+   "key": "fin.ready",
+   "dur": 2.2,
+   "wait": true
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "walk",
+   "npc": "xiaomi",
+   "to": [
+    9.2,
+    8.4
+   ]
+  },
+  {
+   "do": "say",
+   "npc": "xiaomi",
+   "key": "fin.breath",
+   "dur": 2.0,
+   "wait": true
+  },
+  {
+   "do": "gather",
+   "around": "npc:xiaomi",
+   "who": [
+    "abao",
+    "niuniu",
+    "aunt",
+    "courier",
+    "balloon_man",
+    "tourist1",
+    "tourist2"
+   ],
+   "r": 2.2,
+   "perRing": 7,
+   "hearts": false,
+   "wait": true,
+   "max": 12
+  },
+  {
+   "do": "say",
+   "npc": "xiaomi",
+   "key": "say.xiaomi_ok",
+   "dur": 2.6,
+   "wait": true
+  },
+  {
+   "do": "audio",
+   "cue": "sing_xiaomi"
+  },
+  {
+   "do": "sing",
+   "npc": "xiaomi",
+   "secs": 12.5
+  },
+  {
+   "do": "crowd",
+   "mode": "listen",
+   "hearts": true,
+   "around": "npc:xiaomi"
+  },
+  {
+   "do": "wait",
+   "s": 4
+  },
+  {
+   "do": "if",
+   "notFlag": "story:afu_story:done",
+   "then": [
+    {
+     "do": "hat",
+     "stage": 1
+    }
+   ]
+  },
+  {
+   "do": "say",
+   "npc": "aunt",
+   "key": "say.aunt_applause",
+   "dur": 2.8,
+   "wait": false
+  },
+  {
+   "do": "say",
+   "npc": "abao",
+   "key": "fin.kid",
+   "dur": 2.2,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 2.4
+  },
+  {
+   "do": "warmth",
+   "add": 12
+  },
+  {
+   "do": "event",
+   "id": "xiaomi_sung"
+  },
+  {
+   "do": "cam",
+   "focus": null,
+   "zoom": 1,
+   "s": 1.2
+  },
+  {
+   "do": "banner",
+   "key": "banner.xiaomi"
+  },
+  {
+   "do": "release"
+  },
+  {
+   "do": "crowd",
+   "mode": "free"
+  },
+  {
+   "do": "npcDo",
+   "npc": "xiaomi",
+   "order": {
+    "kind": "goto",
+    "x": 10.4,
+    "y": 6.2,
+    "speed": 0.9
+   }
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "if",
+   "all": [
+    "story:afu_story:done"
+   ],
+   "then": [
+    {
+     "do": "runSeq",
+     "id": "phase_noon"
+    }
+   ]
+  }
+ ],
+ "afu_cat_carry": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    8.0,
+    30.0
+   ],
+   "zoom": 1.2,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "cat_m",
+   "key": "say.cat_m_carry",
+   "dur": 2.2,
+   "wait": false
+  },
+  {
+   "do": "npcDo",
+   "npc": "cat_m",
+   "order": {
+    "kind": "goto",
+    "x": 12.4,
+    "y": 29.6,
+    "speed": 1.4
+   }
+  },
+  {
+   "do": "wait",
+   "s": 1.4
+  },
+  {
+   "do": "fx",
+   "id": "notes",
+   "at": [
+    12.4,
+    28.6
+   ]
+  },
+  {
+   "do": "npcDo",
+   "npc": "cat_m",
+   "order": {
+    "kind": "goto",
+    "x": 4.2,
+    "y": 33.8,
+    "speed": 1.6
+   }
+  },
+  {
+   "do": "waitNpcAt",
+   "npc": "cat_m",
+   "at": [
+    4.2,
+    33.8
+   ],
+   "r": 1.2,
+   "timeout": 14
+  },
+  {
+   "do": "say",
+   "npc": "dog",
+   "key": "say.dog_sniff",
+   "dur": 2.0,
+   "wait": false
+  },
+  {
+   "do": "flag",
+   "set": "letter_in_yard"
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "npcDo",
+   "npc": "cat_m",
+   "order": {
+    "kind": "goto",
+    "x": 3.2,
+    "y": 35.0,
+    "speed": 1.0
+   }
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ],
+ "afu_finale": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    2.6,
+    34.4
+   ],
+   "zoom": 1.5,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "afu",
+   "key": "say.afu_deliver",
+   "dur": 2.8,
+   "wait": true
+  },
+  {
+   "do": "walk",
+   "npc": "afu",
+   "to": [
+    2.0,
+    34.6
+   ],
+   "face": [
+    1.7,
+    34.6
+   ]
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_letter_1",
+   "dur": 2.4,
+   "wait": true
+  },
+  {
+   "do": "wait",
+   "s": 0.4
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_letter_2",
+   "dur": 2.8,
+   "wait": true
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.afu_invite",
+   "dur": 3.4,
+   "style": "letter",
+   "wait": false
+  },
+  {
+   "do": "emit",
+   "at": [
+    1.8,
+    34.4
+   ],
+   "spec": {
+    "type": "light",
+    "tag": "warm",
+    "intensity": 0.5,
+    "radius": 4,
+    "duration": 6
+   }
+  },
+  {
+   "do": "wait",
+   "s": 2.0
+  },
+  {
+   "do": "hat",
+   "stage": 2
+  },
+  {
+   "do": "warmth",
+   "add": 12
+  },
+  {
+   "do": "event",
+   "id": "letter_delivered"
+  },
+  {
+   "do": "flag",
+   "set": "letter_delivered"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "banner",
+   "key": "banner.afu"
+  },
+  {
+   "do": "npcDo",
+   "npc": "afu",
+   "order": {
+    "kind": "goto",
+    "x": 3.4,
+    "y": 35.4,
+    "speed": 0.9
+   }
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "if",
+   "all": [
+    "story:xiaomi_story:done"
+   ],
+   "then": [
+    {
+     "do": "runSeq",
+     "id": "phase_noon"
+    }
+   ]
+  }
+ ],
+ "laozhou_finale": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    27.6,
+    3.6
+   ],
+   "zoom": 1.35,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "laozhou",
+   "key": "say.laozhou_open",
+   "dur": 2.6,
+   "wait": true
+  },
+  {
+   "do": "prop",
+   "id": "oven",
+   "move": "oven_fire"
+  },
+  {
+   "do": "flag",
+   "set": "oven_lit"
+  },
+  {
+   "do": "emit",
+   "at": [
+    28.6,
+    3.2
+   ],
+   "spec": {
+    "type": "scent",
+    "tag": "bread",
+    "intensity": 1.0,
+    "radius": 34,
+    "duration": 90,
+    "cone": {
+     "dir": [
+      0.25,
+      1
+     ],
+     "arc": 70
+    }
+   }
+  },
+  {
+   "do": "wait",
+   "s": 1.4
+  },
+  {
+   "do": "prop",
+   "id": "shutter",
+   "move": "shutter_up"
+  },
+  {
+   "do": "flag",
+   "set": "shutter_up"
+  },
+  {
+   "do": "gather",
+   "around": [
+    28.6,
+    5.0
+   ],
+   "who": [
+    "doudou",
+    "kevin",
+    "q1",
+    "q2",
+    "uncle_wu",
+    "granny_qin"
+   ],
+   "r": 2.0,
+   "perRing": 6,
+   "hearts": true,
+   "wait": true,
+   "max": 10
+  },
+  {
+   "do": "say",
+   "npc": "doudou",
+   "key": "say.doudou_bread",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "say",
+   "npc": "kevin",
+   "key": "say.kevin_bread",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 2.6
+  },
+  {
+   "do": "say",
+   "npc": "laozhou",
+   "key": "say.laozhou_fin",
+   "dur": 3.0,
+   "wait": true
+  },
+  {
+   "do": "hat",
+   "stage": 3
+  },
+  {
+   "do": "warmth",
+   "add": 12
+  },
+  {
+   "do": "event",
+   "id": "bread_smell"
+  },
+  {
+   "do": "release"
+  },
+  {
+   "do": "banner",
+   "key": "banner.laozhou"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "if",
+   "all": [
+    "story:xiaolan_story:done"
+   ],
+   "then": [
+    {
+     "do": "runSeq",
+     "id": "phase_dusk"
+    }
+   ]
+  }
+ ],
+ "bike_go": [
+  {
+   "do": "flag",
+   "set": "bike_go"
+  },
+  {
+   "do": "vehicle",
+   "id": "bike_slide",
+   "cmd": "start"
+  }
+ ],
+ "xiaolan_finale": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    31.4,
+    27.0
+   ],
+   "zoom": 1.4,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "xiaolan",
+   "key": "say.xl_paint_start",
+   "dur": 2.4,
+   "wait": true
+  },
+  {
+   "do": "npcDo",
+   "npc": "xiaolan",
+   "pose": "paint",
+   "secs": 6
+  },
+  {
+   "do": "wait",
+   "s": 2.4
+  },
+  {
+   "do": "prop",
+   "id": "snowman_r",
+   "move": "melt_1"
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "prop",
+   "id": "snowman_r",
+   "move": "melt_2"
+  },
+  {
+   "do": "say",
+   "npc": "xiaolan",
+   "key": "say.xl_melt",
+   "dur": 2.0,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "xiaolan",
+   "key": "say.xl_abstract",
+   "dur": 2.8,
+   "wait": true
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.xl_painting",
+   "dur": 3.6,
+   "style": "normal",
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 2.0
+  },
+  {
+   "do": "flag",
+   "set": "painting_done"
+  },
+  {
+   "do": "hat",
+   "stage": 4
+  },
+  {
+   "do": "warmth",
+   "add": 12
+  },
+  {
+   "do": "event",
+   "id": "painting_done"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "banner",
+   "key": "banner.xiaolan"
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "if",
+   "all": [
+    "story:laozhou_story:done"
+   ],
+   "then": [
+    {
+     "do": "runSeq",
+     "id": "phase_dusk"
+    }
+   ]
+  }
+ ],
+ "phase_noon": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "phase",
+   "id": "noon",
+   "s": 4
+  },
+  {
+   "do": "banner",
+   "key": "banner.noon"
+  },
+  {
+   "do": "audio",
+   "cue": "phase_noon"
+  },
+  {
+   "do": "wait",
+   "s": 4.5
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ],
+ "phase_dusk": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "phase",
+   "id": "dusk",
+   "s": 5
+  },
+  {
+   "do": "banner",
+   "key": "banner.dusk"
+  },
+  {
+   "do": "audio",
+   "cue": "phase_dusk"
+  },
+  {
+   "do": "wait",
+   "s": 5.5
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ],
+ "phase_night": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "phase",
+   "id": "night",
+   "s": 6
+  },
+  {
+   "do": "banner",
+   "key": "banner.night"
+  },
+  {
+   "do": "audio",
+   "cue": "phase_night"
+  },
+  {
+   "do": "wait",
+   "s": 0.1
+  },
+  {
+   "do": "wait",
+   "s": 6.5
+  },
+  {
+   "do": "runSeq",
+   "id": "finale_gather"
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ],
+ "adong_alight": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": "npc:adong",
+   "zoom": 1.4,
+   "s": 1.0
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_ramp",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "goto",
+    "x": 43.6,
+    "y": 6.2,
+    "speed": 0.9
+   }
+  },
+  {
+   "do": "wait",
+   "s": 2.2
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "runSeq",
+   "id": "adong_try_start"
+  }
+ ],
+ "adong_light_ok": [
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_light",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "goto",
+    "x": 43.8,
+    "y": 5.6,
+    "speed": 0.9
+   }
+  },
+  {
+   "do": "wait",
+   "s": 0.1
+  },
+  {
+   "do": "runSeq",
+   "id": "adong_try_start"
+  }
+ ],
+ "adong_clear_ok": [
+  {
+   "do": "cam",
+   "to": [
+    43.0,
+    4.2
+   ],
+   "zoom": 1.3,
+   "s": 1.0
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_clear_1",
+   "dur": 2.0,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_clear_2",
+   "dur": 2.0,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "runSeq",
+   "id": "adong_try_start"
+  }
+ ],
+ "adong_crowd_ok": [
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_crowd",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 0.1
+  },
+  {
+   "do": "runSeq",
+   "id": "adong_try_start"
+  }
+ ],
+ "adong_try_start": [
+  {
+   "do": "wait",
+   "s": 0.5
+  },
+  {
+   "do": "if",
+   "all": [
+    "story:adong_story:ramp",
+    "story:adong_story:light",
+    "story:adong_story:clear",
+    "story:adong_story:crowd"
+   ],
+   "then": [
+    {
+     "do": "say",
+     "npc": "adong",
+     "key": "say.adong_go",
+     "dur": 2.2,
+     "wait": false
+    },
+    {
+     "do": "npcDo",
+     "npc": "adong",
+     "order": {
+      "kind": "goto",
+      "x": 47.5,
+      "y": 2.4,
+      "speed": 0.9
+     }
+    }
+   ]
+  }
+ ],
+ "adong_finale": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    48.6,
+    3.2
+   ],
+   "zoom": 1.35,
+   "s": 1.2
+  },
+  {
+   "do": "say",
+   "npc": "referee",
+   "key": "say.ref_ready",
+   "dur": 2.2,
+   "wait": true
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_ready",
+   "dur": 3.0,
+   "wait": true
+  },
+  {
+   "do": "vehicle",
+   "id": "sled_ad",
+   "cmd": "start",
+   "wait": false
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "ride",
+    "target": "mech:sled_ad"
+   }
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.race_321",
+   "dur": 2.6,
+   "style": "big",
+   "wait": true
+  },
+  {
+   "do": "slowmo",
+   "scale": 0.35,
+   "s": 1.6,
+   "wait": false
+  },
+  {
+   "do": "camPath",
+   "points": [
+    {
+     "to": [
+      47.4,
+      6.0
+     ],
+     "zoom": 1.2,
+     "s": 1.2
+    },
+    {
+     "to": [
+      47.8,
+      11.0
+     ],
+     "zoom": 1.2,
+     "s": 1.4
+    },
+    {
+     "to": [
+      49.0,
+      15.8
+     ],
+     "zoom": 1.4,
+     "s": 1.2,
+     "hold": 0.6
+    }
+   ]
+  },
+  {
+   "do": "waitEvent",
+   "id": "sled_done",
+   "timeout": 8
+  },
+  {
+   "do": "if",
+   "all": [
+    "balloons_released"
+   ],
+   "then": [
+    {
+     "do": "fx",
+     "id": "confetti",
+     "at": [
+      49,
+      15.8
+     ]
+    },
+    {
+     "do": "prop",
+     "id": "finish_arch",
+     "move": "arch_pop"
+    }
+   ]
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "release"
+   }
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "goto",
+    "x": 49.0,
+    "y": 16.4,
+    "speed": 0.9
+   }
+  },
+  {
+   "do": "gather",
+   "around": [
+    49.0,
+    15.8
+   ],
+   "who": [
+    "tourist1",
+    "tourist2",
+    "balloon_man",
+    "referee",
+    "driver_zhang"
+   ],
+   "r": 2.0,
+   "perRing": 6,
+   "hearts": true,
+   "wait": true,
+   "max": 8
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.record",
+   "dur": 3.2,
+   "style": "normal",
+   "wait": false
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_win",
+   "dur": 2.6,
+   "wait": true
+  },
+  {
+   "do": "say",
+   "npc": "tourist1",
+   "key": "say.t1_cheer",
+   "dur": 2.2,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 2.0
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.adong_thanks",
+   "dur": 3.2,
+   "wait": true
+  },
+  {
+   "do": "hat",
+   "stage": 5
+  },
+  {
+   "do": "warmth",
+   "add": 12
+  },
+  {
+   "do": "event",
+   "id": "adong_raced"
+  },
+  {
+   "do": "release"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "banner",
+   "key": "banner.adong"
+  },
+  {
+   "do": "wait",
+   "s": 1.5
+  },
+  {
+   "do": "lock",
+   "on": false
+  },
+  {
+   "do": "runSeq",
+   "id": "phase_night"
+  }
+ ],
+ "finale_gather": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "cam",
+   "to": [
+    11.4,
+    7.0
+   ],
+   "zoom": 1.1,
+   "s": 1.5
+  },
+  {
+   "do": "npcDo",
+   "npc": "xiaomi",
+   "order": {
+    "kind": "goto",
+    "x": 8.6,
+    "y": 7.6,
+    "speed": 1.3
+   }
+  },
+  {
+   "do": "npcDo",
+   "npc": "afu",
+   "order": {
+    "kind": "goto",
+    "x": 13.6,
+    "y": 7.8,
+    "speed": 1.3
+   }
+  },
+  {
+   "do": "npcDo",
+   "npc": "laozhou",
+   "order": {
+    "kind": "goto",
+    "x": 13.6,
+    "y": 13.6,
+    "speed": 1.3
+   }
+  },
+  {
+   "do": "npcDo",
+   "npc": "xiaolan",
+   "order": {
+    "kind": "goto",
+    "x": 6.0,
+    "y": 11.6,
+    "speed": 1.3
+   }
+  },
+  {
+   "do": "npcDo",
+   "npc": "adong",
+   "order": {
+    "kind": "goto",
+    "x": 16.0,
+    "y": 9.0,
+    "speed": 1.3
+   }
+  },
+  {
+   "do": "waitNpcAt",
+   "npc": "xiaomi",
+   "at": [
+    8.6,
+    7.6
+   ],
+   "r": 1.5,
+   "timeout": 40
+  },
+  {
+   "do": "say",
+   "npc": "xiaomi",
+   "key": "say.fin_xiaomi",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "afu",
+   "key": "say.fin_afu",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "laozhou",
+   "key": "say.fin_laozhou",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "xiaolan",
+   "key": "say.fin_xiaolan",
+   "dur": 2.4,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 1.6
+  },
+  {
+   "do": "say",
+   "npc": "adong",
+   "key": "say.fin_adong",
+   "dur": 2.6,
+   "wait": false
+  },
+  {
+   "do": "wait",
+   "s": 2.0
+  },
+  {
+   "do": "flag",
+   "set": "finale_ready"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ],
+ "finale_city": [
+  {
+   "do": "lock",
+   "on": true
+  },
+  {
+   "do": "audio",
+   "cue": "finale"
+  },
+  {
+   "do": "cam",
+   "to": [
+    11.4,
+    6.0
+   ],
+   "zoom": 1.5,
+   "s": 1.2
+  },
+  {
+   "do": "gather",
+   "around": [
+    11.4,
+    8.0
+   ],
+   "who": [
+    "xiaomi",
+    "afu",
+    "laozhou",
+    "xiaolan",
+    "adong",
+    "abao",
+    "niuniu",
+    "aunt",
+    "courier",
+    "balloon_man",
+    "tourist1",
+    "tourist2",
+    "kevin",
+    "doudou",
+    "q1",
+    "q2",
+    "uncle_wu",
+    "mrs_ellis",
+    "granny_qin",
+    "post_aunt",
+    "referee",
+    "driver_zhang",
+    "jogger"
+   ],
+   "r": 3.4,
+   "perRing": 8,
+   "hearts": true,
+   "wait": false
+  },
+  {
+   "do": "lightString",
+   "props": [
+    "lamp_p1",
+    "tree",
+    "lamp_p2",
+    "lamp_p3",
+    "lamp_p5",
+    "lamp_p4"
+   ],
+   "gap": 0.5,
+   "closed": true,
+   "z": 10,
+   "camFollow": true,
+   "zoom": 1.4
+  },
+  {
+   "do": "camPath",
+   "points": [
+    {
+     "to": [
+      11.4,
+      6.0
+     ],
+     "zoom": 1.6,
+     "s": 1.4
+    },
+    {
+     "to": [
+      24,
+      6
+     ],
+     "zoom": 1.3,
+     "s": 2.0
+    },
+    {
+     "to": [
+      46,
+      6
+     ],
+     "zoom": 1.2,
+     "s": 2.2
+    },
+    {
+     "to": [
+      8,
+      30
+     ],
+     "zoom": 1.2,
+     "s": 2.4
+    },
+    {
+     "to": [
+      28,
+      26
+     ],
+     "zoom": 1.2,
+     "s": 2.0
+    },
+    {
+     "to": [
+      11.4,
+      6.0
+     ],
+     "zoom": 1.2,
+     "s": 2.4
+    }
+   ]
+  },
+  {
+   "do": "light",
+   "props": [
+    "lamp_bk1",
+    "lamp_s1",
+    "lamp_s2",
+    "lamp_s3",
+    "lamp_s4",
+    "window_apron"
+   ],
+   "gap": 0.3,
+   "bg": true
+  },
+  {
+   "do": "flag",
+   "set": "town_lit"
+  },
+  {
+   "do": "weather",
+   "snow": 1,
+   "s": 3
+  },
+  {
+   "do": "sing",
+   "npc": "xiaomi",
+   "secs": 12.5
+  },
+  {
+   "do": "slowmo",
+   "scale": 0.4,
+   "s": 2.0,
+   "wait": true
+  },
+  {
+   "do": "hatMorph",
+   "to": "santa",
+   "s": 4,
+   "at": [
+    11.4,
+    8.0
+   ]
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.santa_hello",
+   "dur": 3.0,
+   "style": "normal",
+   "wait": true
+  },
+  {
+   "do": "subtitle",
+   "key": "sub.finale_final",
+   "dur": 6.0,
+   "style": "final",
+   "wait": true
+  },
+  {
+   "do": "wait",
+   "s": 1.0
+  },
+  {
+   "do": "hat",
+   "stage": 6
+  },
+  {
+   "do": "warmth",
+   "add": 40
+  },
+  {
+   "do": "event",
+   "id": "town_lit"
+  },
+  {
+   "do": "runSeq",
+   "id": "epilogue"
+  }
+ ],
+ "epilogue": [
+  {
+   "do": "subtitle",
+   "key": "sub.epi_1",
+   "dur": 4.0,
+   "style": "normal",
+   "wait": true
+  },
+  {
+   "do": "banner",
+   "key": "banner.complete"
+  },
+  {
+   "do": "flag",
+   "set": "game_complete"
+  },
+  {
+   "do": "release"
+  },
+  {
+   "do": "crowd",
+   "mode": "free"
+  },
+  {
+   "do": "camRelease"
+  },
+  {
+   "do": "lock",
+   "on": false
+  }
+ ]
+}

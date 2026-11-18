@@ -1,0 +1,21 @@
+import { Play, sleep, go, now, snapSave, texts, launchFromSave } from './lib.mjs';
+const p = await launchFromSave('xiaolan-retry', 'after-noon');
+const s = p.s;
+let st = await s.state();
+p.log('继续后:', JSON.stringify({ now: st.now, phase: st.phase, xl: st.stories.xiaolan_story, npc: st.npcs.xiaolan, hat: st.hat }));
+const sv = await s.qa('readSave'); p.log('flags:', JSON.stringify(sv?.extra?.flags));
+const pr = await s.qa('data'); 
+await p.shot('00');
+const t1 = await now(p);
+await go(p, 'snowman_r', 'snowman_pose_r');
+for (let i = 0; i < 15; i++) { await sleep(1000); st = await s.state(); if (st.stories.xiaolan_story.done.includes('pose')) { p.log('pose ok @', st.now.toFixed(1)); break; } }
+await p.shot('01');
+let r = await p.rec(); p.log('台词:', JSON.stringify(texts(r, t1 - .5, t1 + 15).map(t => `${t.now}:${t.tx}`)));
+await p.waitDone('xiaolan_story', 90000).catch(() => p.log('xiaolan 未完成'));
+await s.waitIdle({ timeout: 90000 }).catch(() => {});
+st = await s.state(); p.log('final', JSON.stringify({ phase: st.phase, check: st.checklist, now: st.now }));
+await p.shot('02');
+r = await p.dump();
+p.log('台词2:', JSON.stringify(texts(r, t1 + 14).map(t => `${t.now}:${t.tx}`)).slice(0, 2500));
+await snapSave(p, 'after-noon2');
+await p.close();

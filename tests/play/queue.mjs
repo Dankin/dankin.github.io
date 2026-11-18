@@ -1,0 +1,16 @@
+import { Play, sleep, go, now, snapSave, texts, launchFromSave } from './lib.mjs';
+const save = process.argv[2] || 'after-laozhou';
+const p = await launchFromSave('queue', save);
+const s = p.s;
+const q = async () => { const st = await s.state(); return JSON.stringify({ now: st.now, phase: st.phase, check: st.checklist.filter(c => /queue|tree|bread/.test(c)), q1: st.npcs.q1 && [st.npcs.q1.x, st.npcs.q1.y, st.npcs.q1.state], q2: st.npcs.q2 && [st.npcs.q2.x, st.npcs.q2.y, st.npcs.q2.state] }); };
+p.log('起点', await q());
+await go(p, 'bread_cart', 'bread_scent_re'); await sleep(1500);
+p.log('香味后', await q());
+await go(p, 'tree', 'tree_twinkle'); await sleep(2500);
+p.log('树后', await q());
+await sleep(6000);
+p.log('再等', await q());
+const r = await p.dump();
+p.log('台词', JSON.stringify(texts(r, 0).map(t => `${t.now}:${t.tx}`).filter(x => /闻|排|Queue|不排|队/.test(x))));
+p.log('errors', JSON.stringify(s.errors), 'dataWarn', s.dataWarnings.length);
+await p.close();

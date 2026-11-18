@@ -1,0 +1,16 @@
+import { Play, sleep, go, now, snapSave, texts, launchFromSave } from './lib.mjs';
+const save = process.argv[2] || 'after-morning2';
+const p = await launchFromSave('bread', save);
+const s = p.s;
+let st = await s.state();
+p.log('起点', JSON.stringify({ now: st.now, phase: st.phase, lz: st.stories.laozhou_story, check: st.checklist }));
+const t0 = st.now;
+await go(p, 'sign_salty', 'cheer_salty'); p.log('咸 @', ((await now(p)) - t0).toFixed(1));
+await go(p, 'sign_cake', 'cheer_cake'); p.log('甜 @', ((await now(p)) - t0).toFixed(1));
+await sleep(4000);
+st = await s.state();
+p.log('结果', JSON.stringify({ check: st.checklist, lz: st.stories.laozhou_story.done }));
+const r = await p.dump();
+p.log('台词', JSON.stringify(texts(r, 0).map(t => `${t.now}:${t.tx}`).filter(x => /蛋糕|咸|甜|吵/.test(x))));
+p.log('errors', JSON.stringify(s.errors), 'dataWarn', s.dataWarnings.length);
+await p.close();

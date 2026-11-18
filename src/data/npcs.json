@@ -1,0 +1,2217 @@
+{
+ "xiaomi": {
+  "name": "npc.xiaomi",
+  "home": [
+   6.0,
+   7.6
+  ],
+  "speed": 0.8,
+  "crowd": false,
+  "voice": 560,
+  "look": {
+   "hair": "#3b2a20",
+   "skin": "#f2c9a5",
+   "top": "#ece4d4",
+   "pants": "#4a5a78",
+   "shoes": "#5a3d2b",
+   "accent": "#c0392b",
+   "style": "pigtails",
+   "acc": "scarf"
+  },
+  "waypoints": [
+   [
+    6.0,
+    7.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.35
+    },
+    "do": "hide",
+    "say": "say.xiaomi_blast",
+    "secs": 8
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "meow",
+     "min": 0.2
+    },
+    "do": "listen",
+    "say": "say.xiaomi_meow"
+   },
+   {
+    "on": {
+     "type": "light",
+     "tag": "warm",
+     "min": 0.3
+    },
+    "do": "listen",
+    "say": "say.xiaomi_light",
+    "cd": 20
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.xiaomi_1",
+    "annoy.xiaomi_2"
+   ],
+   "leave": "hide"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      10.4,
+      6.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "story:xiaomi_story:done"
+    }
+   },
+   {
+    "route": [
+     [
+      6.0,
+      7.6,
+      6
+     ],
+     [
+      5.2,
+      9.6,
+      3
+     ]
+    ],
+    "mode": "loop"
+   }
+  ],
+  "idleSay": "idle.xiaomi",
+  "story": "xiaomi_story"
+ },
+ "abao": {
+  "name": "npc.abao",
+  "home": [
+   11.6,
+   10.6
+  ],
+  "speed": 1.9,
+  "crowd": true,
+  "voice": 760,
+  "kid": true,
+  "look": {
+   "hair": "#222222",
+   "skin": "#efc19a",
+   "top": "#e0a030",
+   "pants": "#3c6e9e",
+   "shoes": "#d8d2c4",
+   "accent": "#d8433a",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    11.6,
+    10.6
+   ],
+   [
+    13.6,
+    12.4
+   ],
+   [
+    9.6,
+    12.0
+   ]
+  ],
+  "away": [
+   [
+    10.8,
+    10.6
+   ],
+   [
+    1.2,
+    10.6
+   ]
+  ],
+  "follows": [
+   {
+    "type": "lure",
+    "tag": "balloon",
+    "say": "chase.kid",
+    "arrive": "kids_chased_balloon"
+   },
+   {
+    "type": "company",
+    "tag": "fun",
+    "say": "chase.snowman"
+   }
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.2
+    },
+    "do": "startle",
+    "say": "react.kid_loud",
+    "emote": "!"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "melody",
+     "min": 0.2
+    },
+    "do": "dance",
+    "say": "react.kid_music"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "meow",
+     "min": 0.2
+    },
+    "do": "listen",
+    "say": "react.kid_meow"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    2,
+    4,
+    6
+   ],
+   "quips": [
+    "annoy.kid_1",
+    "annoy.kid_2"
+   ],
+   "leave": "away"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      11.6,
+      10.6,
+      3
+     ],
+     [
+      13.6,
+      12.4,
+      3
+     ],
+     [
+      9.6,
+      12.0,
+      3
+     ],
+     [
+      12.0,
+      8.6,
+      3
+     ]
+    ],
+    "mode": "random"
+   }
+  ]
+ },
+ "niuniu": {
+  "name": "npc.niuniu",
+  "home": [
+   12.6,
+   11.6
+  ],
+  "speed": 1.8,
+  "crowd": true,
+  "voice": 820,
+  "kid": true,
+  "look": {
+   "hair": "#6b3b22",
+   "skin": "#f1c8a8",
+   "top": "#d9708f",
+   "pants": "#7a5a9a",
+   "shoes": "#d8d2c4",
+   "accent": "#f2d25a",
+   "style": "bun2"
+  },
+  "waypoints": [
+   [
+    12.6,
+    11.6
+   ],
+   [
+    10.6,
+    13.0
+   ]
+  ],
+  "away": [
+   [
+    10.8,
+    10.6
+   ],
+   [
+    1.2,
+    10.6
+   ]
+  ],
+  "follows": [
+   {
+    "type": "lure",
+    "tag": "balloon",
+    "say": "chase.kid2"
+   },
+   {
+    "type": "company",
+    "tag": "fun",
+    "say": "chase.snowman"
+   }
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.2
+    },
+    "do": "startle",
+    "say": "react.kid_loud2",
+    "emote": "!"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "melody",
+     "min": 0.2
+    },
+    "do": "dance",
+    "say": "react.kid_music2"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "meow",
+     "min": 0.2
+    },
+    "do": "listen",
+    "say": "react.kid_meow2"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    2,
+    4,
+    6
+   ],
+   "quips": [
+    "annoy.kid_1",
+    "annoy.kid_2"
+   ],
+   "leave": "away"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      12.6,
+      11.6,
+      3
+     ],
+     [
+      10.6,
+      13.0,
+      3
+     ],
+     [
+      14.0,
+      13.4,
+      3
+     ]
+    ],
+    "mode": "random"
+   }
+  ]
+ },
+ "aunt": {
+  "name": "npc.aunt",
+  "home": [
+   10.4,
+   8.4
+  ],
+  "speed": 1.0,
+  "crowd": true,
+  "voice": 330,
+  "look": {
+   "hair": "#44343a",
+   "skin": "#efc8a6",
+   "top": "#8a4fa0",
+   "pants": "#2f2f3a",
+   "shoes": "#e8e4dc",
+   "accent": "#f0d04a",
+   "style": "perm"
+  },
+  "waypoints": [
+   [
+    10.4,
+    8.4
+   ]
+  ],
+  "away": [
+   [
+    10.8,
+    10.6
+   ],
+   [
+    1.2,
+    10.6
+   ]
+  ],
+  "dancer": true,
+  "follows": [
+   {
+    "type": "lure",
+    "tag": "balloon",
+    "say": "chase.aunt",
+    "chance": 1
+   }
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "soft",
+     "min": 0.15
+    },
+    "do": "listen",
+    "say": "react.aunt_chime"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "melody",
+     "min": 0.15
+    },
+    "do": "dance",
+    "say": "react.aunt_melody"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.15
+    },
+    "do": "startle",
+    "say": "react.aunt_blast",
+    "emote": "!"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "meow",
+     "min": 0.15
+    },
+    "do": "listen",
+    "say": "react.aunt_meow"
+   },
+   {
+    "on": {
+     "type": "light",
+     "min": 0.3
+    },
+    "do": "listen",
+    "say": "react.aunt_light"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    3,
+    5,
+    7
+   ],
+   "quips": [
+    "annoy.aunt_1",
+    "annoy.aunt_2"
+   ],
+   "leave": "away"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      10.4,
+      8.4,
+      5
+     ],
+     [
+      11.4,
+      9.4,
+      4
+     ],
+     [
+      9.2,
+      9.2,
+      4
+     ]
+    ],
+    "mode": "random"
+   }
+  ]
+ },
+ "courier": {
+  "name": "npc.courier",
+  "home": [
+   2.4,
+   17.0
+  ],
+  "speed": 2.3,
+  "crowd": true,
+  "voice": 440,
+  "patrol": true,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#e9bd98",
+   "top": "#2a9d8f",
+   "pants": "#303844",
+   "shoes": "#222222",
+   "accent": "#f2c230",
+   "style": "helmet",
+   "acc": "box"
+  },
+  "waypoints": [
+   [
+    2.4,
+    17.0
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.2
+    },
+    "do": "startle",
+    "say": "react.courier_loud",
+    "emote": "!"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "melody",
+     "min": 0.2
+    },
+    "do": "listen",
+    "say": "react.courier_music"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    3,
+    5,
+    7
+   ],
+   "quips": [
+    "annoy.courier_1"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      2.4,
+      17.0
+     ],
+     [
+      17.0,
+      17.0
+     ],
+     [
+      17.0,
+      7.4
+     ],
+     [
+      2.6,
+      7.4
+     ]
+    ],
+    "mode": "loop",
+    "speed": 1.5
+   }
+  ]
+ },
+ "balloon_man": {
+  "name": "npc.balloon_man",
+  "home": [
+   13.4,
+   11.8
+  ],
+  "speed": 0.8,
+  "crowd": true,
+  "voice": 350,
+  "look": {
+   "hair": "#6b5844",
+   "skin": "#e8c39e",
+   "top": "#d94f4f",
+   "pants": "#5b4a3a",
+   "shoes": "#3b2a20",
+   "accent": "#f2d25a",
+   "style": "short",
+   "acc": "hat"
+  },
+  "waypoints": [
+   [
+    13.4,
+    11.8
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "startle",
+    "say": "react.balloon_man_loud"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.balloon_man_1",
+    "annoy.balloon_man_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      46.4,
+      6.8
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": "dusk"
+    }
+   },
+   {
+    "route": [
+     [
+      13.4,
+      11.8
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.balloon_man"
+ },
+ "tourist1": {
+  "name": "npc.tourist1",
+  "home": [
+   13.0,
+   8.6
+  ],
+  "speed": 0.9,
+  "crowd": true,
+  "voice": 600,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#f0c8a0",
+   "top": "#3b7dd8",
+   "pants": "#3b3b4a",
+   "shoes": "#ffffff",
+   "accent": "#ffcc00",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    13.0,
+    8.6
+   ]
+  ],
+  "reactions": [],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.tourist1_1",
+    "annoy.tourist1_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      43.5,
+      5.6
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": "dusk"
+    },
+    "pose": "photo"
+   },
+   {
+    "route": [
+     [
+      13.0,
+      8.6,
+      4
+     ],
+     [
+      14.0,
+      9.4,
+      3
+     ],
+     [
+      12.2,
+      9.6,
+      3
+     ]
+    ],
+    "mode": "loop"
+   }
+  ],
+  "idleSay": "idle.tourist1",
+  "follows": [
+   {
+    "type": "lure",
+    "tag": "balloon",
+    "say": "chase.tourist1",
+    "chance": 1
+   }
+  ]
+ },
+ "tourist2": {
+  "name": "npc.tourist2",
+  "home": [
+   14.0,
+   9.0
+  ],
+  "speed": 0.9,
+  "crowd": true,
+  "voice": 700,
+  "look": {
+   "hair": "#7a4a2a",
+   "skin": "#f2c9a5",
+   "top": "#e07a9a",
+   "pants": "#4a5a78",
+   "shoes": "#ffffff",
+   "accent": "#ffcc00",
+   "style": "pigtails"
+  },
+  "waypoints": [
+   [
+    14.0,
+    9.0
+   ]
+  ],
+  "reactions": [],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.tourist2_1",
+    "annoy.tourist2_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      44.8,
+      5.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": "dusk"
+    },
+    "pose": "photo"
+   },
+   {
+    "route": [
+     [
+      14.0,
+      9.0,
+      4
+     ],
+     [
+      15.0,
+      9.6,
+      3
+     ]
+    ],
+    "mode": "loop"
+   }
+  ],
+  "idleSay": "idle.tourist2",
+  "follows": [
+   {
+    "type": "lure",
+    "tag": "balloon",
+    "say": "chase.tourist2",
+    "chance": 1
+   }
+  ]
+ },
+ "afu": {
+  "name": "npc.afu",
+  "home": [
+   8.5,
+   25.8
+  ],
+  "speed": 0.9,
+  "crowd": false,
+  "voice": 430,
+  "look": {
+   "hair": "#5a4630",
+   "skin": "#f0c8a0",
+   "top": "#2e6f4e",
+   "pants": "#3a3a46",
+   "shoes": "#3b2a20",
+   "accent": "#d94f4f",
+   "style": "short",
+   "acc": "cap"
+  },
+  "waypoints": [
+   [
+    8.5,
+    25.8
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "lullaby",
+     "min": 0.2
+    },
+    "do": "goto",
+    "when": {
+     "flag": "letter_in_yard",
+     "notFlag": "letter_delivered"
+    },
+    "to": [
+     2.0,
+     34.6
+    ],
+    "speed": 1.0,
+    "poll": true,
+    "stop": 0.4
+   },
+   {
+    "on": {
+     "type": "presence",
+     "tag": "dog",
+     "min": 0.3
+    },
+    "do": "flee",
+    "when": {
+     "notFlag": "dog_asleep",
+     "flag": "letter_in_yard"
+    },
+    "dist": 3,
+    "to": "home",
+    "say": "say.afu_gulp",
+    "cd": 8,
+    "poll": true
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "startle",
+    "say": "say.afu_loud"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.afu_1",
+    "annoy.afu_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      3.0,
+      35.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "letter_delivered"
+    }
+   },
+   {
+    "route": [
+     [
+      2.4,
+      25.4,
+      4
+     ],
+     [
+      8.5,
+      25.6,
+      2
+     ],
+     [
+      11.0,
+      26.0,
+      3
+     ],
+     [
+      8.5,
+      25.8,
+      2
+     ]
+    ],
+    "mode": "pingpong",
+    "speed": 0.9
+   }
+  ],
+  "idleSay": "idle.afu",
+  "story": "afu_story"
+ },
+ "dog": {
+  "name": "npc.dog",
+  "home": [
+   3.8,
+   33.2
+  ],
+  "speed": 0.0,
+  "crowd": false,
+  "voice": 300,
+  "look": {
+   "hair": "#c9923b",
+   "skin": "#c9923b",
+   "top": "#c9923b",
+   "pants": "#c9923b",
+   "shoes": "#8a5a2b",
+   "accent": "#8a5a2b",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    3.8,
+    33.2
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "pose",
+    "when": {
+     "flag": "dog_asleep"
+    },
+    "pose": "bark",
+    "secs": 3,
+    "clear": "dog_asleep",
+    "say": "say.dog_bark"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "pose",
+    "pose": "bark",
+    "secs": 2.5,
+    "say": "say.dog_bark"
+   },
+   {
+    "on": {
+     "type": "scent",
+     "tag": "fish",
+     "min": 0.3
+    },
+    "do": "lookUp",
+    "cd": 10
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    6,
+    9,
+    12
+   ],
+   "quips": [
+    "annoy.dog_1",
+    "annoy.dog_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      3.8,
+      33.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "dog_asleep"
+    },
+    "pose": "sleep"
+   },
+   {
+    "route": [
+     [
+      3.8,
+      33.2
+     ]
+    ],
+    "mode": "stay",
+    "pose": "lie"
+   }
+  ],
+  "idleSay": "idle.dog",
+  "emit": {
+   "type": "presence",
+   "tag": "dog",
+   "intensity": 0.8,
+   "radius": 7
+  },
+  "scale": 1.0,
+  "species": "dog",
+  "noCollide": true,
+  "unpossessable": true
+ },
+ "cat_m": {
+  "name": "npc.cat_m",
+  "home": [
+   12.8,
+   31.4
+  ],
+  "speed": 0.9,
+  "crowd": false,
+  "voice": 900,
+  "look": {
+   "hair": "#e8e0d0",
+   "skin": "#e8e0d0",
+   "top": "#e8e0d0",
+   "pants": "#e8e0d0",
+   "shoes": "#b8a890",
+   "accent": "#b8a890",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    12.8,
+    31.4
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "scent",
+     "tag": "fish",
+     "min": 0.3
+    },
+    "do": "pose",
+    "pose": "stretch",
+    "secs": 3,
+    "say": "say.cat_m_wake",
+    "set": "cat_awake",
+    "cd": 4
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.6
+    },
+    "do": "startle",
+    "say": "say.cat_m_loud"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    6,
+    9,
+    12
+   ],
+   "quips": [
+    "annoy.cat_m_1",
+    "annoy.cat_m_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      4.6,
+      33.6
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "letter_in_yard"
+    },
+    "pose": "sit"
+   },
+   {
+    "route": [
+     [
+      12.8,
+      31.4
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "cat_awake"
+    },
+    "pose": "stretch"
+   },
+   {
+    "route": [
+     [
+      12.8,
+      31.4
+     ]
+    ],
+    "mode": "stay",
+    "pose": "sleep"
+   }
+  ],
+  "idleSay": "idle.cat_m",
+  "species": "cat",
+  "scale": 1.0,
+  "noCollide": true,
+  "unpossessable": true
+ },
+ "uncle_wu": {
+  "name": "npc.uncle_wu",
+  "home": [
+   14.2,
+   25.6
+  ],
+  "speed": 0.7,
+  "crowd": true,
+  "voice": 300,
+  "look": {
+   "hair": "#8a8a8a",
+   "skin": "#e8c39e",
+   "top": "#7a8a6a",
+   "pants": "#4a4a4a",
+   "shoes": "#3b2a20",
+   "accent": "#d8a030",
+   "style": "perm",
+   "acc": "cap"
+  },
+  "waypoints": [
+   [
+    14.2,
+    25.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.45
+    },
+    "do": "startle",
+    "say": "say.uncle_wu_loud",
+    "event": "alley_chat"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.uncle_wu_1",
+    "annoy.uncle_wu_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      14.2,
+      25.6
+     ]
+    ],
+    "mode": "stay",
+    "pose": "sit"
+   }
+  ],
+  "idleSay": "idle.uncle_wu"
+ },
+ "granny_qin": {
+  "name": "npc.granny_qin",
+  "home": [
+   15.4,
+   25.6
+  ],
+  "speed": 0.6,
+  "crowd": true,
+  "voice": 420,
+  "look": {
+   "hair": "#e8e8e8",
+   "skin": "#e8c39e",
+   "top": "#a04a6a",
+   "pants": "#4a3a5a",
+   "shoes": "#3b2a20",
+   "accent": "#f2d25a",
+   "style": "perm",
+   "acc": "scarf"
+  },
+  "waypoints": [
+   [
+    15.4,
+    25.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.45
+    },
+    "do": "startle",
+    "say": "say.granny_qin_loud",
+    "event": "alley_chat"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.granny_qin_1",
+    "annoy.granny_qin_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      15.4,
+      25.6
+     ]
+    ],
+    "mode": "stay",
+    "pose": "sit"
+   }
+  ],
+  "idleSay": "idle.granny_qin"
+ },
+ "post_aunt": {
+  "name": "npc.post_aunt",
+  "home": [
+   2.6,
+   26.8
+  ],
+  "speed": 0.8,
+  "crowd": true,
+  "voice": 460,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#f0c8a0",
+   "top": "#2a8a5a",
+   "pants": "#3a3a46",
+   "shoes": "#3b2a20",
+   "accent": "#f2d25a",
+   "style": "perm",
+   "acc": "scarf"
+  },
+  "waypoints": [
+   [
+    2.6,
+    26.8
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.45
+    },
+    "do": "startle",
+    "say": "say.post_aunt_loud",
+    "event": "alley_chat"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.post_aunt_1",
+    "annoy.post_aunt_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      2.6,
+      26.8,
+      4
+     ],
+     [
+      4.2,
+      26.6,
+      3
+     ]
+    ],
+    "mode": "pingpong"
+   }
+  ],
+  "idleSay": "idle.post_aunt"
+ },
+ "adong": {
+  "name": "npc.adong",
+  "home": [
+   1.7,
+   34.6
+  ],
+  "speed": 0.6,
+  "crowd": false,
+  "voice": 480,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#e8b890",
+   "top": "#d8a030",
+   "pants": "#3a4a6a",
+   "shoes": "#2a2a2a",
+   "accent": "#2a8aa0",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    1.7,
+    34.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "light",
+     "tag": "warm",
+     "min": 0.4
+    },
+    "do": "goto",
+    "when": {
+     "flag": "ramp_down"
+    },
+    "to": [
+     44.0,
+     3.4
+    ],
+    "speed": 0.9,
+    "poll": true,
+    "cd": 10
+   },
+   {
+    "on": {
+     "type": "lure",
+     "tag": "balloon",
+     "min": 0.3
+    },
+    "do": "lookUp",
+    "cd": 10
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    3,
+    6,
+    9
+   ],
+   "quips": [
+    "annoy.adong_1",
+    "annoy.adong_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      21.8,
+      7.6
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": "dusk",
+     "notFlag": "ramp_down"
+    },
+    "pose": "sit"
+   },
+   {
+    "route": [
+     [
+      1.7,
+      34.6
+     ]
+    ],
+    "mode": "stay",
+    "pose": "sit"
+   }
+  ],
+  "idleSay": "idle.adong",
+  "unpossessable": true,
+  "story": "adong_story",
+  "noCollide": true
+ },
+ "laozhou": {
+  "name": "npc.laozhou",
+  "home": [
+   23.4,
+   2.6
+  ],
+  "speed": 0.7,
+  "crowd": false,
+  "voice": 380,
+  "look": {
+   "hair": "#d8d8d8",
+   "skin": "#e8c39e",
+   "top": "#e8e0d0",
+   "pants": "#4a4a5a",
+   "shoes": "#3b2a20",
+   "accent": "#d8a030",
+   "style": "perm",
+   "acc": "apron"
+  },
+  "waypoints": [
+   [
+    23.4,
+    2.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "startle",
+    "say": "say.laozhou_loud"
+   },
+   {
+    "on": {
+     "type": "light",
+     "tag": "warm",
+     "min": 0.4
+    },
+    "do": "lookUp",
+    "when": {
+     "notFlag": "apron_seen"
+    }
+   },
+   {
+    "on": {
+     "type": "light",
+     "tag": "ember",
+     "min": 0.3
+    },
+    "do": "lookUp",
+    "when": {
+     "flag": "story:laozhou_story:crowd"
+    },
+    "cd": 5
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.laozhou_1",
+    "annoy.laozhou_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      28.6,
+      3.4,
+      5
+     ],
+     [
+      24.8,
+      2.6,
+      4
+     ]
+    ],
+    "mode": "loop",
+    "when": {
+     "flag": "oven_lit"
+    },
+    "pose": "bake"
+   },
+   {
+    "route": [
+     [
+      23.4,
+      2.6
+     ]
+    ],
+    "mode": "stay",
+    "pose": "sit"
+   }
+  ],
+  "idleSay": "idle.laozhou",
+  "story": "laozhou_story"
+ },
+ "doudou": {
+  "name": "npc.doudou",
+  "home": [
+   30.6,
+   4.6
+  ],
+  "speed": 1.0,
+  "crowd": true,
+  "voice": 780,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#f0c8a0",
+   "top": "#e0a030",
+   "pants": "#3c6e9e",
+   "shoes": "#2a2a2a",
+   "accent": "#d8433a",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    30.6,
+    4.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "scent",
+     "tag": "biscuit",
+     "min": 0.25
+    },
+    "do": "approach",
+    "stop": 1.2,
+    "say": "say.doudou_cookie",
+    "poll": true,
+    "cd": 8
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.doudou_1",
+    "annoy.doudou_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      30.6,
+      4.6,
+      3
+     ],
+     [
+      31.6,
+      5.6,
+      3
+     ],
+     [
+      29.8,
+      5.4,
+      3
+     ]
+    ],
+    "mode": "loop"
+   }
+  ],
+  "idleSay": "idle.doudou",
+  "kid": true
+ },
+ "kevin": {
+  "name": "npc.kevin",
+  "home": [
+   37.0,
+   4.2
+  ],
+  "speed": 0.8,
+  "crowd": true,
+  "voice": 360,
+  "look": {
+   "hair": "#8a5a2a",
+   "skin": "#f2c9a5",
+   "top": "#3b6fa8",
+   "pants": "#3a3a46",
+   "shoes": "#ffffff",
+   "accent": "#d94f4f",
+   "style": "short",
+   "acc": "cap"
+  },
+  "waypoints": [
+   [
+    37.0,
+    4.2
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "cheer",
+     "min": 0.3
+    },
+    "do": "listen",
+    "say": "say.kevin_cheer"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.kevin_1",
+    "annoy.kevin_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      37.0,
+      4.2
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.kevin"
+ },
+ "q1": {
+  "name": "npc.q1",
+  "home": [
+   33.6,
+   4.4
+  ],
+  "speed": 0.9,
+  "crowd": true,
+  "voice": 640,
+  "look": {
+   "hair": "#222222",
+   "skin": "#f0c8a0",
+   "top": "#e07a9a",
+   "pants": "#3a3a46",
+   "shoes": "#ffffff",
+   "accent": "#f2d25a",
+   "style": "pigtails"
+  },
+  "waypoints": [
+   [
+    33.6,
+    4.4
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "scent",
+     "tag": "bread",
+     "min": 0.3
+    },
+    "do": "goto",
+    "when": {
+     "flag": "oven_lit"
+    },
+    "to": [
+     27.6,
+     4.8
+    ],
+    "say": "say.q1_bread",
+    "event": "queue_dead",
+    "poll": true,
+    "cd": 20
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.q1_1",
+    "annoy.q1_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      33.6,
+      4.4
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.q1"
+ },
+ "q2": {
+  "name": "npc.q2",
+  "home": [
+   34.6,
+   4.6
+  ],
+  "speed": 0.9,
+  "crowd": true,
+  "voice": 420,
+  "look": {
+   "hair": "#4a3a2a",
+   "skin": "#f0c8a0",
+   "top": "#6a9ad8",
+   "pants": "#3a3a46",
+   "shoes": "#ffffff",
+   "accent": "#f2d25a",
+   "style": "short"
+  },
+  "waypoints": [
+   [
+    34.6,
+    4.6
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "scent",
+     "tag": "bread",
+     "min": 0.3
+    },
+    "do": "goto",
+    "when": {
+     "flag": "oven_lit"
+    },
+    "to": [
+     28.4,
+     5.0
+    ],
+    "say": "say.q2_bread",
+    "poll": true,
+    "cd": 20
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.q2_1",
+    "annoy.q2_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      34.6,
+      4.6
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.q2"
+ },
+ "xiaolan": {
+  "name": "npc.xiaolan",
+  "home": [
+   24.6,
+   23.2
+  ],
+  "speed": 0.9,
+  "crowd": false,
+  "voice": 520,
+  "look": {
+   "hair": "#2a1a2a",
+   "skin": "#f0c8a0",
+   "top": "#7a5aa0",
+   "pants": "#3a3a56",
+   "shoes": "#ffffff",
+   "accent": "#e0a030",
+   "style": "bun2",
+   "acc": "beret"
+  },
+  "waypoints": [
+   [
+    24.6,
+    23.2
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "loud",
+     "min": 0.5
+    },
+    "do": "none",
+    "when": {
+     "flag": "window_open",
+     "notFlag": "xl_paint"
+    },
+    "say": "say.xl_headache",
+    "clear": "window_open"
+   },
+   {
+    "on": {
+     "type": "sound",
+     "tag": "cheer",
+     "min": 0.4
+    },
+    "do": "none",
+    "when": {
+     "flag": "window_open"
+    },
+    "say": "say.xl_cheer"
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.xiaolan_1",
+    "annoy.xiaolan_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      24.6,
+      23.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "notFlag": "window_open"
+    },
+    "hidden": true
+   },
+   {
+    "route": [
+     [
+      24.6,
+      23.2
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "window_open",
+     "notFlag": "xl_porch"
+    },
+    "pose": "lean"
+   },
+   {
+    "route": [
+     [
+      24.6,
+      24.8
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "xl_porch",
+     "notFlag": "xl_paint"
+    },
+    "pose": "sit"
+   },
+   {
+    "route": [
+     [
+      31.0,
+      26.8
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "flag": "xl_paint"
+    },
+    "pose": "paint"
+   }
+  ],
+  "idleSay": "idle.xiaolan",
+  "story": "xiaolan_story"
+ },
+ "mrs_ellis": {
+  "name": "npc.mrs_ellis",
+  "home": [
+   22.6,
+   25.8
+  ],
+  "speed": 0.6,
+  "crowd": true,
+  "voice": 400,
+  "look": {
+   "hair": "#e8e8e8",
+   "skin": "#f0c8a0",
+   "top": "#a0507a",
+   "pants": "#4a4a5a",
+   "shoes": "#3b2a20",
+   "accent": "#f2d25a",
+   "style": "perm",
+   "acc": "scarf"
+  },
+  "waypoints": [
+   [
+    22.6,
+    25.8
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "bell",
+     "min": 0.3
+    },
+    "do": "lookUp",
+    "say": "say.mrs_ellis_bell",
+    "cd": 6
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.mrs_ellis_1",
+    "annoy.mrs_ellis_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      22.6,
+      25.8
+     ]
+    ],
+    "mode": "stay",
+    "pose": "rock"
+   }
+  ],
+  "idleSay": "idle.mrs_ellis"
+ },
+ "jogger": {
+  "name": "npc.jogger",
+  "home": [
+   21.0,
+   27.0
+  ],
+  "speed": 1.8,
+  "crowd": true,
+  "voice": 540,
+  "look": {
+   "hair": "#222222",
+   "skin": "#f0c8a0",
+   "top": "#e04040",
+   "pants": "#2a2a3a",
+   "shoes": "#ffffff",
+   "accent": "#ffffff",
+   "style": "short",
+   "acc": "band"
+  },
+  "waypoints": [
+   [
+    21.0,
+    27.0
+   ]
+  ],
+  "reactions": [],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.jogger_1",
+    "annoy.jogger_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      21.0,
+      27.0
+     ],
+     [
+      38.0,
+      27.0
+     ],
+     [
+      38.0,
+      25.4
+     ],
+     [
+      21.0,
+      25.4
+     ]
+    ],
+    "mode": "loop",
+    "speed": 1.8
+   }
+  ],
+  "idleSay": "idle.jogger"
+ },
+ "driver_zhang": {
+  "name": "npc.driver_zhang",
+  "home": [
+   41.0,
+   7.8
+  ],
+  "speed": 0.7,
+  "crowd": true,
+  "voice": 330,
+  "look": {
+   "hair": "#3a3a3a",
+   "skin": "#e8c39e",
+   "top": "#3a5a8a",
+   "pants": "#2a2a3a",
+   "shoes": "#2a2a2a",
+   "accent": "#d8a030",
+   "style": "short",
+   "acc": "cap"
+  },
+  "waypoints": [
+   [
+    41.0,
+    7.8
+   ]
+  ],
+  "reactions": [
+   {
+    "on": {
+     "type": "sound",
+     "tag": "bell",
+     "min": 0.3
+    },
+    "do": "lookUp",
+    "say": "say.zhang_bell",
+    "cd": 10
+   }
+  ],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.driver_zhang_1",
+    "annoy.driver_zhang_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      41.0,
+      7.8
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": [
+      "morning",
+      "noon",
+      "night"
+     ]
+    },
+    "hidden": true
+   },
+   {
+    "route": [
+     [
+      41.0,
+      7.8
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.driver_zhang"
+ },
+ "referee": {
+  "name": "npc.referee",
+  "home": [
+   50.0,
+   3.4
+  ],
+  "speed": 0.8,
+  "crowd": true,
+  "voice": 500,
+  "look": {
+   "hair": "#2a2a2a",
+   "skin": "#f0c8a0",
+   "top": "#2a6a9a",
+   "pants": "#2a2a3a",
+   "shoes": "#ffffff",
+   "accent": "#f2d25a",
+   "style": "short",
+   "acc": "whistle"
+  },
+  "waypoints": [
+   [
+    50.0,
+    3.4
+   ]
+  ],
+  "reactions": [],
+  "annoy": {
+   "window": 30,
+   "tiers": [
+    5,
+    8,
+    11
+   ],
+   "quips": [
+    "annoy.referee_1",
+    "annoy.referee_2"
+   ],
+   "leave": "none"
+  },
+  "schedule": [
+   {
+    "route": [
+     [
+      50.0,
+      3.4
+     ]
+    ],
+    "mode": "stay",
+    "when": {
+     "phase": [
+      "morning",
+      "noon"
+     ]
+    },
+    "hidden": true
+   },
+   {
+    "route": [
+     [
+      50.0,
+      3.4
+     ]
+    ],
+    "mode": "stay"
+   }
+  ],
+  "idleSay": "idle.referee"
+ }
+}
