@@ -1,0 +1,805 @@
+{
+ "xiaomi_story": {
+  "npc": "xiaomi",
+  "phase": "morning",
+  "need": 3,
+  "finale": "xiaomi_finale",
+  "steps": [
+   {
+    "id": "listen",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "windchime",
+     "move": "chime_ring",
+     "t": [
+      "hint.xiaomi_story.listen_1",
+      "hint.xiaomi_story.listen_2",
+      "hint.xiaomi_story.listen_3"
+     ]
+    },
+    "when": {
+     "type": "sound",
+     "tag": "soft",
+     "min": 0.25
+    },
+    "sense": "xiaomi",
+    "say": "say.xiaomi_listen"
+   },
+   {
+    "id": "calm",
+    "kind": "quiet",
+    "hint": {
+     "prop": "balloon_stall",
+     "move": "balloon_release",
+     "t": [
+      "hint.xiaomi_story.calm_1",
+      "hint.xiaomi_story.calm_2",
+      "hint.xiaomi_story.calm_3"
+     ]
+    },
+    "radius": 3.3,
+    "hold": 2.5,
+    "requires": [
+     "listen"
+    ],
+    "say": "say.xiaomi_calm"
+   },
+   {
+    "id": "melody",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "speaker",
+     "move": "speaker_prelude",
+     "t": [
+      "hint.xiaomi_story.melody_1",
+      "hint.xiaomi_story.melody_2",
+      "hint.xiaomi_story.melody_3"
+     ]
+    },
+    "when": {
+     "type": "sound",
+     "tag": "melody",
+     "min": 0.3
+    },
+    "sense": "xiaomi",
+    "requires": [
+     "listen",
+     "calm"
+    ],
+    "needQuiet": 3.3,
+    "say": "say.xiaomi_melody",
+    "fail": {
+     "notRequired": "say.xiaomi_startle",
+     "notQuiet": "say.xiaomi_crowd"
+    }
+   }
+  ]
+ },
+ "afu_story": {
+  "npc": "afu",
+  "phase": "morning",
+  "need": 4,
+  "finale": "afu_finale",
+  "steps": [
+   {
+    "id": "wake",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "fish_rack",
+     "move": "fish_swing",
+     "t": [
+      "hint.afu_story.wake_1",
+      "hint.afu_story.wake_2",
+      "hint.afu_story.wake_3"
+     ]
+    },
+    "when": {
+     "type": "scent",
+     "tag": "fish",
+     "min": 0.3
+    },
+    "sense": "cat_m",
+    "onDone": {
+     "set": "cat_awake",
+     "say": [
+      {
+       "npc": "cat_m",
+       "key": "say.cat_m_wake",
+       "dur": 2.5
+      }
+     ]
+    }
+   },
+   {
+    "id": "drop",
+    "kind": "event",
+    "hint": {
+     "prop": "mailbox_alley",
+     "move": "alley_post",
+     "t": [
+      "hint.afu_story.drop_1",
+      "hint.afu_story.drop_2",
+      "hint.afu_story.drop_3"
+     ]
+    },
+    "on": "afu_letter",
+    "requires": [
+     "wake"
+    ],
+    "onDone": {
+     "seq": "afu_cat_carry",
+     "set": "letter_in_yard"
+    }
+   },
+   {
+    "id": "lull",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "radio",
+     "move": "radio_lullaby",
+     "t": [
+      "hint.afu_story.lull_1",
+      "hint.afu_story.lull_2",
+      "hint.afu_story.lull_3"
+     ]
+    },
+    "when": {
+     "type": "sound",
+     "tag": "lullaby",
+     "min": 0.25
+    },
+    "sense": "dog",
+    "requires": [
+     "drop"
+    ],
+    "needQuiet": 3,
+    "onDone": {
+     "set": "dog_asleep",
+     "order": [
+      {
+       "npc": "afu",
+       "kind": "goto",
+       "x": 2.0,
+       "y": 34.6,
+       "speed": 1.1,
+       "stop": 0.4
+      }
+     ],
+     "say": [
+      {
+       "npc": "afu",
+       "key": "say.afu_go",
+       "dur": 2.5
+      }
+     ]
+    },
+    "fail": {
+     "notRequired": "say.dog_wait"
+    }
+   },
+   {
+    "id": "enter",
+    "kind": "arrive",
+    "npc": "afu",
+    "at": [
+     2.0,
+     34.6
+    ],
+    "r": 1.4,
+    "requires": [
+     "lull"
+    ],
+    "noHint": true
+   },
+   {
+    "id": "bone",
+    "kind": "event",
+    "on": "bone_mailed",
+    "optional": true,
+    "noHint": true
+   }
+  ]
+ },
+ "laozhou_story": {
+  "npc": "laozhou",
+  "phase": "noon",
+  "need": 5,
+  "finale": "laozhou_finale",
+  "steps": [
+   {
+    "id": "see",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "lamp_bk1",
+     "move": "lamp_apron",
+     "t": [
+      "hint.laozhou_story.see_1",
+      "hint.laozhou_story.see_2",
+      "hint.laozhou_story.see_3"
+     ]
+    },
+    "when": {
+     "type": "light",
+     "tag": "warm",
+     "min": 0.4
+    },
+    "sense": "laozhou",
+    "onDone": {
+     "set": "apron_seen",
+     "say": [
+      {
+       "npc": "laozhou",
+       "key": "say.laozhou_apron",
+       "dur": 3
+      }
+     ]
+    }
+   },
+   {
+    "id": "cookie",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "vending",
+     "move": "vend_cookie",
+     "t": [
+      "hint.laozhou_story.cookie_1",
+      "hint.laozhou_story.cookie_2",
+      "hint.laozhou_story.cookie_3"
+     ]
+    },
+    "when": {
+     "type": "scent",
+     "tag": "biscuit",
+     "min": 0.25
+    },
+    "sense": "doudou",
+    "requires": [
+     "see"
+    ],
+    "onDone": {
+     "order": [
+      {
+       "npc": "doudou",
+       "kind": "goto",
+       "x": 24.8,
+       "y": 3.4,
+       "speed": 1.6,
+       "stop": 0.3
+      }
+     ],
+     "say": [
+      {
+       "npc": "doudou",
+       "key": "say.doudou_cookie",
+       "dur": 2.5
+      }
+     ]
+    }
+   },
+   {
+    "id": "crowd",
+    "kind": "near",
+    "hint": {
+     "prop": "vending",
+     "move": "vend_cookie",
+     "t": [
+      "hint.laozhou_story.crowd_1",
+      "hint.laozhou_story.crowd_2",
+      "hint.laozhou_story.crowd_3"
+     ]
+    },
+    "npc": "doudou",
+    "target": "npc:laozhou",
+    "r": 3,
+    "hold": 3,
+    "requires": [
+     "cookie"
+    ],
+    "onDone": {
+     "say": [
+      {
+       "npc": "laozhou",
+       "key": "say.laozhou_kids",
+       "dur": 3
+      }
+     ],
+     "order": [
+      {
+       "npc": "laozhou",
+       "kind": "goto",
+       "x": 27.2,
+       "y": 3.5,
+       "speed": 1.6,
+       "stop": 0.3
+      }
+     ]
+    }
+   },
+   {
+    "id": "ember",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "oven",
+     "move": "oven_stoke",
+     "t": [
+      "hint.laozhou_story.ember_1",
+      "hint.laozhou_story.ember_2",
+      "hint.laozhou_story.ember_3"
+     ]
+    },
+    "when": {
+     "type": "light",
+     "tag": "ember",
+     "min": 0.3
+    },
+    "sense": "laozhou",
+    "requires": [
+     "crowd"
+    ],
+    "onDone": {
+     "order": [
+      {
+       "npc": "laozhou",
+       "kind": "goto",
+       "x": 28.6,
+       "y": 3.6,
+       "speed": 1.2,
+       "stop": 0.3
+      }
+     ]
+    }
+   },
+   {
+    "id": "bake",
+    "kind": "arrive",
+    "npc": "laozhou",
+    "at": [
+     28.6,
+     3.6
+    ],
+    "r": 1.3,
+    "requires": [
+     "ember"
+    ],
+    "noHint": true
+   },
+   {
+    "id": "bread_war",
+    "kind": "combo",
+    "events": [
+     "cheer_salty",
+     "cheer_cake"
+    ],
+    "within": 20,
+    "optional": true,
+    "noHint": true,
+    "onDone": {
+     "event": "bread_fusion"
+    }
+   }
+  ]
+ },
+ "xiaolan_story": {
+  "npc": "xiaolan",
+  "phase": "noon",
+  "requires": {
+   "stories": [
+    "laozhou_story"
+   ]
+  },
+  "need": 5,
+  "finale": "xiaolan_finale",
+  "steps": [
+   {
+    "id": "bell",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "bike_xl",
+     "move": "bike_bell",
+     "t": [
+      "hint.xiaolan_story.bell_1",
+      "hint.xiaolan_story.bell_2",
+      "hint.xiaolan_story.bell_3"
+     ]
+    },
+    "when": {
+     "type": "sound",
+     "tag": "bell",
+     "min": 0.3
+    },
+    "sense": "xiaolan",
+    "onDone": {
+     "set": "window_open"
+    }
+   },
+   {
+    "id": "smell",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "bread_cart",
+     "move": "bread_scent_re",
+     "t": [
+      "hint.xiaolan_story.smell_1",
+      "hint.xiaolan_story.smell_2",
+      "hint.xiaolan_story.smell_3"
+     ]
+    },
+    "when": {
+     "type": "scent",
+     "tag": "bread",
+     "min": 0.2
+    },
+    "sense": "xiaolan",
+    "requires": [
+     "bell"
+    ],
+    "onDone": {
+     "set": "xl_porch",
+     "order": [
+      {
+       "npc": "xiaolan",
+       "kind": "goto",
+       "x": 24.6,
+       "y": 24.8,
+       "speed": 1.0,
+       "stop": 0.3
+      }
+     ],
+     "say": [
+      {
+       "npc": "xiaolan",
+       "key": "say.xl_smell",
+       "dur": 3
+      }
+     ]
+    }
+   },
+   {
+    "id": "bike",
+    "kind": "event",
+    "hint": {
+     "prop": "bike_xl",
+     "move": "bike_roll",
+     "t": [
+      "hint.xiaolan_story.bike_1",
+      "hint.xiaolan_story.bike_2",
+      "hint.xiaolan_story.bike_3"
+     ]
+    },
+    "on": "bike_push",
+    "requires": [
+     "smell"
+    ],
+    "onDone": {
+     "seq": "bike_go",
+     "say": [
+      {
+       "npc": "xiaolan",
+       "key": "say.xl_bike",
+       "dur": 3
+      }
+     ]
+    }
+   },
+   {
+    "id": "pose",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "snowman_r",
+     "move": "snowman_pose_r",
+     "t": [
+      "hint.xiaolan_story.pose_1",
+      "hint.xiaolan_story.pose_2",
+      "hint.xiaolan_story.pose_3"
+     ]
+    },
+    "when": {
+     "type": "company",
+     "tag": "fun",
+     "min": 0.3
+    },
+    "requires": [
+     "bike"
+    ],
+    "gate": {
+     "flag": "bike_parked"
+    },
+    "onDone": {
+     "set": "xl_paint",
+     "order": [
+      {
+       "npc": "xiaolan",
+       "kind": "goto",
+       "x": 31.0,
+       "y": 26.8,
+       "speed": 1.1,
+       "stop": 0.3
+      }
+     ],
+     "say": [
+      {
+       "npc": "xiaolan",
+       "key": "say.xl_start",
+       "dur": 3
+      }
+     ]
+    }
+   },
+   {
+    "id": "paint",
+    "kind": "arrive",
+    "npc": "xiaolan",
+    "at": [
+     31.0,
+     26.8
+    ],
+    "r": 1.2,
+    "hold": 4,
+    "requires": [
+     "pose"
+    ],
+    "noHint": true
+   },
+   {
+    "id": "mirror",
+    "kind": "event",
+    "on": "mirror_tilt",
+    "gate": {
+     "flag": "xl_paint"
+    },
+    "optional": true,
+    "noHint": true,
+    "onDone": {
+     "event": "halo_snowman"
+    }
+   }
+  ]
+ },
+ "adong_story": {
+  "npc": "adong",
+  "phase": "dusk",
+  "requires": {
+   "stories": [
+    "afu_story"
+   ]
+  },
+  "need": 5,
+  "finale": "adong_finale",
+  "steps": [
+   {
+    "id": "ramp",
+    "kind": "event",
+    "hint": {
+     "prop": "bus_door",
+     "move": "bus_ramp",
+     "t": [
+      "hint.adong_story.ramp_1",
+      "hint.adong_story.ramp_2",
+      "hint.adong_story.ramp_3"
+     ]
+    },
+    "on": "ramp_down",
+    "onDone": {
+     "seq": "adong_alight"
+    }
+   },
+   {
+    "id": "light",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "lamp_s1",
+     "move": "lamp_glow_lamp_s1",
+     "t": [
+      "hint.adong_story.light_1",
+      "hint.adong_story.light_2",
+      "hint.adong_story.light_3"
+     ]
+    },
+    "when": {
+     "type": "light",
+     "tag": "warm",
+     "min": 0.4
+    },
+    "sense": "adong",
+    "requires": [
+     "ramp"
+    ],
+    "onDone": {
+     "seq": "adong_light_ok"
+    }
+   },
+   {
+    "id": "clear",
+    "kind": "event",
+    "hint": {
+     "prop": "snowmachine",
+     "move": "snow_blow",
+     "t": [
+      "hint.adong_story.clear_1",
+      "hint.adong_story.clear_2",
+      "hint.adong_story.clear_3"
+     ]
+    },
+    "on": "berm_cleared",
+    "onDone": {
+     "seq": "adong_clear_ok"
+    }
+   },
+   {
+    "id": "crowd",
+    "kind": "stimulus",
+    "hint": {
+     "prop": "balloon_bundle",
+     "move": "balloon_release_s",
+     "t": [
+      "hint.adong_story.crowd_1",
+      "hint.adong_story.crowd_2",
+      "hint.adong_story.crowd_3"
+     ]
+    },
+    "when": {
+     "type": "lure",
+     "tag": "balloon",
+     "min": 0.2
+    },
+    "sense": "tourist1",
+    "onDone": {
+     "seq": "adong_crowd_ok"
+    }
+   },
+   {
+    "id": "start",
+    "kind": "arrive",
+    "hint": {
+     "prop": "bus_door",
+     "move": "bus_ramp",
+     "t": [
+      "hint.adong_story.start_1",
+      "hint.adong_story.start_2",
+      "hint.adong_story.start_3"
+     ]
+    },
+    "npc": "adong",
+    "at": [
+     47.5,
+     2.4
+    ],
+    "r": 1.2,
+    "hold": 3,
+    "requires": [
+     "ramp",
+     "light",
+     "clear",
+     "crowd"
+    ]
+   },
+   {
+    "id": "escort",
+    "kind": "flag",
+    "flag": "lit:lamp_s4",
+    "gate": {
+     "phase": "dusk"
+    },
+    "optional": true,
+    "noHint": true,
+    "onDone": {
+     "event": "record_run"
+    }
+   }
+  ]
+ },
+ "finale_story": {
+  "npc": "xiaomi",
+  "phase": "night",
+  "requires": {
+   "stories": [
+    "xiaomi_story",
+    "afu_story",
+    "laozhou_story",
+    "xiaolan_story",
+    "adong_story"
+   ]
+  },
+  "need": 7,
+  "finale": "finale_city",
+  "steps": [
+   {
+    "id": "ready",
+    "kind": "flag",
+    "flag": "finale_ready",
+    "noHint": true
+   },
+   {
+    "id": "lamp1",
+    "kind": "flag",
+    "hint": {
+     "prop": "lamp_p1",
+     "move": "lamp_glow_lamp_p1",
+     "t": [
+      "hint.finale_story.lamp1_1",
+      "hint.finale_story.lamp1_2",
+      "hint.finale_story.lamp1_3"
+     ]
+    },
+    "flag": "lit:lamp_p1"
+   },
+   {
+    "id": "lamp2",
+    "kind": "flag",
+    "hint": {
+     "prop": "lamp_p2",
+     "move": "lamp_glow_lamp_p2",
+     "t": [
+      "hint.finale_story.lamp2_1",
+      "hint.finale_story.lamp2_2",
+      "hint.finale_story.lamp2_3"
+     ]
+    },
+    "flag": "lit:lamp_p2"
+   },
+   {
+    "id": "lamp3",
+    "kind": "flag",
+    "hint": {
+     "prop": "lamp_p3",
+     "move": "lamp_glow_lamp_p3",
+     "t": [
+      "hint.finale_story.lamp3_1",
+      "hint.finale_story.lamp3_2",
+      "hint.finale_story.lamp3_3"
+     ]
+    },
+    "flag": "lit:lamp_p3"
+   },
+   {
+    "id": "lamp4",
+    "kind": "flag",
+    "hint": {
+     "prop": "lamp_p4",
+     "move": "lamp_glow_lamp_p4",
+     "t": [
+      "hint.finale_story.lamp4_1",
+      "hint.finale_story.lamp4_2",
+      "hint.finale_story.lamp4_3"
+     ]
+    },
+    "flag": "lit:lamp_p4"
+   },
+   {
+    "id": "lamp5",
+    "kind": "flag",
+    "hint": {
+     "prop": "lamp_p5",
+     "move": "lamp_glow_lamp_p5",
+     "t": [
+      "hint.finale_story.lamp5_1",
+      "hint.finale_story.lamp5_2",
+      "hint.finale_story.lamp5_3"
+     ]
+    },
+    "flag": "lit:lamp_p5"
+   },
+   {
+    "id": "tree",
+    "kind": "event",
+    "hint": {
+     "prop": "tree",
+     "move": "tree_twinkle",
+     "t": [
+      "hint.finale_story.tree_1",
+      "hint.finale_story.tree_2",
+      "hint.finale_story.tree_3"
+     ]
+    },
+    "on": "tree_lit",
+    "requires": [
+     "lamp1",
+     "lamp2",
+     "lamp3",
+     "lamp4",
+     "lamp5"
+    ]
+   }
+  ]
+ }
+}
