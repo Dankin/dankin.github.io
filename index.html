@@ -8,23 +8,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#1b1626" />
 <title>圣诞帽帽 · Demo</title>
-<style>
-  html,body{margin:0;height:100%;background:#1b1626;overflow:hidden;overscroll-behavior:none;touch-action:none;
-    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;position:fixed;width:100%}
-  #game{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh}
-  canvas{image-rendering:pixelated;display:block;touch-action:none}
-  #rotate{display:none;position:fixed;inset:0;z-index:10;background:#1b1626;color:#ffe9b0;
-    flex-direction:column;align-items:center;justify-content:center;font:600 20px/1.6 system-ui,sans-serif;text-align:center;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  #rotate i{font-style:normal;font-size:56px;display:block;animation:rot 2.4s ease-in-out infinite}
-  @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-  /* 触屏设备竖屏时提示横屏（桌面窄窗口不提示） */
-  @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
-</style>
+<style>html,body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;background:#1b1626;width:100%;height:100%;margin:0;position:fixed;overflow:hidden}#game{width:100vw;height:100vh;height:100dvh;position:fixed;top:0;bottom:0;left:0;right:0}canvas{image-rendering:pixelated;touch-action:none;display:block}#rotate{z-index:10;color:#ffe9b0;text-align:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#1b1626;flex-direction:column;justify-content:center;align-items:center;font:600 20px/1.6 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;display:none;position:fixed;top:0;bottom:0;left:0;right:0}#rotate i{font-size:56px;font-style:normal;animation:2.4s ease-in-out infinite rot;display:block}@keyframes rot{0%,20%{transform:rotate(0)}60%,to{transform:rotate(-90deg)}}@media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}@media (orientation:portrait) and (max-width:600px){#rotate{display:flex}}#boot{z-index:5;color:#ffe9b0;background:#1b1626;flex-direction:column;justify-content:center;align-items:center;font:600 22px/1.6 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;display:flex;position:fixed;top:0;bottom:0;left:0;right:0}#boot b{background:#3a2f4a;border-radius:3px;width:160px;height:6px;margin-top:14px;display:block;position:relative;overflow:hidden}#boot b:after{content:"";background:#ffd27a;border-radius:3px;width:40%;height:100%;animation:1.2s ease-in-out infinite bootbar;position:absolute;top:0;left:0}@keyframes bootbar{0%{left:-40%}to{left:100%}}#boot i{font-size:44px;font-style:normal;animation:1.4s ease-in-out infinite bootbob}@keyframes bootbob{0%,to{transform:translateY(0)}50%{transform:translateY(-6px)}}#fatal{z-index:20;color:#ffe9b0;text-align:center;background:#1b1626f0;flex-direction:column;justify-content:center;align-items:center;font:600 20px/1.7 system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;display:none;position:fixed;top:0;bottom:0;left:0;right:0}#fatal button{color:#ffe9b0;background:#2b2230;border:2px solid #f2d58a;border-radius:10px;min-height:48px;margin-top:18px;padding:14px 32px;font:600 18px system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif}</style>
+  <script type="module" crossorigin src="./assets/index-DL9vGSa5.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-WkwZ5CU-.js">
+  <link rel="modulepreload" crossorigin href="./assets/phaser-tijnJcp5.js">
 </head>
 <body>
 <div id="game"></div>
+<div id="boot"><i>🎅</i>圣诞帽帽 加载中…<b></b></div>
+<div id="fatal"><div id="fatalMsg">画面出了点问题</div><button id="fatalBtn" type="button">重新加载</button></div>
+<noscript><div style="position:fixed;inset:0;z-index:30;background:#1b1626;color:#ffe9b0;display:flex;align-items:center;justify-content:center;font:600 20px system-ui,sans-serif;text-align:center">需要启用 JavaScript 才能玩《圣诞帽帽》。</div></noscript>
 <div id="rotate"><i>📱</i>请横屏游玩<br><small style="opacity:.7;font-weight:400">Please rotate your device</small></div>
-<script type="module" src="/src/main.ts"></script>
 </body>
 </html>
