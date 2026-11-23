@@ -21,3 +21,11 @@ body #ending .card { margin: auto; }
 
 /* 设置里的小字 */
 #settings .note { margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--dim); }
+
+/* v4 r4:底栏细线框、灰卡不显示价格、顶栏数字轻一点 */
+#bar .act { border-width: 1px; }
+.act.dim { opacity: 0.55; background: var(--paper); border-color: var(--f3); }
+.act.dim .pr { visibility: hidden; }
+.act.dim .pv { color: var(--dim); }
+#apples { font-weight: 500; letter-spacing: 0; }
+#goalNum { display: none; }

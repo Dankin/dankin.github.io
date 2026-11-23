@@ -140,6 +140,9 @@ interface Act {
   nm: HTMLElement;
   pr: HTMLElement;
   gain: HTMLElement;
+  /** 这张卡现在的价钱(满档/最高档 = Infinity) */
+  cost: number;
+  afford: boolean;
 }
 function mkAct(id: string): Act {
   const el = $<HTMLButtonElement>(id);
@@ -151,7 +154,7 @@ function mkAct(id: string): Act {
     gain.className = 'pv';
     el.insertBefore(gain, pr);
   }
-  return { el, nm, pr, gain };
+  return { el, nm, pr, gain, cost: Infinity, afford: false };
 }
 const setText = (el: HTMLElement, t: string): void => {
   if (el.textContent !== t) el.textContent = t;
@@ -175,6 +178,7 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
   const e = h.expand;
   if (e && e.ready) {
     buyMode[line] = 'expand';
+    buy.cost = e.cost; buy.afford = e.affordable;
     setText(buy.nm, `${e.name} ${T[L.tier].name}`);
     setText(buy.pr, fmt(e.cost));
     setText(buy.gain, preview(s, { kind: 'expand', line }).plain);
@@ -183,6 +187,7 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
     buy.el.setAttribute('aria-label', `${LINE_NAME[line]}:${e.name}${T[L.tier].name},${fmt(e.cost)} 果钱`);
   } else if (h.unit.full) {
     buyMode[line] = 'full';
+    buy.cost = Infinity; buy.afford = false;
     setText(buy.nm, `已满 ${UNIT_MAX} ${T[L.tier].unit}`);
     setText(buy.pr, '');
     setText(buy.gain, '');
@@ -192,6 +197,7 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
     buyMode[line] = 'unit';
     const cost = unitCost(s, line);
     const can = s.coins >= cost;
+    buy.cost = cost; buy.afford = can;
     setText(buy.nm, `+1 ${T[L.tier].unit}`);
     setText(buy.pr, fmt(cost));
     setText(buy.gain, preview(s, { kind: 'unit', line }).plain);
@@ -208,6 +214,7 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
   // 升档
   const tc = tierCost(s, line);
   if (tc === null) {
+    up.cost = Infinity; up.afford = false;
     setText(up.nm, `已是最高档:${T[L.tier].name}`);
     setText(up.pr, '');
     setText(up.gain, '');
@@ -217,13 +224,36 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
   }
   up.el.disabled = false;
   const canUp = s.coins >= tc;
+  up.cost = tc; up.afford = canUp;
   const tp = h.tier ? h.tier.flowPct : 0;
   setText(up.nm, `升级 ${T[L.tier + 1].name}`);
   setText(up.pr, fmt(tc));
-  setText(up.gain, '二选一,各有各的长处');
+  setText(up.gain, T[L.tier + 1].pair || '二选一');
   setCls(up.gain, { up: canUp, zero: !canUp });
   setCls(up.el, { can: canUp, no: !canUp, max: false, 'has-branch': true });
   up.el.setAttribute('aria-label', `${LINE_NAME[line]}:升级为${T[L.tier + 1].name},${fmt(tc)} 果钱`);
+}
+
+/** 底栏一次只亮 1–2 张:瓶颈卡 + 最便宜能买的卡(都买不起就亮最便宜的那张当目标)。其余变灰、不显示价格。首购前买不起的卡先藏起来。 */
+const INITIAL_UNITS = (() => {
+  const n = newState(0);
+  return n.source.units.reduce((a, b) => a + b, 0) + n.route.units.reduce((a, b) => a + b, 0);
+})();
+function renderFocus(): void {
+  const acts = [btn.sb, btn.su, btn.rb, btn.ru];
+  const s = state;
+  const bought = s.source.units.reduce((a, b) => a + b, 0) + s.route.units.reduce((a, b) => a + b, 0) > INITIAL_UNITS || s.source.tier > 0 || s.route.tier > 0 || s.helpers > 0;
+  const live = acts.filter((a) => isFinite(a.cost));
+  let cheapest: Act | null = null;
+  for (const a of live) if (a.afford && (!cheapest || a.cost < cheapest.cost)) cheapest = a;
+  if (!cheapest) for (const a of live) if (!cheapest || a.cost < cheapest.cost) cheapest = a;
+  for (const a of acts) {
+    const lit = !isFinite(a.cost) || a === cheapest || a.el.classList.contains('bn');
+    // 首购前只露出最便宜的那张(买得起才算"可买")
+    a.el.hidden = !bought && !lit && !a.afford;
+    a.el.classList.toggle('dim', !lit && !a.el.hidden);
+    if (!lit && !a.el.hidden && isFinite(a.cost)) setText(a.gain, a.afford ? '' : '再攒攒');
+  }
 }
 
 // ───────────── 老徐(自动摇树)按钮:场景左上角的小按钮,生产档 ≥1 才出现 ─────────────
@@ -258,7 +288,7 @@ function renderHelper(hints: ReturnType<typeof nextHints>): void {
     return;
   }
   helperBtn.hidden = false;
-  const label = h ? `${HELPER.name} ×${have} · 再雇一位 ${fmt(h.cost)}` : `${HELPER.name} ×${have} · 满员`;
+  const label = h ? (have === 0 ? `${HELPER.name}在树下打盹,叫醒他 ${fmt(h.cost)}` : `${HELPER.name} ×${have} · 再雇一位 ${fmt(h.cost)}`) : `${HELPER.name} ×${have} · 满员`;
   setText(helperBtn, label);
   setCls(helperBtn, { can: !!h && h.affordable, no: !h || !h.affordable });
   helperBtn.disabled = !h;
@@ -536,6 +566,8 @@ function renderAll(): void {
     ap.textContent = shown;
     lastApples = shown;
   }
+  const gn = $o('goalNum');
+  if (gn && !gn.hidden) gn.hidden = true; // 目标和精确值放在设置里
   const rateEl = $o('rate');
   if (rateEl) setText(rateEl, `果钱 ${fmt(Math.floor(s.coins))} · 每秒 ${fmt(th.flow)}`);
   renderExact(th);
@@ -546,11 +578,13 @@ function renderAll(): void {
 
   renderAct('source', btn.sb, btn.su, hints, th);
   renderAct('route', btn.rb, btn.ru, hints, th);
+  renderFocus();
   renderGates();
   renderHelper(hints);
   if (!bp.hidden) fillBranch();
 
   orchard.setWorld(buildWorld(th));
+  (orchard as unknown as { setProgress?: (f: number) => void }).setProgress?.(progress(s)); // 礼物盒:进度越高越满
   const e = era(s);
   if (e !== lastEra) {
     lastEra = e;
