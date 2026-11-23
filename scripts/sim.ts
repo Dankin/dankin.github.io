@@ -225,7 +225,7 @@ export function play(o: Opts): Report {
         if (ok) {
           if (Number.isNaN(rep.firstBuy)) rep.firstBuy = t;
           if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : a.kind === 'expand' ? `EXPAND ${a.line} t${a.tier} #${s[a.line].ext[a.tier ?? 0]}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
-          if (best.tier || best.gainPct >= 0.01) {
+          if (best.tier || a.kind === 'expand' || best.gainPct >= 0.03) {
             const gap = t - lastBuyT;
             if (a.kind === 'tier') { const nt = s[a.line].tier; rep.tierWait[nt] = Math.max(rep.tierWait[nt], gap); }
             rep.gaps.push(gap);
@@ -278,7 +278,8 @@ function print(o: Opts, r: Report) {
   const tu = r.eras.map((m, i) => (i > 0 ? `${i}:${fm(m)}` : '')).filter(Boolean).join('  ');
   console.log(`时代切换(两线都到第k档)分钟: ${tu || '—'}`);
   console.log(`首次购买 ${fm(r.firstBuy)}s  首辆新车 ${fm(r.firstVehicle)}s  首次换道具 ${fm(r.firstGate)}s`);
-  console.log(`最长无事可买(≥3%提升) ${fm(r.idleMaxS)}s (约第 ${fm(r.idleAtMin)} 分钟)  两次有意义购买(升档/≥2%)最大间隔 ${fm(r.buyGapMaxS)}s (第 ${fm(r.buyGapAtMin)} 分钟)  浪费 ${r.wastedPct.toFixed(1)}%`);
+  console.log(`有意义购买(升档/扩建/≥3%提升)之间最长间隔 ${fm(r.buyGapMaxS)}s (第 ${fm(r.buyGapAtMin)} 分钟)  [目标≤90s]  |  最长无事可买(购买力) ${fm(r.idleMaxS)}s  浪费 ${r.wastedPct.toFixed(1)}%`);
+  console.log(`升档前最长等待(第1..5档,秒): ${r.tierWait.slice(1).map((x) => x.toFixed(0)).join(' / ')}`);
   console.log(`瓶颈(每分钟 P=产出不够 C=运力不够 =平衡): ${r.timeline}`);
   console.log(`道具使用时间占比: ${Object.entries(r.gatesUsed).map(([k, v]) => `${k}${v}%`).join(' ')}`);
   console.log(`分支: ${r.branches.join(' | ')}`);

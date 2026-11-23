@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from '../src/core/constants.ts';
 import { GATES, HELPER, SHAKE, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, TIER_START_UNITS, UNIT_MAX, EXPAND, describeEffect } from '../src/core/content.ts';
-import { EVENT_GAP_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
+import { EVENT_GAP_S, EVENT_GAP_SHARE, EVENT_MAX_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
   appleValue, baseProduce, buyHelper, buyUnit, canBuyHelper, canBuyUnit, canUpgradeTier, click, comboMult, era, helperCost, shake, fleetView, isWon, mods,
   buyExpand, canExpand, expandCost, nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
@@ -563,6 +563,8 @@ test('事件:间隔、昼夜选择、奖励', () => {
   s.source.units[1] = 5;
   s.route.units[1] = 5;
   const flow = throughput(s).flow;
+  s.coins = tierCost(s, 'source')!; // 离目标没有差额:只发基础奖励
+  s.coins = Math.max(s.coins, tierCost(s, 'route')!);
   const c = claimEvent(s, 'bird');
   assert.equal(c.apples, Math.floor(flow * EVENT_REWARD_S.bird));
   assert.equal(s.delivered, c.apples);
@@ -574,6 +576,30 @@ test('事件:间隔、昼夜选择、奖励', () => {
   assert.equal(n.apples, 0);
   assert.equal(s.newtonUntil, 50 + NEWTON_S);
   assert.ok(claimEvent(fresh(), 'bird').apples >= 1);
+});
+
+test('事件:离升档远时补差额(20%),封顶 EVENT_MAX_S 秒送达量', () => {
+  const s = atTiers(1, 1);
+  s.source.units[1] = 5;
+  s.route.units[1] = 5;
+  const flow = throughput(s).flow;
+  s.coins = 0;
+  const gap = Math.min(tierCost(s, 'source')!, tierCost(s, 'route')!);
+  const c = claimEvent(s, 'bird');
+  const expect = Math.max(Math.floor(flow * EVENT_REWARD_S.bird), Math.min(Math.floor((gap * EVENT_GAP_SHARE) / mods(s).value), Math.floor(flow * EVENT_MAX_S)));
+  assert.equal(c.apples, expect);
+  assert.ok(c.apples <= Math.floor(flow * EVENT_MAX_S));
+  assert.ok(EVENT_GAP_S[0] === 45 && EVENT_GAP_S[1] === 90);
+});
+
+test('升档点短标题 pair:每个升档点一条,无数字', () => {
+  for (const tiers of [SOURCE_TIERS, ROUTE_TIERS]) {
+    assert.equal(tiers[0].pair, '');
+    for (const t of tiers.slice(1)) {
+      assert.equal(t.pair, `${t.branches![0].name} 或 ${t.branches![1].name}`);
+      assert.doesNotMatch(t.pair, /[0-9×%]/);
+    }
+  }
 });
 
 test('事件:不连续同一种;牛顿三段;文案条数', () => {

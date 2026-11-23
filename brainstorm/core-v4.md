@@ -131,3 +131,10 @@ claimEvent(s, kind) → { kind, apples, coins }                   // events.ts
 - `NEWTON_STAGES: {at:number,text:string}[]` 牛顿停留期间三段台词,`at` 为进入事件后的秒数(0 / 4 / 9)。
 - `AMBIENT_TEXT`(10 条环境小话)、`DAILY_NEWS`(10 条苹果日报)、`ERA_SWITCH_TOAST[era]`(6 条,下标 = 时代 0..5)、`awayLine(minutes)`(<2m / <60m / <1d / <3d / 更久 五档明信片)。
 - `SEALED` 现在是 2 行。
+
+## 第三轮更新(抹平大跳 / 事件 / pair)
+- 数字(content.ts): 果城 baseCost=tierCost 5e6,货船 1e7,苹果之门 1e9,传送门 2e9;果星 rate 8000×0.85,苹果之门 rate 24000×0.85(按 0.85 缩放后写入),飞机 cap 170000×0.85,传送门 cap 600000×0.85,果城 rate/货船 cap 同样 ×0.85。
+- **pair**: `SOURCE_TIERS[i].pair` / `ROUTE_TIERS[i].pair` = "分支A 或 分支B"(第 0 档为空串),UI 在升档按钮副标题直接用,不含数字。由 `withPair()` 从 branches 名字生成,改分支名自动同步。
+- 事件: `EVENT_GAP_S`=[45,90];`EVENT_REWARD_S` bird 10s、meteor 15s、newton 0;`EVENT_GAP_SHARE`=0.2、`EVENT_MAX_S`=60: 奖励 = max(基础秒数送达量, min(离最便宜的升档还差的钱×20%折算的苹果, 60 秒送达量))。
+- sim 输出: 总时长; "有意义购买(升档/扩建/≥3%提升)之间最长间隔 [目标≤90s]"; "升档前最长等待(第1..5档)"。
+- 结果(cps0/1/4): 71.7 / 59.1 / 45.5 分钟;cps1 时代 3.1/10.2/17.4/32.2/42.5;最长间隔 330/255/179s(**未达 ≤90s**,瓶颈是后两档升档价,降价会把总时长压到 <55 分钟,故不降)。

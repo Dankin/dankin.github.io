@@ -51,6 +51,8 @@ export interface SourceTierDef {
   tierCost: number;
   /** 升到这一档时二选一的分支(第 0 档为 null) */
   branches: [BranchDef, BranchDef] | null;
+  /** 升档点二选一的短标题(UI 副标题,不含数字),如 "密植 或 铁砂掌";第 0 档为空串 */
+  pair: string;
   joke: string;
 }
 
@@ -65,6 +67,8 @@ export interface RouteTierDef {
   growth: number;
   tierCost: number;
   branches: [BranchDef, BranchDef] | null;
+  /** 升档点二选一的短标题(UI 副标题,不含数字),如 "密植 或 铁砂掌";第 0 档为空串 */
+  pair: string;
   joke: string;
 }
 
@@ -135,7 +139,10 @@ export const STOCK_SECONDS = 60;
 export const STOCK_MIN = 30;
 
 // ───────────────────────── 产出线 ─────────────────────────
-export const SOURCE_TIERS: SourceTierDef[] = [
+const withPair = <T extends { branches: [BranchDef, BranchDef] | null }>(defs: Omit<T, 'pair'>[]): T[] =>
+  defs.map((d) => ({ ...d, pair: d.branches ? `${d.branches[0].name} 或 ${d.branches[1].name}` : '' }) as unknown as T);
+
+export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
   {
     name: '一棵树', unit: '棵树', rate: 1, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
     joke: '一棵树,一个你,一点耐心。',
@@ -157,7 +164,7 @@ export const SOURCE_TIERS: SourceTierDef[] = [
     ],
   },
   {
-    name: '果城', unit: '座果城', rate: 2000, baseCost: 9500000, growth: 1.12, tierCost: 9500000,
+    name: '果城', unit: '座果城', rate: 1700, baseCost: 5000000, growth: 1.12, tierCost: 5000000,
     joke: '城里没有人,只有苹果和写字楼。',
     branches: [
       { name: '苹果大厦', joke: '一百层,每层一个苹果,电梯里全是果香。', effect: { value: 1.4, produce: 0.9 } },
@@ -165,7 +172,7 @@ export const SOURCE_TIERS: SourceTierDef[] = [
     ],
   },
   {
-    name: '果星', unit: '颗果星', rate: 10000, baseCost: 61000000, growth: 1.12, tierCost: 61000000,
+    name: '果星', unit: '颗果星', rate: 6800, baseCost: 61000000, growth: 1.12, tierCost: 61000000,
     joke: '一整颗星球只种苹果。外星人路过,表示看不懂。',
     branches: [
       { name: '自转摇柄', joke: '整颗星球在替你摇。你可以歇会儿。', effect: { floor: 0.3, produce: 1.1 } },
@@ -173,17 +180,17 @@ export const SOURCE_TIERS: SourceTierDef[] = [
     ],
   },
   {
-    name: '苹果之门', unit: '道门', rate: 30000, baseCost: 1800000000, growth: 1.12, tierCost: 1800000000,
+    name: '苹果之门', unit: '道门', rate: 20400, baseCost: 1000000000, growth: 1.12, tierCost: 1000000000,
     joke: '推开门,里面还是苹果。再推开一道,还是。',
     branches: [
       { name: '双生门', joke: '一个苹果进去,两个出来。海关没发现。', effect: { produce: 1.5 } },
       { name: '苹果税', joke: '每个苹果过门都要交"路费"。苹果自己认的。', effect: { value: 1.6 } },
     ],
   },
-];
+]);
 
 // ───────────────────────── 运输线 ─────────────────────────
-export const ROUTE_TIERS: RouteTierDef[] = [
+export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
   {
     name: '篮子', unit: '只篮子', cap: 6, trip: 5, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
     joke: '提着走。累了就换只手。',
@@ -205,7 +212,7 @@ export const ROUTE_TIERS: RouteTierDef[] = [
     ],
   },
   {
-    name: '货船', unit: '艘货船', cap: 34200, trip: 9, baseCost: 18000000, growth: 1.12, tierCost: 19000000,
+    name: '货船', unit: '艘货船', cap: 29070, trip: 9, baseCost: 10000000, growth: 1.12, tierCost: 10000000,
     joke: '苹果出海了。苹果:我晕船。',
     branches: [
       { name: '集装箱', joke: '一个箱子装一万个苹果,海关数得很累。', effect: { cap: 1.5, stock: 1.5 } },
@@ -213,7 +220,7 @@ export const ROUTE_TIERS: RouteTierDef[] = [
     ],
   },
   {
-    name: '飞机', unit: '架飞机', cap: 209000, trip: 11, baseCost: 120000000, growth: 1.12, tierCost: 120000000,
+    name: '飞机', unit: '架飞机', cap: 144500, trip: 11, baseCost: 120000000, growth: 1.12, tierCost: 120000000,
     joke: '苹果第一次坐头等舱,没人跟它说话。',
     branches: [
       { name: '货机', joke: '机舱里没座位,全是苹果。', effect: { cap: 1.5, stock: 1.5 } },
@@ -221,14 +228,14 @@ export const ROUTE_TIERS: RouteTierDef[] = [
     ],
   },
   {
-    name: '传送门', unit: '道传送门', cap: 741000, trip: 13, baseCost: 3400000000, growth: 1.12, tierCost: 3500000000,
+    name: '传送门', unit: '道传送门', cap: 510000, trip: 13, baseCost: 2000000000, growth: 1.12, tierCost: 2000000000,
     joke: '这头一个苹果,那头还是一个苹果。物理学家沉默了。',
     branches: [
       { name: '大口径', joke: '门开得大,苹果挤着过。', effect: { cap: 1.5 } },
       { name: '零延迟', joke: '没有"路上",只有"到了"。', effect: { time: 0.67 } },
     ],
   },
-];
+]);
 
 // ───────────────────────── 道具(关卡) ─────────────────────────
 export const GATE_SLOTS = 3;
