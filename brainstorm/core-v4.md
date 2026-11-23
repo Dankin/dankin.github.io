@@ -100,3 +100,17 @@ claimEvent(s, kind) → { kind, apples, coins }                   // events.ts
 - 首次购买 ~10–14s,首辆新车 10–18s,首次换道具 ~8s;bot 前 8 分钟会雇 2–4 位老徐。
 - 只扩一条线(`--policy=source|route`)200 分钟内通不了关;固定道具 `--gates=none` 130 分钟、`wax,wash,rush` 67、`juice,wash,rush` 80,自动搭配 60,差距 >10%。
 - 已知偏差:两次"有意义购买"的最长间隔 ≈260–320 秒(目标 ≤90s 未达成);1cps 比 0cps 只快约 8%(堆场满时手摇被浪费,4cps 快约 25%);手摇多出的苹果在运力吃紧时 25–55% 被浪费。调参入口:`scripts/tune.ts`(PB/rho/tau/g/fw/late/tauLate/drop)+ `src/core/content.ts`。
+
+## 第一轮平衡更新(扩建 / 单位上限 / 人话预览)
+
+- **扩建**:每档每条线可买 3 次一次性扩建(`EXPAND.units=[5,15,30]` 个单位后解锁,价格 = 该线下一档升档价 ×`EXPAND.cost=[0.06,0.2,0.45]`,买后该档产出/运力 ×`EXPAND.mult=1.5`)。
+  - 状态:`Line.ext: number[]`(每档已买次数 0..3)。
+  - API:`expandInfo(s,line,tier?) → {n,cost,name,need}|null`、`expandCost`、`canExpand`、`buyExpand(s,line,tier?)`;`Action {kind:'expand',line,tier?}` 可交给 `preview`。
+  - `nextHints(s)[line].expand: {name,need,have,ready,cost,affordable,waitSec,flowPct}|null`(`ready=false` 表示单位还没买够,UI 可显示 have/need)。
+- **单位上限** `UNIT_MAX=40`(每线每档):`nextHints()[line].unit.full` 为真时只剩升档/扩建/道具可买;`canBuyUnit` 同步返回 false。
+- **升档白送** `TIER_START_UNITS=3` 个单位(运输线同时多出 3 辆该档车)。
+- **堆场满了摇树**:溢出仍计 `wasted`,同时当场路边摊卖掉 `SHAKE.roadside=0.15` 的价值(进果钱,不算送达)。
+- **Preview.plain**:一句不带数字的人话(车更大/装得更快/更值钱/长得更多/堆场更大/摇一下掉更多/…,最多两条用“、”连接);什么都没改变时是 `''`,UI 自己决定“暂时用不上”之类的文案和要不要显示数字。
+- 路线分支不再有“更快+更值钱”:快的只快,大的容量/堆场 ×1.5;道具 洗果 ×1.3 / 打蜡 ×1.5(慢 20%)/ 加急(快 30%,价值 ×0.95)拉平。
+- 存档:`ext` 在 `fillDefaults` 里规整成 0..3,旧版存档仍按 SAVE_VERSION 3 规则处理。
+- `scripts/fit.ts`:逐档拟合价格(`node scripts/fit.ts [迭代]`),调价时用它再烘焙进 `content.ts`。

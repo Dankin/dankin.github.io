@@ -85,6 +85,7 @@ function fillDefaults(s: State, now: number): State {
   const line = (l: any, dl: State['source']): State['source'] => ({
     tier: Number.isInteger(l?.tier) ? l.tier : 0,
     units: dl.units.map((_, i) => (Number.isFinite(l?.units?.[i]) ? l.units[i] : dl.units[i])),
+    ext: dl.ext.map((_, i) => Math.min(3, Math.max(0, Math.floor(Number.isFinite(l?.ext?.[i]) ? l.ext[i] : 0)))),
     branch: dl.branch.map((_, i) => (l?.branch?.[i] === 0 || l?.branch?.[i] === 1 ? l.branch[i] : -1)) as State['source']['branch'],
   });
   const legacy = s as any;

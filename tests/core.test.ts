@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from '../src/core/constants.ts';
-import { GATES, HELPER, SHAKE, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, describeEffect } from '../src/core/content.ts';
+import { GATES, HELPER, SHAKE, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, TIER_START_UNITS, UNIT_MAX, EXPAND, describeEffect } from '../src/core/content.ts';
 import { EVENT_GAP_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
   appleValue, baseProduce, buyHelper, buyUnit, canBuyHelper, canBuyUnit, canUpgradeTier, click, comboMult, era, helperCost, shake, fleetView, isWon, mods,
-  nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
+  buyExpand, canExpand, expandCost, nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
   upgradeTier,
 } from '../src/core/game.ts';
 import { giftOpen } from '../src/core/gift.ts';
@@ -70,7 +70,7 @@ test('买车:每买一辆多一辆;超过上限合并成车队', () => {
   assert.equal(fleetView(s)[0].count, s.route.units[0]);
 });
 
-test('升档:要钱、要选分支、送 1 个单位、记录时间、解锁道具', () => {
+test('升档:要钱、要选分支、送起步单位、记录时间、解锁道具', () => {
   const s = fresh();
   assert.equal(canUpgradeTier(s, 'source'), false);
   assert.equal(upgradeTier(s, 'source', 0), null, '没钱');
@@ -87,7 +87,7 @@ test('升档:要钱、要选分支、送 1 个单位、记录时间、解锁道�
   assert.equal(r.tier, 1);
   assert.equal(s.source.tier, 1);
   assert.equal(s.source.branch[1], 1);
-  assert.equal(s.source.units[1], 1);
+  assert.equal(s.source.units[1], TIER_START_UNITS);
   assert.equal(s.coins, before - SOURCE_TIERS[1].tierCost);
   assert.equal(s.tierTimes.source[0], 42);
   // 分支效果生效
@@ -97,7 +97,7 @@ test('升档:要钱、要选分支、送 1 个单位、记录时间、解锁道�
   const r2 = upgradeTier(s, 'route', 0)!;
   assert.ok(r2.newGates.includes('pack'));
   assert.ok(s.gatesUnlocked.includes('pack'));
-  assert.equal(s.vehicles.filter((v) => v.tier === 1).length, 1, '升运输档送一辆新车');
+  assert.equal(s.vehicles.filter((v) => v.tier === 1).length, TIER_START_UNITS, '升运输档送起步车辆');
 });
 
 test('升到最高档后不能再升', () => {
@@ -122,7 +122,7 @@ test('吞吐 = min(产出, 运力),瓶颈标签', () => {
   t = throughput(s);
   assert.equal(t.flow, t.produce);
   assert.equal(t.bottleneck, 'produce');
-  s.route.units[0] = 20;
+  s.route.units[0] = 17;
   assert.equal(throughput(s).bottleneck, 'balanced');
   assert.equal(t.income, t.flow * t.value);
 });
@@ -174,7 +174,8 @@ test('道具:换槽改变价值,互换,未解锁不能放,可清空', () => {
   assert.equal(v0, 1);
   assert.ok(setGate(s, 0, 'wash'));
   const v1 = throughput(s).value;
-  assert.ok(Math.abs(v1 - 1.25) < 1e-9);
+  const wash = GATES.find((g) => g.id === 'wash')!.effect.value!;
+  assert.ok(Math.abs(v1 - wash) < 1e-9);
   assert.equal(setGate(s, 1, 'brand'), false, '没解锁');
   assert.equal(setGate(s, 5, 'wash'), false);
   assert.ok(setGate(s, 2, 'wash'));
@@ -201,14 +202,16 @@ test('红绳:放大相邻槽的道具,不相邻没用', () => {
   s.gatesUnlocked.push('red');
   setGate(s, 0, 'wash');
   setGate(s, 1, 'red');
-  assert.ok(Math.abs(mods(s).value - Math.pow(1.25, RED_EXP)) < 1e-9);
+  const wash = GATES.find((g) => g.id === 'wash')!.effect.value!;
+  const waxV = GATES.find((g) => g.id === 'wax')!.effect.value!;
+  assert.ok(Math.abs(mods(s).value - Math.pow(wash, RED_EXP)) < 1e-9);
   setGate(s, 1, null);
   setGate(s, 2, 'red');
-  assert.ok(Math.abs(mods(s).value - 1.25) < 1e-9, '槽 0 与槽 2 不相邻');
+  assert.ok(Math.abs(mods(s).value - wash) < 1e-9, '槽 0 与槽 2 不相邻');
   setGate(s, 1, 'wax');
   setGate(s, 0, 'wash');
   // 槽 1 的 wax 被红绳(槽 2)放大,槽 0 的 wash 没有
-  const expect = 1.25 * Math.pow(1.6, RED_EXP);
+  const expect = wash * Math.pow(waxV, RED_EXP);
   assert.ok(Math.abs(mods(s).value - expect) < 1e-9);
 });
 
@@ -591,4 +594,61 @@ test('格式化:中文万/亿', () => {
   assert.equal(fmt(3.5e12), '3.5万亿');
   assert.equal(fmt(Infinity), '∞');
   assert.match(equiv(8.2e9), /每个人/);
+});
+
+test('扩建:够数量才能买,一次性,该档翻倍×1.5,价格随下一档升档价', () => {
+  const s = atTiers(1, 1);
+  assert.equal(canExpand(s, 'source'), false, '单位不够');
+  s.source.units[1] = EXPAND.units[0];
+  s.coins = 0;
+  assert.equal(canExpand(s, 'source'), false, '没钱');
+  const cost = expandCost(s, 'source')!;
+  assert.ok(cost > 0);
+  s.coins = cost;
+  const before = throughput(s).produce;
+  assert.ok(buyExpand(s, 'source'));
+  assert.equal(s.source.ext[1], 1);
+  assert.ok(throughput(s).produce > before * 1.2);
+  assert.equal(canExpand(s, 'source'), false, '第二次要更多单位');
+  s.source.units[1] = EXPAND.units[1];
+  assert.ok(expandCost(s, 'source')! > cost);
+});
+
+test('单位有上限 UNIT_MAX;nextHints 标 full', () => {
+  const s = atTiers(1, 1);
+  s.coins = 1e18;
+  s.source.units[1] = UNIT_MAX;
+  assert.equal(canBuyUnit(s, 'source'), false);
+  assert.equal(nextHints(s).source.unit.full, true);
+  assert.equal(nextHints(s).route.unit.full, false);
+});
+
+test('堆场满了摇树:溢出当场路边摊卖掉一点钱', () => {
+  const s = fresh();
+  s.stock = stockMax(s, mods(s));
+  s.shakeTok = 3;
+  const c0 = s.coins;
+  const w0 = s.wasted;
+  const r = shake(s);
+  assert.ok(r.ok);
+  assert.ok(s.wasted > w0);
+  assert.ok(s.coins > c0);
+});
+
+test('preview.plain:一句人话,没用处时是空串,不带数字', () => {
+  const s = atTiers(1, 1);
+  s.coins = 1e18;
+  const p = preview(s, { kind: 'tier', line: 'route', branch: 0 });
+  assert.equal(typeof p.plain, 'string');
+  assert.ok(!/\d/.test(p.plain));
+  s.source.units[1] = UNIT_MAX;
+  assert.equal(preview(s, { kind: 'unit', line: 'source' }).plain, '');
+});
+
+test('存档:ext 往返并规整', () => {
+  const s = atTiers(1, 1);
+  s.source.ext[1] = 2;
+  const back = parse(serialize(s));
+  assert.ok(back);
+  assert.deepEqual(back!.state.source.ext, s.source.ext);
 });

@@ -24,6 +24,8 @@ export interface Line {
   units: number[];
   /** branch[t] = 升到第 t 档时选的分支 0/1;第 0 档恒为 -1 */
   branch: (0 | 1 | -1)[];
+  /** ext[t] = 第 t 档已买的"扩建"次数 0..3(单位数到 5/15/30 各能买一次,该档产出/运力 ×1.5) */
+  ext: number[];
 }
 
 export interface State {
@@ -70,7 +72,7 @@ export interface State {
 }
 
 export function newLine(): Line {
-  return { tier: 0, units: Array(TIER_COUNT).fill(0).map((_, i) => (i === 0 ? 1 : 0)), branch: Array(TIER_COUNT).fill(-1) as (0 | 1 | -1)[] };
+  return { tier: 0, units: Array(TIER_COUNT).fill(0).map((_, i) => (i === 0 ? 1 : 0)), branch: Array(TIER_COUNT).fill(-1) as (0 | 1 | -1)[], ext: Array(TIER_COUNT).fill(0) };
 }
 
 export function newState(now: number): State {

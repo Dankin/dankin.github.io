@@ -6,7 +6,7 @@ import { GOAL } from '../src/core/constants.ts';
 import { GATES, GATE_SLOTS, gateDef, ROUTE_TIERS, SOURCE_TIERS, type GateId } from '../src/core/content.ts';
 import { EVENT_GAP_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
-  buyHelper, buyUnit, canBuyUnit, shake, nextBranches, preview, setGate, tick, throughput, tierCost, unitCost, upgradeTier,
+  buyHelper, buyExpand, buyUnit, canBuyUnit, shake, nextBranches, preview, setGate, tick, throughput, tierCost, unitCost, upgradeTier,
   type Action, type LineId,
 } from '../src/core/game.ts';
 import { newState, type State } from '../src/core/state.ts';
@@ -82,7 +82,10 @@ function candidates(s: State, policy: Opts['policy']): Cand[] {
   }
   for (const line of lines) {
     const acts: { a: Action; tier: boolean }[] = [];
-    for (let t = 0; t <= s[line].tier; t++) acts.push({ a: { kind: 'unit', line, tier: t }, tier: false });
+    for (let t = 0; t <= s[line].tier; t++) {
+      acts.push({ a: { kind: 'unit', line, tier: t }, tier: false });
+      acts.push({ a: { kind: 'expand', line, tier: t }, tier: false });
+    }
     if (nextBranches(s, line)) for (const b of [0, 1] as const) acts.push({ a: { kind: 'tier', line, branch: b }, tier: true });
     for (const { a, tier } of acts) {
       const p = preview(s, a);
@@ -200,6 +203,8 @@ export function play(o: Opts): Report {
           const before = s.vehicles.length;
           ok = buyUnit(s, a.line, a.tier);
           if (ok && a.line === 'route' && s.vehicles.length > before && Number.isNaN(rep.firstVehicle)) rep.firstVehicle = t;
+        } else if (a.kind === 'expand') {
+          ok = buyExpand(s, a.line, a.tier);
         } else if (a.kind === 'helper') {
           ok = buyHelper(s);
         } else if (a.kind === 'tier') {
@@ -216,7 +221,7 @@ export function play(o: Opts): Report {
         }
         if (ok) {
           if (Number.isNaN(rep.firstBuy)) rep.firstBuy = t;
-          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
+          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : a.kind === 'expand' ? `EXPAND ${a.line} t${a.tier} #${s[a.line].ext[a.tier ?? 0]}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
           if (best.tier || best.gainPct >= 0.01) {
             const gap = t - lastBuyT;
             rep.gaps.push(gap);
@@ -238,6 +243,8 @@ export function play(o: Opts): Report {
   if (!rep.won) rep.minutes = s.playSec / 60;
   rep.wastedPct = (100 * wasted0) / Math.max(1, delivered0 + wasted0);
   rep.finalFlow = throughput(s).flow;
+  if (!rep.won && process.env.SIMDBG) for (const c of candidates(s, o.policy)) console.log("CAND", JSON.stringify(c.action), c.cost.toExponential(2), c.gain.toExponential(2), c.gainPct.toFixed(4));
+  if (!rep.won && process.env.SIMDBG) console.log("STATE", JSON.stringify({ coins: s.coins, src: s.source, route: s.route, gates: s.gates, th: throughput(s) }));
   const total = Object.values(gateTime).reduce((a, b) => a + b, 0) || 1;
   for (const [g, v] of Object.entries(gateTime)) rep.gatesUsed[gateDef(g as GateId).name] = Math.round((100 * v) / total);
   return rep;

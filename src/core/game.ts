@@ -4,7 +4,7 @@ import {
   GATES, HELPER, MAX_CONVOYS, MAX_TIER, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
   type BranchDef, type Effect, type GateId,
 } from './content.ts';
-import { RED_EXP } from './content.ts';
+import { EXPAND, RED_EXP, TIER_START_UNITS, UNIT_MAX } from './content.ts';
 import type { Line, State } from './state.ts';
 export type LineId = 'source' | 'route';
 
@@ -105,15 +105,18 @@ export interface Throughput {
 }
 export type Bottleneck = 'produce' | 'carry' | 'balanced';
 
+/** 第 t 档扩建带来的倍率 */
+export const extMult = (L: Pick<Line, 'ext'>, t: number): number => Math.pow(EXPAND.mult, L.ext[t] ?? 0);
+
 export function baseProduce(L: Line): number {
   let p = 0;
-  for (let t = 0; t <= L.tier; t++) p += L.units[t] * SOURCE_TIERS[t].rate;
+  for (let t = 0; t <= L.tier; t++) p += L.units[t] * SOURCE_TIERS[t].rate * extMult(L, t);
   return p;
 }
 
 export function carryRate(R: Line, m: Mods): number {
   let c = 0;
-  for (let t = 0; t <= R.tier; t++) c += (R.units[t] * ROUTE_TIERS[t].cap) / ROUTE_TIERS[t].trip;
+  for (let t = 0; t <= R.tier; t++) c += (R.units[t] * ROUTE_TIERS[t].cap * extMult(R, t)) / ROUTE_TIERS[t].trip;
   return (c * m.cap) / m.time;
 }
 
@@ -159,7 +162,7 @@ export function unitCost(s: State, line: LineId, tier = s[line].tier): number {
 }
 
 export function canBuyUnit(s: State, line: LineId, tier = s[line].tier): boolean {
-  return tier >= 0 && tier <= s[line].tier && s.coins >= unitCost(s, line, tier);
+  return tier >= 0 && tier <= s[line].tier && s[line].units[tier] < UNIT_MAX && s.coins >= unitCost(s, line, tier);
 }
 
 /** 运输线新增一辆:车数 ≤ 24 一辆一个;超过则并进最轻的车队 */
@@ -180,6 +183,28 @@ export function buyUnit(s: State, line: LineId, tier = s[line].tier): boolean {
   s.coins -= unitCost(s, line, tier);
   s[line].units[tier] += 1;
   if (line === 'route') addVehicle(s, tier);
+  return true;
+}
+
+/** 第 tier 档下一次扩建的信息;单位数没到门槛、已买满、该线已最高档且无下一档价格时 null */
+export function expandInfo(s: State, line: LineId, tier = s[line].tier): { n: number; cost: number; name: string; need: number } | null {
+  const L = s[line];
+  if (tier < 0 || tier > L.tier) return null;
+  const n = L.ext[tier] ?? 0;
+  if (n >= EXPAND.units.length) return null;
+  const base = L.tier >= MAX_TIER ? tiersOf(line)[L.tier].tierCost || tiersOf(line)[L.tier].baseCost * 40 : tiersOf(line)[L.tier + 1].tierCost;
+  return { n, cost: Math.floor(base * EXPAND.cost[n]), name: EXPAND.names[n], need: EXPAND.units[n] };
+}
+export const expandCost = (s: State, line: LineId, tier = s[line].tier): number | null => expandInfo(s, line, tier)?.cost ?? null;
+/** 单位数够了且钱够才能买 */
+export function canExpand(s: State, line: LineId, tier = s[line].tier): boolean {
+  const e = expandInfo(s, line, tier);
+  return !!e && s[line].units[tier] >= e.need && s.coins >= e.cost;
+}
+export function buyExpand(s: State, line: LineId, tier = s[line].tier): boolean {
+  if (!canExpand(s, line, tier)) return false;
+  s.coins -= expandInfo(s, line, tier)!.cost;
+  s[line].ext[tier] += 1;
   return true;
 }
 
@@ -216,8 +241,8 @@ export function upgradeTier(s: State, line: LineId, branch: 0 | 1): UpgradeResul
   s.coins -= tierCost(s, line)!;
   L.tier += 1;
   L.branch[L.tier] = branch;
-  L.units[L.tier] = 1;
-  if (line === 'route') addVehicle(s, L.tier);
+  L.units[L.tier] = TIER_START_UNITS;
+  if (line === 'route') for (let i = 0; i < TIER_START_UNITS; i++) addVehicle(s, L.tier);
   s.tierTimes[line][L.tier - 1] = s.playSec;
   return { line, tier: L.tier, branch, newGates: unlockGates(s) };
 }
@@ -270,6 +295,7 @@ export type Action =
   | { kind: 'unit'; line: LineId; tier?: number }
   | { kind: 'tier'; line: LineId; branch: 0 | 1 }
   | { kind: 'helper' }
+  | { kind: 'expand'; line: LineId; tier?: number }
   | { kind: 'gate'; slot: number; id: GateId | null };
 
 export interface Preview {
@@ -286,12 +312,38 @@ export interface Preview {
   /** 做之前/之后的完整吞吐(UI 可画对比条) */
   before: Throughput;
   after: Throughput;
+  /** 给人看的一句话(不带数字):"多送一些""车更大""装得更快"…;没什么可说的是空串。UI 想不想显示自己定。 */
+  plain: string;
+}
+
+/** 把"做了这件事之后变了什么"说成人话,最多两个短语 */
+function plainOf(a: Action, ok: boolean, bm: Mods, am: Mods, before: Throughput, after: Throughput): string {
+  if (!ok) return '';
+  const parts: string[] = [];
+  const up = (x: number, y: number, e = 0.01) => y > x * (1 + e);
+  const down = (x: number, y: number, e = 0.01) => y < x * (1 - e);
+  if (a.kind === 'helper') parts.push('多一位帮手摇树');
+  if (a.kind === 'expand') parts.push(a.line === 'source' ? '这一档长得更多' : '这一档车更大');
+  if (a.kind === 'tier') parts.push('升一档,多一种玩法');
+  if (up(bm.cap, am.cap)) parts.push('车更大');
+  if (down(bm.time, am.time)) parts.push('装得更快');
+  if (up(bm.value, am.value)) parts.push('更值钱');
+  if (down(bm.value, am.value)) parts.push('价钱略低');
+  if (up(bm.produce, am.produce)) parts.push('长得更多');
+  if (up(bm.stock, am.stock)) parts.push('堆场更大');
+  if (up(bm.shake, am.shake)) parts.push('摇一下掉更多');
+  if (up(bm.combo, am.combo)) parts.push('连摇更值');
+  if (up(bm.fw, am.fw) || up(bm.floor + 1, am.floor + 1)) parts.push('摇劲更足');
+  if (a.kind === 'unit' || a.kind === 'helper') {
+    if (up(before.flow, after.flow)) parts.push(a.kind === 'unit' && a.line === 'route' ? '多运一些' : '多送一些');
+  } else if (a.kind === 'gate' && up(before.flow, after.flow, 0.03) && !parts.length) parts.push('多送一些');
+  return parts.slice(0, 2).join('、');
 }
 
 type Lite = Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helpers' | 'shakeRate' | 'gatesUnlocked'>;
 const lite = (s: State): Lite => ({
-  source: { ...s.source, units: [...s.source.units], branch: [...s.source.branch] },
-  route: { ...s.route, units: [...s.route.units], branch: [...s.route.branch] },
+  source: { ...s.source, units: [...s.source.units], branch: [...s.source.branch], ext: [...s.source.ext] },
+  route: { ...s.route, units: [...s.route.units], branch: [...s.route.branch], ext: [...s.route.ext] },
   gates: [...s.gates],
   charge: s.charge,
   combo: s.combo,
@@ -308,10 +360,18 @@ export function preview(s: State, a: Action): Preview {
   let ok = true;
   if (a.kind === 'unit') {
     const tier = a.tier ?? s[a.line].tier;
-    ok = tier >= 0 && tier <= s[a.line].tier;
+    ok = tier >= 0 && tier <= s[a.line].tier && s[a.line].units[tier] < UNIT_MAX;
     if (ok) {
       cost = unitCost(s, a.line, tier);
       l[a.line].units[tier] += 1;
+    }
+  } else if (a.kind === 'expand') {
+    const tier = a.tier ?? s[a.line].tier;
+    const e = expandInfo(s, a.line, tier);
+    ok = !!e && s[a.line].units[tier] >= e.need;
+    if (ok) {
+      cost = e!.cost;
+      l[a.line].ext[tier] += 1;
     }
   } else if (a.kind === 'helper') {
     const c = helperCost(s);
@@ -328,7 +388,7 @@ export function preview(s: State, a: Action): Preview {
       const L = l[a.line];
       L.tier += 1;
       L.branch[L.tier] = a.branch;
-      L.units[L.tier] = 1;
+      L.units[L.tier] = TIER_START_UNITS;
     }
   } else {
     ok = a.slot >= 0 && a.slot < l.gates.length && (a.id === null || s.gatesUnlocked.includes(a.id));
@@ -352,13 +412,17 @@ export function preview(s: State, a: Action): Preview {
     incomePct: before.income > 0 ? after.income / before.income - 1 : 0,
     before,
     after,
+    plain: plainOf(a, ok, mods(s), mods(l), before, after),
   };
 }
 
 export interface LineHints {
-  unit: { cost: number; affordable: boolean; waitSec: number; flowPct: number };
+  /** full = 这一档已买满 UNIT_MAX 个(只能升档/扩建) */
+  unit: { cost: number; affordable: boolean; waitSec: number; flowPct: number; full: boolean };
   /** 已最高档为 null */
   tier: { cost: number; affordable: boolean; waitSec: number; flowPct: number } | null;
+  /** 当前档的下一次扩建(5/15/30 个单位时各一次);买满为 null。ready=单位数够了;没 ready 时 UI 可显示"再来 N 个" */
+  expand: { name: string; need: number; have: number; ready: boolean; cost: number; affordable: boolean; waitSec: number; flowPct: number } | null;
 }
 export interface Hints {
   source: LineHints;
@@ -376,8 +440,11 @@ export function nextHints(s: State): Hints {
   const mk = (line: LineId): LineHints => {
     const c = unitCost(s, line);
     const tc = tierCost(s, line);
+    const ei = expandInfo(s, line);
+    const have = s[line].units[s[line].tier];
     return {
-      unit: { cost: c, affordable: s.coins >= c, waitSec: wait(c), flowPct: preview(s, { kind: 'unit', line }).flowPct },
+      expand: ei === null ? null : { name: ei.name, need: ei.need, have, ready: have >= ei.need, cost: ei.cost, affordable: have >= ei.need && s.coins >= ei.cost, waitSec: wait(ei.cost), flowPct: preview(s, { kind: 'expand', line }).flowPct },
+      unit: { cost: c, affordable: s.coins >= c && s[line].units[s[line].tier] < UNIT_MAX, waitSec: wait(c), flowPct: preview(s, { kind: 'unit', line }).flowPct, full: s[line].units[s[line].tier] >= UNIT_MAX },
       tier:
         tc === null
           ? null
@@ -426,8 +493,11 @@ export function shake(s: State): ShakeResult {
   s.stock += dropped;
   const smax = stockMax(s, m);
   if (s.stock > smax) {
-    s.wasted += s.stock - smax;
+    const over = s.stock - smax;
+    s.wasted += over;
     s.stock = smax;
+    // 堆场满了:路边摊顺手卖掉,不计送达
+    s.coins += over * appleValue(s, m) * SHAKE.roadside;
   }
   return { ok: true, dropped, combo: s.combo };
 }
@@ -481,7 +551,7 @@ export function tick(s: State, dtSec: number, now = NaN): TickResult {
     const val = appleValue(s, m);
     for (const v of s.vehicles) {
       const d = ROUTE_TIERS[v.tier];
-      const full = v.w * d.cap * m.cap;
+      const full = v.w * d.cap * m.cap * extMult(s.route, v.tier);
       if (v.phase === 0) {
         if (v.load > full) {
           s.stock += v.load - full;
@@ -619,7 +689,7 @@ export function fleetView(s: State): FleetView[] {
       count += v.w;
       if (v.phase > 0) moving += v.w;
       loadSum += v.load;
-      full += v.w * ROUTE_TIERS[t].cap * m.cap;
+      full += v.w * ROUTE_TIERS[t].cap * m.cap * extMult(s.route, t);
     }
     out.push({ tier: t, count, moving: count ? moving / count : 0, load: full ? Math.min(1, loadSum / full) : 0 });
   }
