@@ -35,6 +35,8 @@ export interface Report {
   idleAtMin: number;
   /** 任意两次购买之间最长间隔(秒) */
   buyGapMaxS: number;
+  /** 每次升档前离上一次有意义购买隔了多少秒(按升到的档位取最大) */
+  tierWait: number[];
   buyGapAtMin: number;
   log: string[];
   /** 每次有意义购买(升档或 ≥2% 提升)距上一次的秒数 */
@@ -129,7 +131,7 @@ export function play(o: Opts): Report {
   const dt = 0.25;
   const rep: Report = {
     minutes: NaN, won: false, tierUps: [], eras: [], firstBuy: NaN, firstVehicle: NaN, firstGate: NaN,
-    idleMaxS: 0, idleAtMin: 0, buyGapMaxS: 0, buyGapAtMin: 0, log: [], gaps: [], timeline: '', gatesUsed: {}, branches: [], wastedPct: 0, finalFlow: 0,
+    idleMaxS: 0, idleAtMin: 0, tierWait: [0, 0, 0, 0, 0, 0], buyGapMaxS: 0, buyGapAtMin: 0, log: [], gaps: [], timeline: '', gatesUsed: {}, branches: [], wastedPct: 0, finalFlow: 0,
   };
   const allowedGates: GateId[] = o.gates === 'auto' ? GATES.map((g) => g.id) : o.gates === 'none' ? [] : o.gates;
   let clickAcc = 0;
@@ -185,13 +187,14 @@ export function play(o: Opts): Report {
     const score = (c: Cand) => (c.gain <= 0 ? Infinity : Math.max(0, (c.cost - s.coins) / inc) + c.cost / c.gain);
     let best: Cand | null = null;
     for (const c of cs) if (!best || score(c) < score(best)) best = c;
-    const worthy = cs.some((c) => c.cost <= s.coins && (c.tier || c.gainPct >= 0.03));
+    const worthy = cs.some((c) => c.cost <= s.coins && (c.tier || c.action.kind === 'expand' || c.gainPct >= 0.03));
     if (worthy) {
       lastWorthy = t;
       if (idleStart !== null) idleStart = null;
     } else {
       if (idleStart === null) idleStart = lastWorthy;
       const idle = t - idleStart;
+      if (o.verbose && Math.abs(idle - 90) < 0.3) rep.log.push(`${(t / 60).toFixed(1)}m IDLE90 coins ${s.coins.toExponential(1)} inc ${th.income.toExponential(1)} next ${cs.filter((c) => c.tier || c.action.kind === 'expand' || c.gainPct >= 0.03).map((c) => `${c.action.kind}${(c.action as any).line ?? ''}${(c.action as any).tier ?? ''}:${c.cost.toExponential(1)}`).join(' ')} bn ${th.bottleneck}`);
       if (idle > rep.idleMaxS) { rep.idleMaxS = idle; rep.idleAtMin = t / 60; }
     }
     if (best && best.cost <= s.coins && score(best) < Infinity) {
@@ -224,6 +227,7 @@ export function play(o: Opts): Report {
           if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : a.kind === 'expand' ? `EXPAND ${a.line} t${a.tier} #${s[a.line].ext[a.tier ?? 0]}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
           if (best.tier || best.gainPct >= 0.01) {
             const gap = t - lastBuyT;
+            if (a.kind === 'tier') { const nt = s[a.line].tier; rep.tierWait[nt] = Math.max(rep.tierWait[nt], gap); }
             rep.gaps.push(gap);
             if (gap > rep.buyGapMaxS) { rep.buyGapMaxS = gap; rep.buyGapAtMin = t / 60; }
             lastBuyT = t;

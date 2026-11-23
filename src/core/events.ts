@@ -8,7 +8,7 @@ export const EVENT_NAMES: Record<EventKind, string> = { bird: '偷苹果的小�
 export const EVENT_DESC: Record<EventKind, string> = {
   bird: '小鸟衔来一份苹果(约 15 秒的送达量)',
   newton: '牛顿被砸了一下,灵感爆发:10 秒内摇树掉的苹果和摇劲翻倍',
-  meteor: '流星带来一整车苹果(约 25 秒的送达量)',
+  meteor: '流星路过,顺便卸下一整车苹果(约 25 秒的送达量)',
 };
 /** 事件间隔 [min,max] 秒 */
 export const EVENT_GAP_S: [number, number] = [60, 120];
@@ -23,10 +23,12 @@ export function nextEventGap(rnd: () => number = Math.random): number {
   return EVENT_GAP_S[0] + rnd() * (EVENT_GAP_S[1] - EVENT_GAP_S[0]);
 }
 
-/** 流星只在夜里出现;白天是小鸟和牛顿 */
-export function pickEvent(isNight: boolean, rnd: () => number = Math.random): EventKind {
-  if (isNight) return rnd() < 0.6 ? 'meteor' : 'bird';
-  return rnd() < 0.6 ? 'bird' : 'newton';
+/** 流星只在夜里出现;白天是小鸟和牛顿。last = 上一次的事件,不连续出现同一种。 */
+export function pickEvent(isNight: boolean, rnd: () => number = Math.random, last?: EventKind | null): EventKind {
+  const pool: EventKind[] = isNight ? ['meteor', 'bird'] : ['bird', 'newton'];
+  const first: EventKind = rnd() < 0.6 ? pool[0] : pool[1];
+  if (last && first === last) return first === pool[0] ? pool[1] : pool[0];
+  return first;
 }
 
 export interface EventClaim {

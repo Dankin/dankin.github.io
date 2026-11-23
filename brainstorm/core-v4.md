@@ -114,3 +114,20 @@ claimEvent(s, kind) → { kind, apples, coins }                   // events.ts
 - 路线分支不再有“更快+更值钱”:快的只快,大的容量/堆场 ×1.5;道具 洗果 ×1.3 / 打蜡 ×1.5(慢 20%)/ 加急(快 30%,价值 ×0.95)拉平。
 - 存档:`ext` 在 `fillDefaults` 里规整成 0..3,旧版存档仍按 SAVE_VERSION 3 规则处理。
 - `scripts/fit.ts`:逐档拟合价格(`node scripts/fit.ts [迭代]`),调价时用它再烘焙进 `content.ts`。
+
+## 第二轮更新(文案 / 事件 / 平衡重排)
+
+### 平衡结构变化
+- `UNIT_MAX` 40 → **12**。每档最多 12 个单位,起步 `TIER_START_UNITS`=3。每档就是"买 9 个单位 + 3 次扩建 + 升档",节奏更密。
+- `EXPAND` 改为 `units:[4,7,10]`,`cost:[3,6,12]`,价 = **该档第一个单位的价 × cost[n]**(不再看下一档升档价)。`expandInfo/expandCost` 签名不变。
+- 价格曲线: 单位成本增长 `growth` 1.12(各档),`tierCost = baseCost × 1`。数字全在 `src/core/content.ts`,用 `node scripts/fit.ts 16`(`DROP=0.8 G=1.12 TW=0 TAU=1`)拟合,再用 bake 脚本写回。
+- `SHAKE.dropSec` 按 drop=0.8 缩放(手摇占比略降,cps4 不再碾压)。
+- 路线运力约为产线速率 ×1.9(含 trip 时间),瓶颈大多是运力,后期会换成产出;买产线和买运输都有收益。
+- Sim(cps0/1/4): 76 / 63 / 46 分钟。时代切换 cps1: 3.0/9.9/19.7/35.3/51.9。首购 ≈10s,首辆新车 ≈11–16s,首次换道具 8s。
+- **未达标**: "最长无事可买"仍 170–340s(升档价/升档后第一个单位价是主要空档),≤90s 靠改乘数达不到,需要改结构(见 sim `tierWait`)。
+
+### 文案 / 事件 API(src/core/copy.ts, src/core/events.ts)
+- `pickEvent(isNight, rnd?, last?)`: 传入上一次的种类即可保证不连续同一种。main.ts 应该保存上次种类并传入。
+- `NEWTON_STAGES: {at:number,text:string}[]` 牛顿停留期间三段台词,`at` 为进入事件后的秒数(0 / 4 / 9)。
+- `AMBIENT_TEXT`(10 条环境小话)、`DAILY_NEWS`(10 条苹果日报)、`ERA_SWITCH_TOAST[era]`(6 条,下标 = 时代 0..5)、`awayLine(minutes)`(<2m / <60m / <1d / <3d / 更久 五档明信片)。
+- `SEALED` 现在是 2 行。

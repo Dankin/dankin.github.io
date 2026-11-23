@@ -9,7 +9,7 @@ import {
   upgradeTier,
 } from '../src/core/game.ts';
 import { giftOpen } from '../src/core/gift.ts';
-import { SEALED } from '../src/core/copy.ts';
+import { AMBIENT_TEXT, DAILY_NEWS, ERA_SWITCH_TOAST, NEWTON_STAGES, SEALED, awayLine } from '../src/core/copy.ts';
 import { exportSave, fnv, importSave, load, parse, save, serialize, storageWritable, type KV } from '../src/core/save.ts';
 import { newState, type State } from '../src/core/state.ts';
 import { DAY_S, SEASON_NAMES, worldAt } from '../src/core/world.ts';
@@ -60,12 +60,14 @@ test('买单位:扣钱、涨价、不够钱不成', () => {
   assert.equal(buyUnit(s, 'source', 3), false, '没到的档不能买');
 });
 
-test('买车:每买一辆多一辆;超过上限合并成车队', () => {
+test('买车:每买一辆多一辆;单位数封顶 UNIT_MAX', () => {
   const s = fresh();
   s.coins = 1e30;
-  for (let i = 0; i < MAX_CONVOYS + 10; i++) assert.ok(buyUnit(s, 'route'));
+  for (let i = 0; i < UNIT_MAX + 5; i++) buyUnit(s, 'route');
+  assert.equal(s.route.units[0], UNIT_MAX);
   const mine = s.vehicles.filter((v) => v.tier === 0);
-  assert.equal(mine.length, MAX_CONVOYS);
+  assert.equal(mine.length, UNIT_MAX);
+  assert.ok(MAX_CONVOYS >= UNIT_MAX);
   assert.equal(mine.reduce((a, v) => a + v.w, 0), s.route.units[0]);
   assert.equal(fleetView(s)[0].count, s.route.units[0]);
 });
@@ -574,6 +576,23 @@ test('事件:间隔、昼夜选择、奖励', () => {
   assert.ok(claimEvent(fresh(), 'bird').apples >= 1);
 });
 
+test('事件:不连续同一种;牛顿三段;文案条数', () => {
+  for (const last of ['bird', 'newton', 'meteor'] as const) {
+    for (const night of [true, false]) {
+      for (let i = 0; i < 50; i++) assert.notEqual(pickEvent(night, () => i / 50, last), last);
+    }
+  }
+  assert.equal(pickEvent(true, () => 0, null), pickEvent(true, () => 0));
+  assert.equal(NEWTON_STAGES.length, 3);
+  assert.deepEqual(NEWTON_STAGES.map((x) => x.at), [...NEWTON_STAGES.map((x) => x.at)].sort((a, b) => a - b));
+  assert.ok(NEWTON_STAGES[NEWTON_STAGES.length - 1].at < NEWTON_S);
+  assert.ok(AMBIENT_TEXT.length >= 8);
+  assert.ok(DAILY_NEWS.length >= 8);
+  assert.equal(ERA_SWITCH_TOAST.length, 6);
+  const lines = new Set([awayLine(1), awayLine(30), awayLine(600), awayLine(2000), awayLine(5000)]);
+  assert.ok(lines.size >= 4, '离线问候至少分 4 档');
+});
+
 test('世界与礼物日期', () => {
   assert.equal(DAY_S, 240);
   assert.equal(SEASON_NAMES.length, 4);
@@ -582,7 +601,7 @@ test('世界与礼物日期', () => {
   assert.deepEqual(worldAt(123), worldAt(123));
   assert.equal(giftOpen(new Date(2026, 11, 23, 23, 59).getTime()), false);
   assert.equal(giftOpen(new Date(2026, 11, 24, 0, 0).getTime()), true);
-  assert.equal(SEALED.length, 3);
+  assert.equal(SEALED.length, 2);
 });
 
 test('格式化:中文万/亿', () => {

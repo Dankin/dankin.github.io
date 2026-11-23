@@ -27,24 +27,29 @@ const run = (cps: number) => play({ cps, delay: 1.5, policy: 'balanced', gates: 
 
 if (process.argv[1]?.endsWith('/fit.ts') || process.argv[1] === 'scripts/fit.ts') {
   const iters = Number(process.argv[2] ?? 14);
+  const TW = Number(process.env.TW ?? 60);
+  const TAU = Number(process.env.TAU ?? 1.4);
   const f: Fit = {
-    pb: [0, 1027, 2800, 8836, 15595, 36085],
-    tau: [0, 0.288, 0.364, 0.134, 0.108, 0.145],
-    g: 1.06, drop: 1.4, drop0: 0,
+    pb: [0, 370, 380, 3700, 4600, 5000],
+    tau: process.env.TAUS ? [0, ...process.env.TAUS.split(",").map(Number)] : [0, TAU, TAU, TAU, TAU, TAU],
+    g: Number(process.env.G ?? 1.16), drop: Number(process.env.DROP ?? 1.4), drop0: 0,
   };
   for (let it = 0; it < iters; it++) {
     applyFit(f);
     const r = run(1);
     const e = r.eras;
-    console.log(it, 'end', r.minutes.toFixed(1), 'eras', e.slice(1).map((x) => x?.toFixed(1)).join('/'), 'gap', r.buyGapMaxS.toFixed(0), 'pb', f.pb.slice(1).map((x) => x.toFixed(0)).join(','), 'tau', f.tau.slice(1).map((x) => x.toFixed(3)).join(','));
-    for (let k = 1; k <= 5; k++) {
-      const a = e[k] ?? r.minutes;
-      const ratio = Math.pow(ERA_T[k] / a, 0.7);
-      f.tau[k] = Math.min(0.5, Math.max(0.04, f.tau[k] * ratio));
-      f.pb[k] *= Math.pow(ratio, 0.5);
+    console.log(it, 'end', r.minutes.toFixed(1), 'eras', e.slice(1).map((x) => x?.toFixed(1)).join('/'), 'gap', r.buyGapMaxS.toFixed(0), 'idle', r.idleMaxS.toFixed(0), 'pb', f.pb.slice(1).map((x) => x.toFixed(0)).join(','), 'tau', f.tau.slice(1).map((x) => x.toFixed(2)).join(','), 'tw', r.tierWait.slice(1).map((x) => x.toFixed(0)).join(','));
+    let L = 0;
+    for (let k = 1; k <= 5; k++) if (e[k] != null) L = k;
+    for (let k = 1; k <= Math.min(5, L + 1); k++) {
+      const a0 = k === 1 ? 0 : (e[k - 1] as number);
+      let dur: number, want: number;
+      if (k < 5 && k <= L) { dur = (e[k] as number) - a0; want = ERA_T[k] - ERA_T[k - 1]; }
+      else { dur = r.minutes - a0; want = END_T - ERA_T[k - 1]; }
+      dur = Math.max(0.3, dur);
+      f.pb[k] *= Math.min(2, Math.max(0.5, Math.pow(want / dur, 0.8)));
+      if (TW > 0 && r.tierWait[k] > 0) f.tau[k] = Math.min(8, Math.max(0.02, f.tau[k] * Math.min(1.6, Math.max(0.6, Math.pow(TW / r.tierWait[k], 0.7)))));
     }
-    const endR = Math.pow(END_T / r.minutes, 0.6);
-    for (let k = 3; k <= 5; k++) f.pb[k] *= endR;
   }
   applyFit(f);
   console.log(JSON.stringify(f));

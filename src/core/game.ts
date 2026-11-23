@@ -186,13 +186,13 @@ export function buyUnit(s: State, line: LineId, tier = s[line].tier): boolean {
   return true;
 }
 
-/** 第 tier 档下一次扩建的信息;单位数没到门槛、已买满、该线已最高档且无下一档价格时 null */
+/** 第 tier 档下一次扩建的信息(价 = 该档第一个单位的价 × EXPAND.cost[n]);已买满时 null */
 export function expandInfo(s: State, line: LineId, tier = s[line].tier): { n: number; cost: number; name: string; need: number } | null {
   const L = s[line];
   if (tier < 0 || tier > L.tier) return null;
   const n = L.ext[tier] ?? 0;
   if (n >= EXPAND.units.length) return null;
-  const base = L.tier >= MAX_TIER ? tiersOf(line)[L.tier].tierCost || tiersOf(line)[L.tier].baseCost * 40 : tiersOf(line)[L.tier + 1].tierCost;
+  const base = tiersOf(line)[tier].baseCost;
   return { n, cost: Math.floor(base * EXPAND.cost[n]), name: EXPAND.names[n], need: EXPAND.units[n] };
 }
 export const expandCost = (s: State, line: LineId, tier = s[line].tier): number | null => expandInfo(s, line, tier)?.cost ?? null;
