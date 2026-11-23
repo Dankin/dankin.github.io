@@ -184,6 +184,21 @@ await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' })
 await sleep(150);
 check('空格 = 摇一下', (await num('g.state.shakes')) === c1 + 1, `(${c1} → ${await num('g.state.shakes')})`);
 
+// ───────── 2a. 扩建 / 单位满档 / 小字 ─────────
+await view(844, 390); await open('?debug=1');
+await G('(g.state.source.units[0]=4, g.state.coins=1e6, 0)'); await sleep(700);
+check('单位够数后买卡变"加固"并可点', /加固/.test(await text('#btnSrcBuy .nm')), `(${await text('#btnSrcBuy .nm')} / ${await text('#btnSrcBuy .pr')})`);
+const ext0 = await num('g.state.source.ext[0]');
+await click('#btnSrcBuy'); await sleep(400);
+check('点它买到一次扩建', (await num('g.state.source.ext[0]')) === ext0 + 1 && !/加固/.test(await text('#btnSrcBuy .nm')), `(ext ${ext0}→${await num('g.state.source.ext[0]')}, ${await text('#btnSrcBuy .nm')})`);
+await G('(g.state.source.units[0]=12, g.state.source.ext[0]=3, 0)'); await sleep(700);
+check('单位满档且扩建买完:显示已满且不可点', /已满/.test(await text('#btnSrcBuy .nm')) && (await ev('document.getElementById("btnSrcBuy").disabled')) === true, `(${await text('#btnSrcBuy .nm')})`);
+{
+  const pv = await text('#btnRtBuy .pv');
+  check('小字不再有"暂时用不上/约N分钟/送达"', !/暂时用不上|约\d|送达/.test(pv + (await text('#btnSrcUp .pv')) + (await text('#btnRtUp .pv'))), `(${pv})`);
+}
+await shot('land_expand');
+
 // ───────── 2b. 摇一摇 / 清单 / 久别提示 ─────────
 check('有 manifest 与 apple-touch-icon 链接', (await ev('!!document.querySelector("link[rel=manifest]")&&!!document.querySelector("link[rel=apple-touch-icon]")')) === true);
 await view(1280, 800); await open('?debug=1');

@@ -1,13 +1,13 @@
 // Shake the Apple v4 —— 把新核心(src/core)和新界面(src/ui)接起来。
 // 约定:核心只认 State;界面只认 WorldView + DOM id。这里负责:读档/存档、时间推进、渲染到 DOM、各种弹层、提示、事件、结局。
 import {
-  buyHelper, helperCost, buyUnit, canUpgradeTier, era, chargeLevel, isWon, mods, nextBranches, nextHints, preview, progress, setGate, shake,
+  buyHelper, helperCost, buyUnit, buyExpand, eraMin, canUpgradeTier, era, chargeLevel, isWon, mods, nextBranches, nextHints, preview, progress, setGate, shake,
   settle, stockFill, throughput, tick, tierCost, tiersOf, unitCost, upgradeTier,
   type ShakeResult, type LineId, type Throughput,
 } from './core/game.ts';
-import { GATES, GATE_SLOTS, HELPER, ROUTE_TIERS, describeEffect, describeGate, gateDef, type GateId } from './core/content.ts';
+import { GATES, GATE_SLOTS, HELPER, UNIT_MAX, ROUTE_TIERS, describeEffect, describeGate, gateDef, type GateId } from './core/content.ts';
 import { claimEvent, nextEventGap, pickEvent, type EventKind } from './core/events.ts';
-import { BOTTLENECK_TIP, EMPTY_SLOT_TIP, ERA_TOAST, EVENT_TEXT, SHAKE_TEXT, COMBO_TEXT, HELPER_TEXT, GATE_UNLOCK_TOAST, SEALED, awayLine } from './core/copy.ts';
+import { AMBIENT_TEXT, BOTTLENECK_TIP, DAILY_NEWS, EMPTY_SLOT_TIP, ERA_SWITCH_TOAST, ERA_TOAST, NEWTON_STAGES, EVENT_TEXT, SHAKE_TEXT, COMBO_TEXT, HELPER_TEXT, GATE_UNLOCK_TOAST, SEALED, awayLine } from './core/copy.ts';
 import { SAVE_KEY, GOAL } from './core/constants.ts';
 import { exportSave, importSave, load, save, storageWritable } from './core/save.ts';
 import { newState, type State } from './core/state.ts';
@@ -161,6 +161,8 @@ function setCls(el: HTMLElement, on: Record<string, boolean>): void {
 }
 
 let btn: { sb: Act; su: Act; rb: Act; ru: Act };
+const buyMode: Record<LineId, 'unit' | 'expand' | 'full'> = { source: 'unit', route: 'unit' };
+const expandSeen: Record<string, boolean> = {};
 const LINE_NAME: Record<LineId, string> = { source: '生产线', route: '运输线' };
 
 function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nextHints>, th: Throughput): void {
@@ -169,18 +171,39 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
   const T = tiersOf(line);
   const h = hints[line];
 
-  // +1 单位
-  const cost = unitCost(s, line);
-  const can = s.coins >= cost;
-  setText(buy.nm, `+1 ${T[L.tier].unit}`);
-  setText(buy.pr, fmt(cost));
-  const pct = h.unit.flowPct;
-  const help = pct >= 0.005;
-  const waitTxt = can || !isFinite(h.unit.waitSec) ? '' : ` · 约${fmtWait(h.unit.waitSec)}`;
-  setText(buy.gain, (help ? `${fmtPct(pct)} 送达` : th.bottleneck === (line === 'source' ? 'carry' : 'produce') ? '卡在另一边,先扩那边' : '暂时用不上') + waitTxt);
-  setCls(buy.gain, { up: help, zero: !help });
-  setCls(buy.el, { can, no: !can, bn: hints.suggest === line && th.bottleneck !== 'balanced' });
-  buy.el.setAttribute('aria-label', `${LINE_NAME[line]}:再加一个${T[L.tier].unit},${fmt(cost)} 果钱`);
+  // 买卡:+1 单位;单位够数时变成"扩建"(划算得多,先买它);单位满档又没有扩建时显示已满
+  const e = h.expand;
+  if (e && e.ready) {
+    buyMode[line] = 'expand';
+    setText(buy.nm, `${e.name} ${T[L.tier].name}`);
+    setText(buy.pr, fmt(e.cost));
+    setText(buy.gain, preview(s, { kind: 'expand', line }).plain);
+    setCls(buy.el, { can: e.affordable, no: !e.affordable, max: false, bn: hints.suggest === line && th.bottleneck !== 'balanced' });
+    buy.el.disabled = false;
+    buy.el.setAttribute('aria-label', `${LINE_NAME[line]}:${e.name}${T[L.tier].name},${fmt(e.cost)} 果钱`);
+  } else if (h.unit.full) {
+    buyMode[line] = 'full';
+    setText(buy.nm, `已满 ${UNIT_MAX} ${T[L.tier].unit}`);
+    setText(buy.pr, '');
+    setText(buy.gain, '');
+    setCls(buy.el, { can: false, no: false, max: true, bn: false });
+    buy.el.disabled = true;
+  } else {
+    buyMode[line] = 'unit';
+    const cost = unitCost(s, line);
+    const can = s.coins >= cost;
+    setText(buy.nm, `+1 ${T[L.tier].unit}`);
+    setText(buy.pr, fmt(cost));
+    setText(buy.gain, preview(s, { kind: 'unit', line }).plain);
+    setCls(buy.el, { can, no: !can, max: false, bn: hints.suggest === line && th.bottleneck !== 'balanced' });
+    buy.el.disabled = false;
+    buy.el.setAttribute('aria-label', `${LINE_NAME[line]}:再加一个${T[L.tier].unit},${fmt(cost)} 果钱`);
+  }
+  setCls(buy.gain, { up: true, zero: false });
+  if (e && e.ready && !expandSeen[line + L.tier + e.name]) {
+    expandSeen[line + L.tier + e.name] = true;
+    if (state.delivered > 0) toast(`${LINE_NAME[line]}${T[L.tier].name}可以「${e.name}」了,点那张卡。`, 3400);
+  }
 
   // 升档
   const tc = tierCost(s, line);
@@ -197,9 +220,8 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
   const tp = h.tier ? h.tier.flowPct : 0;
   setText(up.nm, `升级 ${T[L.tier + 1].name}`);
   setText(up.pr, fmt(tc));
-  const wt = canUp || !h.tier || !isFinite(h.tier.waitSec) ? '' : ` · 约${fmtWait(h.tier.waitSec)}`;
-  setText(up.gain, (tp >= 0.005 ? `${fmtPct(tp)} 送达` : '二选一') + wt);
-  setCls(up.gain, { up: tp >= 0.005, zero: tp < 0.005 });
+  setText(up.gain, '二选一,各有各的长处');
+  setCls(up.gain, { up: canUp, zero: !canUp });
   setCls(up.el, { can: canUp, no: !canUp, max: false, 'has-branch': true });
   up.el.setAttribute('aria-label', `${LINE_NAME[line]}:升级为${T[L.tier + 1].name},${fmt(tc)} 果钱`);
 }
@@ -359,7 +381,7 @@ function fillBranch(): void {
       desc.replaceChildren(a, br, j);
     }
     const p = preview(state, { kind: 'tier', line: branchLine, branch: i as 0 | 1 });
-    setText(el.querySelector('.pr') as HTMLElement, `${p.flowPct >= 0.005 ? `送达 ${fmtPct(p.flowPct)} · ` : ''}${fmt(c)}`);
+    setText(el.querySelector('.pr') as HTMLElement, `${p.plain ? `${p.plain} · ` : ''}${fmt(c)}`);
     setCls(el, { can, no: !can });
   });
 }
@@ -406,18 +428,41 @@ function bottleneckTip(th: Throughput): void {
   }
 }
 
+// ───────────── 环境小话(40–70 秒飘一句)和苹果日报(每 10 分钟一句 toast) ─────────────
+let nextAmbient = performance.now() + 30000;
+let nextNews = performance.now() + 600000;
+let ambI = Math.floor(Math.random() * AMBIENT_TEXT.length);
+let newsI = Math.floor(Math.random() * DAILY_NEWS.length);
+function ambient(): void {
+  if (document.hidden || DEBUG && speed > 60) return;
+  const now = performance.now();
+  if (now >= nextAmbient && !orchard.eventActive()) {
+    nextAmbient = now + 40000 + Math.random() * 30000;
+    orchard.floatText(AMBIENT_TEXT[ambI++ % AMBIENT_TEXT.length]);
+  }
+  if (now >= nextNews && !toastBusy && !toastQ.length && bp.hidden && gp.hidden && state.delivered > 0) {
+    nextNews = now + 600000;
+    toast(DAILY_NEWS[newsI++ % DAILY_NEWS.length], 4200);
+  }
+}
+
 // ───────────── 事件(小鸟 / 牛顿 / 流星) ─────────────
 let nextEventAt = 0;
+let lastEventKind: EventKind | null = null;
 function maybeEvent(): void {
   if (state.playSec < nextEventAt || orchard.eventActive() || document.hidden || !bp.hidden) return;
   nextEventAt = state.playSec + nextEventGap();
-  const kind: EventKind = pickEvent(worldAt(state.playSec).isNight);
+  const kind: EventKind = pickEvent(worldAt(state.playSec).isNight, Math.random, lastEventKind);
+  lastEventKind = kind;
   orchard.spawnEvent(kind, (hit) => {
     if (!hit) return;
     const r = claimEvent(state, kind);
     audio.sfx.golden();
     orchard.floatText(r.apples > 0 ? `+${fmt(r.apples)}` : '灵感!');
-    toast(EVENT_TEXT[kind].claim, 3600);
+    if (kind === 'newton') {
+      // 牛顿停留的三段台词,按进入后的秒数排开
+      for (const st of NEWTON_STAGES) setTimeout(() => toast(st.text, 3200), st.at * 1000);
+    } else toast(EVENT_TEXT[kind].claim, 3600);
     persist();
     renderAll();
   });
@@ -473,6 +518,7 @@ function renderExact(th: Throughput): void {
 // ───────────── 渲染(每 0.25 秒一次,以及操作后立即) ─────────────
 let lastApples = '';
 let lastEra = -1;
+let lastEraMin = -1;
 function renderAll(): void {
   const s = state;
   const th = throughput(s);
@@ -515,7 +561,11 @@ function renderAll(): void {
     tipEmptyShown = true;
     toast(EMPTY_SLOT_TIP, 4200);
   }
+  const em = eraMin(s);
+  if (lastEraMin >= 0 && em > lastEraMin) toast(ERA_SWITCH_TOAST[Math.min(em, ERA_SWITCH_TOAST.length - 1)], 4600);
+  lastEraMin = em;
   bottleneckTip(th);
+  ambient();
   maybeEvent();
   if (!won && isWon(s)) win();
 }
@@ -561,6 +611,7 @@ function afterStateReplaced(): void {
   won = isWon(state);
   lastApples = '';
   lastEra = -1;
+  lastEraMin = -1;
   gatesSeen = state.gates.some((g) => g !== null) ? state.gatesUnlocked.length : 0;
   bnKind = 'balanced';
   bnSince = state.playSec;
@@ -625,9 +676,9 @@ function press(el: HTMLElement): void {
   el.classList.add('pressed');
   setTimeout(() => el.classList.remove('pressed'), 480);
 }
-function nudge(line: LineId, what: 'unit' | 'tier'): void {
+function nudge(line: LineId, what: 'unit' | 'tier' | 'expand'): void {
   const h = nextHints(state)[line];
-  const x = what === 'unit' ? h.unit : h.tier;
+  const x = what === 'unit' ? h.unit : what === 'expand' ? h.expand : h.tier;
   if (!x) return;
   const lack = Math.ceil(x.cost - state.coins);
   toast(`果钱还差 ${fmt(lack)}${isFinite(x.waitSec) ? `,约 ${fmtWait(x.waitSec)}` : ''}。`, 2400);
@@ -637,12 +688,15 @@ function wire(): void {
   orchard.onGate = (slot) => openGate(slot);
 
   const buy = (line: LineId, a: Act) => () => {
-    if (buyUnit(state, line)) {
-      audio.sfx.buy();
+    const mode = buyMode[line];
+    if (mode === 'full') return;
+    if (mode === 'expand' ? buyExpand(state, line) : buyUnit(state, line)) {
+      if (mode === 'expand') audio.sfx.stage();
+      else audio.sfx.buy();
       press(a.el);
       persist();
       renderAll();
-    } else nudge(line, 'unit');
+    } else nudge(line, mode);
   };
   btn.sb.el.addEventListener('click', buy('source', btn.sb));
   btn.rb.el.addEventListener('click', buy('route', btn.rb));
