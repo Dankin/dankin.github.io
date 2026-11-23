@@ -11,28 +11,28 @@
 <body>
 <header id="topbar">
   <div class="counts"><span class="lbl">已送出</span><b id="apples">0</b><span id="goalNum">/ 82亿</span></div>
-  <div id="rate" class="rate"></div>
   <button id="btnSettings" class="ib" type="button" aria-label="设置">⚙</button>
   <div id="goalWrap" role="progressbar" aria-label="送达进度" aria-valuemin="0" aria-valuemax="100"><i id="goalBar"></i></div>
 </header>
 
-<main id="scene"><canvas id="stage" aria-label="苹果传送线"></canvas><div id="toast" role="status" aria-live="polite"></div></main>
+<main id="scene"><canvas id="stage" aria-label="苹果传送线"></canvas><div id="toast" role="status" aria-live="polite"></div><button id="btnHelper" type="button" hidden></button></main>
 
 <footer id="bar">
   <section class="side" id="srcSide" aria-label="生产线">
     <button id="btnSrcBuy" class="act" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
     <button id="btnSrcUp" class="act up" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
   </section>
-  <section id="gates" aria-label="关卡">
-    <button class="slot" id="gate0" type="button" data-slot="0"><b class="nm">+</b></button>
-    <button class="slot" id="gate1" type="button" data-slot="1"><b class="nm">+</b></button>
-    <button class="slot" id="gate2" type="button" data-slot="2"><b class="nm">+</b></button>
-  </section>
   <section class="side" id="rtSide" aria-label="运输线">
     <button id="btnRtBuy" class="act" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
     <button id="btnRtUp" class="act up" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
   </section>
 </footer>
+
+<div id="gates" hidden aria-hidden="true">
+  <button class="slot" id="gate0" type="button" tabindex="-1"><b class="nm">+</b></button>
+  <button class="slot" id="gate1" type="button" tabindex="-1"><b class="nm">+</b></button>
+  <button class="slot" id="gate2" type="button" tabindex="-1"><b class="nm">+</b></button>
+</div>
 
 <div id="gatePick" hidden role="dialog" aria-label="选择关卡">
   <div class="gp-head"><b id="gatePickTitle">选择关卡</b><button id="gatePickClose" class="ib sm" type="button" aria-label="关闭">✕</button></div>
@@ -60,6 +60,7 @@
       <button id="btnImport" type="button">导入存档</button>
       <button id="btnReset" type="button">重新开始</button>
     </div>
+    <div id="exactApples"></div>
     <div id="saveWarn"></div>
     <div id="debug"></div>
     <div class="foot">原创小游戏,与苹果公司无关。</div>

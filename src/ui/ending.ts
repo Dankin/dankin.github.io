@@ -11,6 +11,16 @@ const CSS = `
 #ending .stats{margin:18px 0;padding:12px;border:1px solid #333;border-radius:8px;font-size:14px;opacity:.85}
 #ending button{background:none;border:1px solid #666;color:#f4f4f4;border-radius:8px;padding:10px 18px;margin:6px;font-size:15px;min-height:44px;cursor:pointer}
 #ending button.main{border-color:#d9342b;color:#fff;background:#d9342b33}
+@media (max-height:520px){
+#ending{padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+#ending .card{max-width:640px;display:grid;grid-template-columns:130px 1fr;column-gap:22px;text-align:left;line-height:1.5;align-items:center}
+#ending .l{text-align:center}
+#ending .apple{width:48px;height:48px;margin:0 auto 8px}
+#ending h2{font-size:20px;margin:0}
+#ending p{margin:3px 0;font-size:14px}
+#ending .stats{margin:8px 0;padding:6px 10px;font-size:13px}
+#ending button{padding:6px 14px;margin:4px 8px 0 0;min-height:40px;font-size:14px}
+}
 @keyframes endpulse{50%{transform:scale(1.08)}}
 @media (prefers-reduced-motion:reduce){#ending,#ending .apple{transition:none;animation:none}}
 `;
@@ -33,8 +43,9 @@ export function showEnding(s: EndStats, onClose: () => void, onRestart: () => vo
   el.id = 'ending';
   el.innerHTML = `
   <div class="card">
-    <div class="apple"></div>
-    <h2>平安夜</h2>
+    <div class="l"><div class="apple"></div>
+    <h2>平安夜</h2></div>
+    <div class="r">
     <p>82 亿个平安果,送完了。</p>
     <p>地球上的每一个人,手里都有一个苹果。</p>
     <p>有人咬了一口,有人留着没吃。</p>
@@ -43,6 +54,7 @@ export function showEnding(s: EndStats, onClose: () => void, onRestart: () => vo
     </div>
     <p style="opacity:.6;font-size:13px">谢谢你一直在摇。树也谢谢你。</p>
     <div><button class="main" id="endKeep">回到果园</button><button id="endRestart">重新开始</button></div>
+    </div>
   </div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('on'));

@@ -59,3 +59,22 @@ interface WorldView {
 - 每档生产/运输的"分支"只对部分档有明显画面差异(果园温室、果山缆车/隧道、果城烟囱/金光、果星星舰)。
 - `.pv` 第二行由 main 填文字,没填就只显示名称+价格。
 - 真机未测,只做了 Chrome 无头截图;手机摇晃尚未接入(留了 shakeTap())。
+
+## Round 2 更新(UI 契约变化)
+
+DOM
+- 顶栏只剩 `#apples` `#goalNum` `#goalBar` 与设置按钮;`#rate` 已删除(main 请 null-guard)。果钱/每秒/精确数写进 `#exactApples`(设置面板内,`white-space:pre-line`)。
+- 底栏只剩两侧各两张卡:`#srcSide(#btnSrcBuy,#btnSrcUp)` `#rtSide(#btnRtBuy,#btnRtUp)`;卡内 `.nm` `.pr` 同一行,`.pv` 为可选第二行小字。
+- 关卡槽不再在底栏:画布里的虚线圈(≥44px 点击区)就是槽,点击触发 `orchard.onGate(slot)`;`#gate0..2` 作为隐藏兼容节点保留在 `#gates[hidden]`,main 写文字/类不会报错。`#gatePick` 仍由 main 控制 `hidden`。
+- `#btnHelper` 已预置在 `#scene` 内(左下角,safe-area 内,不压树),main 只需切 `hidden` / 文本 / `.can .no`。
+- 红色只给苹果和 `.act.bn`(当前最划算的一项,呼吸高亮);其余可买只显示墨色。"二选一"徽标 11px 墨色。
+
+Orchard
+- 摇树在 pointerdown 立即触发 `onShake(1)`(多指都算);点事件(鸟/牛顿/流星)与关卡圈仍在抬起时触发。
+- `drawShakeMeter` 改为树根下的细弧(空时不画),连摇 ≥2 显示 `×N`。
+- 首次进入且没摇过(localStorage `sta.shook`)时,树上有手指+涟漪并定时轻晃,无文字。
+- 画布内布局避开刘海(safe-area 左右)与 6px 边距。
+- 小推车按车数 1/2/3 节编队;卡车/货船/飞机开出画面再从另一端回来。
+- 分支轮廓:路线 br0=载量(货堆/双层/集装箱/货舱),br1=速度(速度线/通行证/水花/尾迹);生产 br0 密植苗圃/自转摇柄/双生门,br1 沿用旧版(温室/星舰等)。
+- 新增门图标 belt/glove/chant/brand;`GATE_IDS` 已扩展,`red` 等同 `string`。
+- 预览:`preview.html?ending=1` 可看结局页(横屏单屏)。

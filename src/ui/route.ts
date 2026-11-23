@@ -1,5 +1,5 @@
 /** 运输线 6 档:篮子 / 推车 / 卡车 / 货船 / 飞机 / 传送门;终点码头 6 档;关卡拱门图标。 */
-import { APPLE, GOLDC, P, TAU, apple, circ, clamp, pen, poly, rect, rs, seg, sparkle, sv, text } from './pen.ts';
+import { APPLE, P, TAU, apple, circ, clamp, pen, poly, rect, rs, seg, sparkle, sv, text } from './pen.ts';
 
 type C = CanvasRenderingContext2D;
 export const RT_NAMES = ['篮子', '推车', '卡车', '货船', '飞机', '传送门'];
@@ -96,6 +96,39 @@ export function drawVehicle(c: C, tier: number, o: VehOpt): void {
     }
     default:
       break;
+  }
+  // 分支标志轮廓(只在有分支时):br0 = 载量系(更宽更高),br1 = 速度系(速度线/尾迹)
+  if (o.br >= 0 && tier >= 1 && tier <= 4) {
+    const fast = o.br === 1;
+    const t = o.t;
+    if (fast) {
+      const k = (Math.sin(t * 9 + o.ph) + 1) * 0.5;
+      pen(c, 1, P.f3);
+      const my = tier === 1 ? -4 : tier === 3 ? -2.5 : tier === 4 ? -8 : -5;
+      const L0 = tier === 4 ? 16 : 9;
+      seg(c, -L0, my - 2, -L0 - 5 - k * 3, my - 2, 1, P.f3);
+      seg(c, -L0 + 1, my + 1, -L0 - 3 - k * 4, my + 1, 1, P.f3);
+      if (tier === 2) {
+        rect(c, 3.4, -9.4, 3.6, 2.6, P.f0, 1, 0.5); // 通行证
+        seg(c, 4.2, -8.6, 6.2, -8.6, 0.8);
+      }
+      if (tier === 3) {
+        seg(c, 8, -1.6, 11 + k * 2, -3.4, 1, P.f3);
+        seg(c, 8.4, -0.8, 12 + k * 2, -0.8, 1, P.f3);
+      }
+      if (tier === 4) sparkle(c, 12, -9, 1.4, P.ink, t * 3);
+    } else {
+      if (tier === 1) rect(c, -3, -11.4, 5.6, 3.6, P.f1, 1.1, 0.4);
+      if (tier === 2) {
+        rect(c, -3, -12.4, 7.6, 3, P.f1, 1.1, 0.4);
+        seg(c, 6, -11.6, 6, -14.6, 1.4);
+      }
+      if (tier === 3) {
+        rect(c, -4, -13, 4, 3, P.f1, 1.1, 0.4);
+        rect(c, 0.4, -13, 4, 3, P.f1, 1.1, 0.4);
+      }
+      if (tier === 4) rect(c, -4.6, -3.2, 9.2, 2.6, P.f1, 1.1, 1.2);
+    }
   }
   c.restore();
 }
@@ -253,12 +286,12 @@ export function drawDock(c: C, tier: number, t: number, pulse: number, crates: n
       c.restore();
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * TAU;
-        seg(c, -2 + Math.cos(a) * 9.4, -16 + Math.sin(a) * 16.4, -2 + Math.cos(a) * 11.2, -16 + Math.sin(a) * 19, 1.2, i % 2 ? P.f3 : GOLDC);
+        seg(c, -2 + Math.cos(a) * 9.4, -16 + Math.sin(a) * 16.4, -2 + Math.cos(a) * 11.2, -16 + Math.sin(a) * 19, 1.2, i % 2 ? P.f3 : P.ink);
       }
       break;
     }
   }
-  if (pulse > 0.05) sparkle(c, 4, -16 - pulse * 6, 3 * pulse + 1, GOLDC, t * 3);
+  if (pulse > 0.05) sparkle(c, 4, -16 - pulse * 6, 3 * pulse + 1, P.ink, t * 3);
   c.restore();
   c.save();
   c.translate(tier === 5 ? 6 : 13, 0);
@@ -267,7 +300,7 @@ export function drawDock(c: C, tier: number, t: number, pulse: number, crates: n
 }
 
 /* ---------- 关卡图标 ---------- */
-export const GATE_IDS = ['wash', 'wax', 'juice', 'pack', 'cold', 'rush', 'string'];
+export const GATE_IDS = ['wash', 'wax', 'juice', 'pack', 'cold', 'rush', 'string', 'belt', 'glove', 'chant', 'brand'];
 export function gateIcon(c: C, id: string, x: number, y: number, s: number): void {
   sv(c, x, y, s);
   pen(c, 1.5);
@@ -301,12 +334,57 @@ export function gateIcon(c: C, id: string, x: number, y: number, s: number): voi
       poly(c, [0.8, -3.2, -2, 0.4, -0.2, 0.4, -0.8, 3.2, 2, -0.5, 0.1, -0.5], null, 1.3);
       break;
     case 'string':
+    case 'red':
       c.beginPath();
       c.arc(0, -0.4, 2, 0, TAU);
-      pen(c, 1.5, APPLE);
+      pen(c, 1.5, P.ink);
       c.stroke();
-      seg(c, 0, 1.6, -1.6, 3.2, 1.3, APPLE);
-      seg(c, 0, 1.6, 1.6, 3.2, 1.3, APPLE);
+      seg(c, 0, 1.6, -1.6, 3.2, 1.3, P.ink);
+      seg(c, 0, 1.6, 1.6, 3.2, 1.3, P.ink);
+      break;
+    case 'belt':
+      // 流水线:传送带 + 两只滚轮
+      c.beginPath();
+      c.roundRect(-3.4, -0.4, 6.8, 2.6, 1.3);
+      pen(c, 1.3);
+      c.stroke();
+      circ(c, -2.1, 0.9, 0.55, P.ink, 0.6);
+      circ(c, 2.1, 0.9, 0.55, P.ink, 0.6);
+      apple(c, 0, -1.6, 1.2, 0.8);
+      break;
+    case 'glove':
+      // 摇树手套:连指手套
+      c.beginPath();
+      c.moveTo(-1.8, 3);
+      c.lineTo(-2.1, -0.6);
+      c.quadraticCurveTo(-2.1, -3.2, 0.1, -3.2);
+      c.quadraticCurveTo(2.1, -3.2, 2.1, -0.6);
+      c.lineTo(2.3, 0.2);
+      c.lineTo(3.4, -0.6);
+      c.lineTo(3.6, 0.8);
+      c.lineTo(1.8, 3);
+      c.closePath();
+      pen(c, 1.3);
+      c.stroke();
+      seg(c, -1.8, 1.8, 1.8, 1.8, 1);
+      break;
+    case 'chant':
+      // 号子:喇叭 + 声波
+      poly(c, [-3, -0.9, -1.2, -0.9, 1.6, -2.8, 1.6, 2.8, -1.2, 0.9, -3, 0.9], null, 1.3);
+      c.beginPath();
+      c.arc(1.6, 0, 2.2, -0.9, 0.9);
+      pen(c, 1.1);
+      c.stroke();
+      c.beginPath();
+      c.arc(1.6, 0, 3.4, -0.8, 0.8);
+      c.stroke();
+      break;
+    case 'brand':
+      // 品牌:吊牌
+      poly(c, [-2.6, -3, 1.2, -3, 3, -1.2, 3, 3, -2.6, 3], null, 1.3);
+      circ(c, 0.6, -1.4, 0.55, null, 1);
+      seg(c, -1.4, 0.6, 1.8, 0.6, 1);
+      seg(c, -1.4, 1.8, 1.2, 1.8, 1);
       break;
     default:
       text(c, '?', 0, 0, 9, P.dim);
@@ -314,30 +392,47 @@ export function gateIcon(c: C, id: string, x: number, y: number, s: number): voi
   rs(c);
 }
 
-/** 关卡拱门,原点 = 路面中心。id=null 为空槽 */
-export function drawGate(c: C, id: string | null, flash: number, t: number, hint: boolean): void {
+/** 关卡徽章半径/中心(世界单位):空槽至少 minR(≈23 屏幕像素)使点击区 ≥44px */
+export function gateBadge(minR: number): { r: number; by: number } {
+  const r = Math.max(4.4, minR);
+  return { r, by: -(12.2 + r) };
+}
+
+/** 关卡拱门,原点 = 路面中心。id=null 为空槽;minR=徽章最小半径(世界单位) */
+export function drawGate(c: C, id: string | null, flash: number, t: number, hint: boolean, minR = 4.4): void {
   const empty = id === null;
   c.save();
-  if (empty) c.globalAlpha = hint ? 0.9 : 0.55;
-  if (empty) c.setLineDash([2 / 1, 1.6]);
-  seg(c, -5.6, 0.5, -5.6, -9.6, 1.6);
-  seg(c, 5.6, 0.5, 5.6, -9.6, 1.6);
+  if (empty) c.globalAlpha = hint ? 0.95 : 0.6;
+  if (empty) c.setLineDash([2, 1.6]);
+  seg(c, -5.6, 0.5, -5.6, -9.6, 1.4);
+  seg(c, 5.6, 0.5, 5.6, -9.6, 1.4);
   c.beginPath();
   c.roundRect(-6.8, -11.6, 13.6, 2.6, 1);
   c.fillStyle = empty ? 'rgba(0,0,0,0)' : P.f0;
   if (!empty) c.fill();
-  pen(c, 1.5);
+  pen(c, 1.3);
   c.stroke();
-  c.setLineDash([]);
   c.restore();
-  // 徽章
-  const by = -16.2;
-  circ(c, 0, by, 3.9, empty ? null : flash > 0.05 ? GOLDC : P.f0, 1.5);
-  if (empty) text(c, '+', 0, by, 12, P.dim);
-  else gateIcon(c, id as string, 0, by, 1.05);
+  // 徽章:空槽 = 放大的虚线圈
+  const { r, by } = gateBadge(empty ? minR : Math.max(3.9, minR * 0.85));
+  c.save();
+  if (empty) {
+    c.globalAlpha = hint ? 0.95 : 0.6;
+    c.setLineDash([2.2, 1.8]);
+    if (hint) {
+      c.beginPath();
+      c.arc(0, by, r + 0.8 + Math.sin(t * 3) * 0.7, 0, TAU);
+      pen(c, 1, P.f3);
+      c.stroke();
+    }
+  }
+  circ(c, 0, by, r, empty ? null : flash > 0.05 ? P.f2 : P.f0, 1.3);
+  c.restore();
+  if (empty) text(c, '+', 0, by, Math.round(r * 3.4), P.dim);
+  else gateIcon(c, id as string, 0, by, (r / 3.9) * 1.05);
   if (flash > 0.05) {
-    sparkle(c, 4.8, by - 3.6, 1.6 + flash, GOLDC, t * 4);
-    sparkle(c, -4.8, by - 3, 1.2 + flash * 0.7, GOLDC, -t * 3);
+    sparkle(c, r + 1, by - r + 0.4, 1.6 + flash, P.ink, t * 4);
+    sparkle(c, -r - 1, by - r + 1, 1.2 + flash * 0.7, P.ink, -t * 3);
   }
   void clamp;
 }

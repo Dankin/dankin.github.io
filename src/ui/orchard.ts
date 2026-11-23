@@ -1,7 +1,7 @@
 /** v4 场景引擎:左 生产 → 中 路线(3 个关卡) → 右 码头。一块画布,一条连续的线。 */
 import { APPLE, GOLDC, P, TAU, apple, circ, clamp, ease, lerp, pen, poly, rect, rs, seg, setTheme, setUnit, sparkle, sv, text } from './pen.ts';
 import { EMIT, PILE_MAX, SRC_NAMES, drawPile, drawSource, drawShakeMeter } from './sources.ts';
-import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawGate, drawPortalRing, drawVehicle } from './route.ts';
+import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawGate, drawPortalRing, drawVehicle, gateBadge } from './route.ts';
 import { fmt } from './format.ts';
 
 type C = CanvasRenderingContext2D;
@@ -176,6 +176,13 @@ export class Orchard {
   private downX = 0;
   private downY = 0;
   private moved = 0;
+  private tapKind = 0; // 0 无 1 事件 2 关卡圈
+  private tapGate = -1;
+  private everShook = false;
+  private nudgeT = 1.2;
+  private insL = 0;
+  private insR = 0;
+  private probe: HTMLElement | null = null;
 
   constructor(cv: HTMLCanvasElement) {
     this.cv = cv;
@@ -184,6 +191,17 @@ export class Orchard {
     for (let i = 0; i < MAX_FLY; i++) this.flys.push({ on: false, x0: 0, y0: 0, x1: 0, y1: 0, t: 0, dur: 1, arc: 10, kind: 0 });
     for (let i = 0; i < 4; i++) this.floats.push({ on: false, s: '', x: 0, y: 0, t: 0, col: P.ink });
     cv.style.touchAction = 'none';
+    try {
+      this.everShook = localStorage.getItem('sta.shook') === '1';
+    } catch {
+      /* ignore */
+    }
+    if (typeof document !== 'undefined') {
+      const p = document.createElement('div');
+      p.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)';
+      document.body.appendChild(p);
+      this.probe = p;
+    }
     addEventListener('keydown', (e) => {
       if (e.code !== 'Space' || e.repeat) return;
       const tg = e.target as HTMLElement | null;
@@ -217,6 +235,11 @@ export class Orchard {
     this.w = Math.max(80, r.width);
     this.h = Math.max(60, r.height);
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (this.probe) {
+      const cs = getComputedStyle(this.probe);
+      this.insL = parseFloat(cs.paddingLeft) || 0;
+      this.insR = parseFloat(cs.paddingRight) || 0;
+    }
     this.cv.width = Math.round(this.w * this.dpr);
     this.cv.height = Math.round(this.h * this.dpr);
     this.layout();
@@ -232,7 +255,7 @@ export class Orchard {
       if (wv.srcTier !== o.srcTier) {
         this.srcPop = 1;
         this.ring(this.lay.srcX, this.lay.srcY - 22, true);
-        this.say('升级!', this.lay.srcX, this.lay.srcY - 44, GOLDC);
+        this.say('升级!', this.lay.srcX, this.lay.srcY - 44, P.ink);
       } else if (wv.srcUnits.some((n, i) => n > (o.srcUnits[i] ?? 0))) {
         this.srcPop = 0.7;
         this.ring(this.lay.srcX, this.lay.srcY - 20, false);
@@ -241,7 +264,7 @@ export class Orchard {
         this.rtPop = 1;
         this.dockPop = 1;
         this.ring(this.lay.dockX, this.lay.dockY - 12, true);
-        this.say('升级!', this.lay.dockX, this.lay.dockY - 30, GOLDC);
+        this.say('升级!', this.lay.dockX, this.lay.dockY - 30, P.ink);
       } else if (wv.rtVehicles > o.rtVehicles) {
         this.rtPop = 0.7;
         const q = this.at(0.02);
@@ -295,13 +318,21 @@ export class Orchard {
     const [x, y] = this.toWorld(px, py);
     if (this.ev && this.evHit(x, y)) return 'event';
     const L = this.lay;
-    for (let i = 0; i < 3; i++) {
-      const q = this.at(L.gateU[i]);
-      if (Math.abs(x - q.x) < 9 && y > q.y - 24 && y < q.y + 4) return 'gate';
-    }
+    if (this.gateAt(x, y) >= 0) return 'gate';
     if (Math.abs(x - L.srcX) < 32 * L.ss && y < L.srcY + 4 && y > L.srcY - 52 * L.ss) return 'source';
     if (Math.abs(x - L.dockX) < 22 && y < L.dockY + 4 && y > L.dockY - 30) return 'dock';
     return 'none';
+  }
+
+  /** 命中哪个关卡圈(世界坐标)。圈 ≥44px:半径取 max(徽章半径, 23/s)+余量 */
+  private gateAt(x: number, y: number): number {
+    const L = this.lay;
+    const { r, by } = gateBadge(23 / L.s);
+    for (let i = 0; i < 3; i++) {
+      const q = this.at(L.gateU[i]);
+      if (Math.abs(x - q.x) < r + 2 && y > q.y + by - r - 2 && y < q.y + 4) return i;
+    }
+    return -1;
   }
 
   /** 世界坐标(用于 float 位置) */
@@ -337,10 +368,12 @@ export class Orchard {
     let Wu: number;
     let Hu: number;
     const L = { portrait } as Lay;
+    const mg = 6; // 画布内最小边距
+    const aw = Math.max(80, w - this.insL - this.insR - mg * 2);
     if (!portrait) {
       Wu = 232;
       Hu = 70;
-      s = Math.min(w / Wu, h / Hu);
+      s = Math.min(aw / Wu, (h - 4) / Hu);
       L.meterX = 11;
       L.srcX = 58;
       L.pileX = 101;
@@ -352,7 +385,7 @@ export class Orchard {
     } else {
       Wu = 126;
       Hu = 138;
-      s = Math.min(w / Wu, h / Hu);
+      s = Math.min(aw / Wu, (h - 4) / Hu);
       const ga = 58;
       const gb = 128;
       L.meterX = 10;
@@ -366,7 +399,7 @@ export class Orchard {
       L.gateU = [0.58, 0.72, 0.86];
     }
     L.s = s;
-    L.ox = (w - Wu * s) / 2;
+    L.ox = this.insL + mg + (aw - Wu * s) / 2;
     L.oy = (h - Hu * s) / 2;
     L.len = [];
     let tot = 0;
@@ -411,19 +444,30 @@ export class Orchard {
     return [e.clientX - r.left, e.clientY - r.top];
   }
   private down(e: PointerEvent): void {
-    if (this.pid !== -1) return;
-    this.pid = e.pointerId;
-    try {
-      this.cv.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
     const [x, y] = this.pos(e);
-    this.moved = 0;
-    this.downT = performance.now();
-    this.downX = x;
-    this.downY = y;
     this.lastInput = this.t;
+    const [wx, wy] = this.toWorld(x, y);
+    const evh = !!this.ev && this.evHit(wx, wy);
+    const g = evh ? -1 : this.gateAt(wx, wy);
+    if (evh || g >= 0) {
+      // 事件/关卡圈:抬起时才生效(只跟踪一根手指)
+      if (this.pid !== -1) return;
+      this.pid = e.pointerId;
+      this.tapKind = evh ? 1 : 2;
+      this.tapGate = g;
+      try {
+        this.cv.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      this.moved = 0;
+      this.downT = performance.now();
+      this.downX = x;
+      this.downY = y;
+      return;
+    }
+    // 其余位置:按下即摇,多指可连摇
+    this.shakeTap();
   }
   private move(e: PointerEvent): void {
     if (e.pointerId !== this.pid) return;
@@ -433,32 +477,29 @@ export class Orchard {
   private up(e: PointerEvent, cancel = false): void {
     if (e.pointerId !== this.pid) return;
     this.pid = -1;
+    const kind = this.tapKind;
+    this.tapKind = 0;
     if (cancel) return;
     if (this.moved > 10 || performance.now() - this.downT > 500) return;
     const [x, y] = this.pos(e);
     const [wx, wy] = this.toWorld(x, y);
     this.lastInput = this.t;
-    if (this.ev && this.evHit(wx, wy)) {
-      this.catchEv(wx, wy);
-      return;
-    }
-    const hit = this.hitTest(x, y);
-    if (hit === 'gate') {
-      for (let i = 0; i < 3; i++) {
-        const q = this.at(this.lay.gateU[i]);
-        if (Math.abs(wx - q.x) < 9) {
-          this.onGate(i);
-          return;
-        }
-      }
-    }
-    this.shakeTap();
+    if (kind === 1 && this.ev && this.evHit(wx, wy)) this.catchEv(wx, wy);
+    else if (kind === 2 && this.gateAt(wx, wy) === this.tapGate && this.tapGate >= 0) this.onGate(this.tapGate);
   }
 
   /** 摇一下:树轻晃 + 回调(苹果由 main 调 poke 弹出) */
   shakeTap(): void {
     this.sway = Math.min(1, this.sway + 0.45);
     this.lastInput = this.t;
+    if (!this.everShook) {
+      this.everShook = true;
+      try {
+        localStorage.setItem('sta.shook', '1');
+      } catch {
+        /* ignore */
+      }
+    }
     this.onShake(1);
   }
 
@@ -527,6 +568,13 @@ export class Orchard {
     }
     this.fwV += (wv.shake - this.fwV) * Math.min(1, dt * 6);
     this.pileV += (wv.stock01 * PILE_MAX - this.pileV) * Math.min(1, dt * 4);
+    if (!this.everShook && !this.reducedMotion) {
+      this.nudgeT -= dt;
+      if (this.nudgeT <= 0) {
+        this.sway = Math.max(this.sway, 0.38);
+        this.nudgeT = 1.6;
+      }
+    }
     if (this.t - this.lastInput > 6) this.hint = Math.min(1, this.hint + dt * 0.5);
     else this.hint = Math.max(0, this.hint - dt * 2);
 
@@ -869,9 +917,10 @@ export class Orchard {
     sv(c, L.srcX, L.srcY, srcPopS * L.ss);
     drawSource(c, wv.srcTier, { t, n: wv.srcUnits, br: wv.srcBranch, sway: rm ? 0 : this.sway, shake: this.fwV, reduced: rm });
     rs(c);
-    sv(c, L.meterX, L.srcY);
-    drawShakeMeter(c, this.fwV, wv.combo, this.hint, t);
+    sv(c, L.srcX, L.srcY, L.ss);
+    drawShakeMeter(c, this.fwV, wv.combo, 0, t, 15);
     rs(c);
+    if (!this.everShook) this.drawFirstHint(c, t, rm);
     sv(c, L.pileX, L.pileY);
     drawPile(c, Math.round(this.pileV), wv.stock01 >= 0.985, t);
     rs(c);
@@ -888,7 +937,7 @@ export class Orchard {
         circ(c, 0, -7, 2.6, null, 1);
         rect(c, -1.6, -6, 3.2, 2.6, P.f1, 1, 0.5);
         c.globalAlpha = 1;
-      } else drawGate(c, wv.gates[i], this.gateFlash[i], t, wv.gates.filter((g) => g).length === 0 && i === 0);
+      } else drawGate(c, wv.gates[i], this.gateFlash[i], t, wv.gates.filter((g) => g).length === 0 && i === 0, 23 / L.s);
       rs(c);
     }
 
@@ -963,6 +1012,41 @@ export class Orchard {
     }
   }
 
+  /** 首次引导(无文字):树上方一根手指轻点 + 点击涟漪,摇过一次就不再出现 */
+  private drawFirstHint(c: C, t: number, rm: boolean): void {
+    const L = this.lay;
+    const cyc = rm ? 0.3 : (t % 1.6) / 1.6; // 0..1
+    const tap = Math.sin(Math.min(1, cyc / 0.35) * Math.PI); // 按下
+    const x = L.srcX + 8 * L.ss;
+    const y = L.srcY - 30 * L.ss;
+    sv(c, x, y + tap * 2.2, L.ss, -0.35);
+    c.globalAlpha = 0.9;
+    // 手指:圆角长条 + 掌
+    c.beginPath();
+    c.roundRect(-1.7, -2, 3.4, 9, 1.7);
+    c.fillStyle = P.f0;
+    c.fill();
+    pen(c, 1.4);
+    c.stroke();
+    c.beginPath();
+    c.roundRect(-3.6, 5.2, 7.2, 5.6, 2.4);
+    c.fillStyle = P.f0;
+    c.fill();
+    pen(c, 1.4);
+    c.stroke();
+    c.globalAlpha = 1;
+    rs(c);
+    if (!rm && cyc > 0.15 && cyc < 0.8) {
+      const k = (cyc - 0.15) / 0.65;
+      c.globalAlpha = 1 - k;
+      c.beginPath();
+      c.arc(x, y - 1, 2 + k * 8 * L.ss, 0, TAU);
+      pen(c, 1.2, P.f3);
+      c.stroke();
+      c.globalAlpha = 1;
+    }
+  }
+
   private drawQueue(c: C): void {
     const L = this.lay;
     const waiting = this.vehs.filter((v) => v.state === 0).length;
@@ -986,31 +1070,81 @@ export class Orchard {
     if (extra > 0 || waiting > 3) text(c, '×' + this.wv.rtVehicles, q0.x + (L.portrait ? 0 : 0), q0.y + 9, 9, P.dim);
   }
 
+  /** 终点之后沿末段方向延伸到屏幕外的点(车辆驶出画面用) */
+  private exitPt(): { x: number; y: number; dx: number; dy: number } {
+    const a = this.at(0.985);
+    const b = this.at(1);
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    const n = Math.hypot(dx, dy) || 1;
+    dx /= n;
+    dy /= n;
+    const L = this.lay;
+    const tx = dx >= 0 ? (this.w - L.ox) / L.s + 14 : -L.ox / L.s - 14;
+    const D = Math.abs(dx) > 0.2 ? (tx - b.x) / dx : 40;
+    return { x: b.x + dx * D, y: b.y + dy * D, dx, dy };
+  }
+
   private drawVehicles(c: C): void {
     const tier = this.wv.rtTier;
     const lane = LANE_OF[tier] ?? 0;
     const L = this.lay;
+    const leave = tier >= 2 && tier <= 4; // 卡车/货船/飞机:开出画面再绕回来
+    const ex = leave ? this.exitPt() : null;
+    // 小推车:车越多,编队越长(1~3 节)
+    const rv = this.wv.rtVehicles;
+    const cars = tier === 1 ? (rv >= 8 ? 3 : rv >= 3 ? 2 : 1) : 1;
     for (const v of this.vehs) {
       if (v.state === 0) continue;
       let u: number;
       let full = v.full;
       let dirF = 1;
+      let px = NaN;
+      let py = NaN;
       if (v.state === 1) u = 0.02 + v.p * 0.96;
       else if (v.state === 2) {
         u = 0.98;
         full = false;
+      } else if (ex) {
+        // 3:先驶出右/左边缘(0~.2),屏外调头(.2~.34),再从边缘驶回起点
+        const b = this.at(1);
+        if (v.p < 0.2) {
+          const k = v.p / 0.2;
+          px = b.x + (ex.x - b.x) * k;
+          py = b.y + (ex.y - b.y) * k;
+          u = 1;
+        } else if (v.p < 0.34) continue;
+        else {
+          const k = (v.p - 0.34) / 0.66;
+          dirF = -1;
+          if (k < 0.16) {
+            const kk = k / 0.16;
+            px = ex.x + (b.x - ex.x) * kk;
+            py = ex.y + (b.y - ex.y) * kk;
+            u = 1;
+          } else u = 1 - ((k - 0.16) / 0.84) * 0.98;
+        }
       } else {
         u = 0.98 - v.p * 0.96;
         dirF = -1;
       }
       const q = this.at(u);
-      let dir = q.dir * dirF;
-      if (L.portrait && Math.abs(this.at(Math.min(1, u + 0.01)).x - this.at(Math.max(0, u - 0.01)).x) < 0.2) dir = q.dir * dirF;
-      const oy = lane === 2 ? -22 + Math.sin(this.t * 2 + v.ph) * 0.8 : lane === 1 ? 2.2 + Math.sin(this.t * 2.4 + v.ph) * 0.5 : lane === 3 ? -8 : 0;
-      sv(c, q.x, q.y + oy);
+      const dir = q.dir * dirF;
+      const oy = (lane === 2 ? -22 + Math.sin(this.t * 2 + v.ph) * 0.8 : lane === 1 ? 2.2 + Math.sin(this.t * 2.4 + v.ph) * 0.5 : lane === 3 ? -8 : 0) + (dirF < 0 && leave && lane !== 2 ? 2.4 : 0);
+      sv(c, px === px ? px : q.x, (py === py ? py : q.y) + oy);
       if (lane === 3) {
         drawBead(c, full, this.t);
-      } else drawVehicle(c, tier, { t: this.t, ph: v.ph, full, dir, br: this.wv.rtBranch });
+      } else {
+        for (let k = 0; k < cars; k++) {
+          if (k > 0) {
+            // 车间牵绳
+            seg(c, -9 * dir * k + 4.2 * dir, -2, -9 * dir * k + 9 * dir - 4.2 * dir, -2, 1);
+            sv(c, -9 * dir * k, 0);
+          }
+          drawVehicle(c, tier, { t: this.t, ph: v.ph + k, full: k === 0 ? full : full && k % 2 === 0, dir, br: this.wv.rtBranch });
+          if (k > 0) rs(c);
+        }
+      }
       rs(c);
     }
   }

@@ -1,5 +1,5 @@
 /** 生产线 6 档:树 / 果园 / 果山 / 果城 / 果星 / 苹果之门。原点 = 底部中心,x∈[-30,30],高 ≤46 单位。 */
-import { APPLE, GOLDC, P, TAU, apple, applePath, blob, circ, clamp, pen, poly, rect, rs, seg, sparkle, sv, text } from './pen.ts';
+import { APPLE, P, TAU, apple, applePath, blob, circ, clamp, pen, poly, rect, rs, seg, sparkle, sv, text } from './pen.ts';
 
 type C = CanvasRenderingContext2D;
 
@@ -201,7 +201,7 @@ function tier3(c: C, o: SrcOpt): void {
   c.fill();
   pen(c, 1.2);
   c.stroke();
-  if (o.br[3] === 0) sparkle(c, 0, -46, 2.4, GOLDC, o.t);
+  if (o.br[3] === 0) sparkle(c, 0, -46, 2.4, P.ink, o.t);
 }
 
 /* ---------- 4 果星 ---------- */
@@ -302,14 +302,14 @@ function tier5(c: C, o: SrcOpt): void {
   // 符文
   for (let i = 0; i < 12; i++) {
     const a = -rot * 0.4 + (i / 12) * TAU;
-    seg(c, Math.cos(a) * 20.5, cy + Math.sin(a) * 20.5 * 0.92 - 1, Math.cos(a) * 22.4, cy + Math.sin(a) * 22.4 * 0.92 - 1, 1.2, i % 3 === 0 ? GOLDC : P.f3);
+    seg(c, Math.cos(a) * 20.5, cy + Math.sin(a) * 20.5 * 0.92 - 1, Math.cos(a) * 22.4, cy + Math.sin(a) * 22.4 * 0.92 - 1, 1.2, i % 3 === 0 ? P.ink : P.f3);
   }
   // 环绕小苹果
   for (let i = 0; i < clamp(o.n[5], 0, 5); i++) {
     const a = o.t * 0.7 + (i / 5) * TAU;
     apple(c, Math.cos(a) * 25, cy + Math.sin(a) * 8 - 2, 1.4, 0.9);
   }
-  if (o.br[5] === 1) sparkle(c, 0, cy - 24, 3, GOLDC, o.t * 0.5);
+  if (o.br[5] === 1) sparkle(c, 0, cy - 24, 3, P.ink, o.t * 0.5);
 }
 
 const OLD_TREE_X = [0, -26, -27, -27, -24, -27];
@@ -321,6 +321,34 @@ export function drawSource(c: C, tier: number, o: SrcOpt): void {
     case 3: tier3(c, o); break;
     case 4: tier4(c, o); break;
     default: tier5(c, o);
+  }
+  // 分支 0 的标志轮廓(分支 1 的在各档函数内)
+  if (tier === 1 && o.br[1] === 0) {
+    // 密植:前排一行小树苗
+    for (let k = 0; k < 5; k++) {
+      const x = -26 + k * 12.5;
+      seg(c, x, 0.4, x, -3.6, 1.2);
+      circ(c, x, -5.6, 2.4, P.f1, 1.1);
+      apple(c, x + 0.6, -5.4, 0.8, 0.6);
+    }
+  }
+  if (tier === 4 && o.br[4] === 0) {
+    // 自转摇柄:行星侧面一根大摇柄
+    const a = o.t * 2;
+    circ(c, 25, -20, 3.2, P.f0, 1.3);
+    seg(c, 25, -20, 25 + Math.cos(a) * 6, -20 + Math.sin(a) * 6, 1.4);
+    circ(c, 25 + Math.cos(a) * 6, -20 + Math.sin(a) * 6, 1.1, P.ink, 0.8);
+  }
+  if (tier === 5 && o.br[5] === 0) {
+    // 双生门:旁边再立一扇小门
+    c.beginPath();
+    c.ellipse(26, -10, 4.2, 9, 0, 0, TAU);
+    pen(c, 1.3);
+    c.stroke();
+    c.beginPath();
+    c.ellipse(26, -10, 1.8 + Math.sin(o.t * 3) * 0.4, 5.4, 0, 0, TAU);
+    pen(c, 1, P.f3);
+    c.stroke();
   }
   if (tier > 0 && o.n[0] > 0) tree(c, OLD_TREE_X[tier], 0, 0.33, o, 3, 5.5);
 }
@@ -341,20 +369,29 @@ export function drawPile(c: C, count: number, full: boolean, t: number): void {
 }
 
 /* ---------- 摇劲条(树旁小计量) ---------- */
-export function drawShakeMeter(c: C, v: number, combo: number, hint: number, t: number): void {
-  // 竖条:底部 0,顶部 1;满了变红
-  const H = 22;
-  rect(c, -2.6, -H - 4, 5.2, H, P.f1, 1.2, 2.2);
-  if (v > 0.01) {
-    c.fillStyle = v > 0.8 ? APPLE : GOLDC;
-    const h = Math.max(1.2, (H - 1.6) * Math.min(1, v));
-    c.fillRect(-1.5, -5.4 - h, 3, h);
+/**
+ * 摇劲:树根下的一道细弧(空时不画);连摇≥2 时弧心写 ×N。
+ * 原点 = 树根(地面线上),r = 弧半径(世界单位)
+ */
+export function drawShakeMeter(c: C, v: number, combo: number, _hint: number, t: number, r = 15): void {
+  if (v < 0.02 && combo < 2) return;
+  const a0 = Math.PI * 0.18;
+  const a1 = Math.PI * 0.82;
+  const cy = 1.5 - r * Math.sin(a0) + 3.4;
+  c.save();
+  c.lineCap = 'round';
+  c.beginPath();
+  c.arc(0, cy, r, a0, a1);
+  c.lineWidth = 2.2 * (c.getTransform().a ? 1 / Math.max(0.0001, c.getTransform().a) : 1);
+  c.strokeStyle = P.f2;
+  c.stroke();
+  if (v > 0.02) {
+    c.beginPath();
+    c.arc(0, cy, r, a0, a0 + (a1 - a0) * Math.min(1, v));
+    c.lineWidth = 2.2 * (c.getTransform().a ? 1 / Math.max(0.0001, c.getTransform().a) : 1);
+    c.strokeStyle = P.ink;
+    c.stroke();
   }
-  text(c, '摇劲', 0, -H - 7.6, 9, P.dim);
-  if (combo >= 2) text(c, `连摇 ×${combo}`, 0, -H - 14 - Math.abs(Math.sin(t * 6)) * 1.2, 11, APPLE);
-  if (hint > 0.02) {
-    c.globalAlpha = hint * (0.55 + 0.45 * Math.sin(t * 3));
-    text(c, '点树摇一摇', 14, -H - 24, 10, P.dim);
-    c.globalAlpha = 1;
-  }
+  c.restore();
+  if (combo >= 2) text(c, `×${combo}`, 0, cy + r + 3 + Math.abs(Math.sin(t * 6)) * 0.6, 11, P.ink);
 }

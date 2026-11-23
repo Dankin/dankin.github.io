@@ -1,3 +1,4 @@
+import { showEnding } from './ending.ts';
 /** v4 预览:假状态驱动 Orchard + 底栏 DOM。参数:?src=0..5&rt=0..5&dark=1&veh=4&stock=.5&shake=.6&gates=wash,pack,rush&gu=3&unit=3&br=0|1&carry&prod&event=bird&dev=0&reduced=1&pick=gate|branch */
 import { Orchard, EMPTY_WORLD, type WorldView } from './orchard.ts';
 import { SRC_NAMES } from './sources.ts';
@@ -68,7 +69,7 @@ function btn(id: string, nm: string, pr: string, cls: string, pv = ''): void {
 }
 function ui(): void {
   $('apples').textContent = fmt(st.delivered);
-  $('rate').textContent = '每秒 ' + fmt(Math.pow(10, Math.min(st.prod, st.carry) / 2));
+  $('exactApples').textContent = '精确已送出 ' + Math.round(st.delivered) + '\n每秒 ' + fmt(Math.pow(10, Math.min(st.prod, st.carry) / 2));
   ($('goalBar') as HTMLElement).style.width = Math.min(100, (st.delivered / 8.2e9) * 100) + '%';
   btn('btnSrcBuy', ['摘果篮', '果树苗', '梯田', '高楼', '卫星', '分门'][st.src] + ' ×' + st.unit, '1.2万', 'can', '每秒多产 +12%');
   btn('btnSrcUp', st.src < 5 ? '升级 → ' + SRC_NAMES[st.src + 1] : SRC_NAMES[st.src] + ' 满级', st.src < 5 ? '3.4亿' : '', st.src < 5 ? 'no' : 'max', st.src < 5 ? '产量 ×4,二选一' : '');
@@ -232,3 +233,5 @@ function loop(now: number): void {
 }
 requestAnimationFrame(loop);
 void fmt;
+
+if (q.get('ending') === '1') showEnding({ elapsedMs: 3.2e6, clicks: 1234 }, () => {}, () => {});
