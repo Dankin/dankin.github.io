@@ -1,29 +1,22 @@
-# 圣诞帽帽 Demo（冬青里广场）
+# Shake the Apple
 
-Phaser 3 + TypeScript + Vite。画面、音效全部程序生成，无外部素材。
+摇苹果树的放置小游戏:目标是累计送出 82 亿个平安果。打完大约 2 小时,圣诞节前后有彩蛋。免费,非商业,东方二创风格的原创小调,与苹果公司无关。
 
-## 运行
-    npm install
-    npm run dev      # http://127.0.0.1:5173
-    npm run build    # 产物在 dist/，可直接丢到任意静态托管
+在线玩:见仓库的 GitHub Pages(`main` 分支是构建产物,`source` 分支是源码)。
 
-## 玩法
-点地面：帽子飘过去 / 点物件：附身并弹出招式 / 点招式：制造“巧合”。帽子不能附身人。
-主线：让小米唱出第一声（风铃 → 把孩子引开保持安静 → 音箱前奏）。支线：气球、圣诞树、邮筒、雪人（隐藏）。
+## 命令
 
-## 调试
-右上角 🐞 打开调试（显示声音范围、NPC 状态、可点区域），调试开启时按 F 直接播放终章。
+- `npm install`
+- `npm run dev`:开发服务器 http://127.0.0.1:5174
+- `npm run build`:类型检查并打包成单个 `dist/index.html`,可直接双击离线打开
+- `npm test`:核心逻辑单元测试
+- `node scripts/smoke.mjs`:Chrome 冒烟测试(需先 build)
+- `node scripts/sim.ts <每秒点击数>`:数值模拟,看各期用时和通关时间
 
-## 内容在哪改
-src/data/*.json（招式、物件、NPC、故事、演出序列、清单、文案 zh.json），逻辑在 src/core、src/entities。
+## 调试参数
 
-## 多区域大地图（v0.2）
-- 世界 36×24 瓦片，由 6 个 12×12 区块无缝拼接：冬青里广场、面包街、滨江坡道·人造雪场（上排）；邮局弄堂、江边小桥、轮渡码头（下排）。
-- 区块定义在 `src/data/config.json` 的 `regions`（`bx/by` 为区块坐标，`walls` 指定该区块东北/西北侧的石库门立面样式 a–d，`map` 为 12×12 地砖：p 广场 c 石板 g 草 i 冰雪场 w 水 d 木栈桥）。
-- 镜头跟随帽子；进入新区块会弹出地名；剧情演出时镜头聚焦角色。
-- 气泡与招式面板都在屏幕空间排布：气泡会自动避开面板、清单、提示条和彼此。
+- `?debug=1` 或 `?speed=60`:出现时间加速面板
+- `?calm`:关闭收获周期和下雨加成,数值恒定
+- `?date=2025-12-24`:预览圣诞彩蛋
 
-## 视口与存档（v0.3）
-- 逻辑视口 1280×720，Scale.FIT；UI 按设备缩放（L.z）；镜头缩放 0.7–1.5（滚轮/双指）。
-- 存档键：`christmas-hat/save`（自动存档）、`christmas-hat/settings`；损坏存档备份为 `christmas-hat/save.corrupt`。
-- 调试：URL 加 `?debug=1` 加载 testApi。
+规范见 [SPEC.md](SPEC.md)。结构:`src/core` 游戏逻辑(不依赖 DOM),`src/ui` 画面,`src/audio` 音乐与音效,`src/main.ts` 主循环。

@@ -1,42 +1,288 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ctext y=%2713%27 font-size=%2713%27%3E🎅%3C/text%3E%3C/svg%3E" />
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="theme-color" content="#1b1626" />
-<title>圣诞帽帽 · Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#fafafa" />
+<title>Shake the Apple</title>
 <style>
-  html,body{margin:0;height:100%;background:#1b1626;overflow:hidden;overscroll-behavior:none;touch-action:none;
-    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;position:fixed;width:100%}
-  #game{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh}
-  canvas{image-rendering:pixelated;display:block;touch-action:none}
-  #rotate{display:none;position:fixed;inset:0;z-index:10;background:#1b1626;color:#ffe9b0;
-    flex-direction:column;align-items:center;justify-content:center;font:600 20px/1.6 system-ui,sans-serif;text-align:center;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  #rotate i{font-style:normal;font-size:56px;display:block;animation:rot 2.4s ease-in-out infinite}
-  @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-  /* 触屏设备竖屏时提示横屏（桌面窄窗口不提示） */
-  @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
-  @media (orientation:portrait) and (max-width:600px){#rotate{display:flex}}
-  #boot{position:fixed;inset:0;z-index:5;background:#1b1626;color:#ffe9b0;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 22px/1.6 system-ui,sans-serif}
-  #boot b{display:block;width:160px;height:6px;margin-top:14px;border-radius:3px;background:#3a2f4a;overflow:hidden;position:relative}
-  #boot b::after{content:"";position:absolute;top:0;left:0;height:100%;width:40%;background:#ffd27a;border-radius:3px;animation:bootbar 1.2s ease-in-out infinite}
-  @keyframes bootbar{0%{left:-40%}100%{left:100%}}
-  #boot i{font-style:normal;font-size:44px;animation:bootbob 1.4s ease-in-out infinite}
-  @keyframes bootbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-  #fatal{display:none;position:fixed;inset:0;z-index:20;background:rgba(27,22,38,.94);color:#ffe9b0;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:600 20px/1.7 system-ui,sans-serif}
-  #fatal button{margin-top:18px;padding:14px 32px;min-height:48px;font:600 18px system-ui,sans-serif;border:2px solid #f2d58a;border-radius:10px;background:#2b2230;color:#ffe9b0}
+:root { --bg:#fafafa; --fg:#111; --mute:#777; --line:#111; --red:#e0202a; --gold:#f2b705; --card:#fff; --news-dur:90s; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin:0; background:var(--bg); color:var(--fg);
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif; }
+body { max-width:1080px; margin:0 auto; padding:0 12px env(safe-area-inset-bottom); overflow-x:hidden; }
+h1 { font-size:17px; margin:calc(8px + env(safe-area-inset-top)) 0 6px; letter-spacing:.5px; display:flex; align-items:center; gap:8px; }
+h1::before { content:""; width:12px; height:12px; border-radius:50%; background:var(--red); box-shadow:2px -5px 0 -3px #111; flex:none; }
+.hidden { display:none !important; }
+
+/* ---------- 苹果新闻跑马灯 ---------- */
+#news { position:relative; overflow:hidden; height:28px; line-height:28px; font-size:13px; color:var(--mute);
+  border-top:1px solid #ddd; border-bottom:1px solid #ddd; background:var(--bg);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 22px,#000 calc(100% - 22px),transparent 100%); }
+#newsTrack { display:inline-flex; white-space:nowrap; will-change:transform; animation:newsmove var(--news-dur,90s) linear infinite; }
+#news:hover #newsTrack { animation-play-state:paused; }
+.ni { display:inline-block; }
+.ni::after { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin:0 16px; vertical-align:middle; position:relative; top:-1px; box-shadow:1.5px -4px 0 -2.4px #111; }
+@keyframes newsmove { from { transform:translate3d(0,0,0); } to { transform:translate3d(-50%,0,0); } }
+
+/* ---------- 吸顶区:果园画面 ---------- */
+#app { display:block; }
+#left { position:sticky; top:0; z-index:5; background:var(--bg); padding:env(safe-area-inset-top) 0 2px; margin:0 -12px; padding-left:12px; padding-right:12px; }
+#left #news { margin:0 -12px 6px; }
+#stage { position:relative; width:100%; height:clamp(190px,35vh,340px); border:2px solid var(--line); border-radius:12px; background:#fff; touch-action:manipulation; cursor:pointer; user-select:none; -webkit-user-select:none; overflow:hidden; }
+#stage canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.hud { position:absolute; left:10px; top:5px; z-index:2; pointer-events:none; max-width:78%; }
+.counts { display:flex; align-items:baseline; gap:4px 8px; flex-wrap:wrap; text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 6px #fff; }
+.counts b { font-size:28px; line-height:1.1; font-weight:800; font-variant-numeric:tabular-nums; display:inline-block; transform-origin:0 70%; }
+.counts b.bump { animation:bump .22s ease-out; }
+.counts span { color:var(--mute); font-size:12px; }
+#rate { color:var(--fg); font-weight:700; font-variant-numeric:tabular-nums; }
+#buffs { font-size:11px; font-weight:700; color:var(--red); text-shadow:0 0 3px #fff,0 0 3px #fff; }
+#buffs:empty { display:none; }
+@keyframes bump { 0% { transform:scale(1); } 40% { transform:scale(1.14); } 100% { transform:scale(1); } }
+#hint { position:absolute; right:10px; top:6px; text-align:right; font-size:11px; color:var(--mute); pointer-events:none; text-shadow:0 0 3px #fff; }
+#stageBox { margin:6px 0 4px; padding:0 2px; }
+/* 下一步目标:一行字 + 细进度条 */
+#nextGoal { display:flex; align-items:center; gap:8px; margin:0 2px 5px; padding:3px 8px; border-radius:8px; background:#fff7e0; border:1.5px solid var(--gold); font-size:11.5px; line-height:1.25; color:#5a4300; }
+#nextGoal.hidden { display:none; }
+#nextGoal #nextGoalText { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+#nextGoal .bar { flex:0 0 64px; height:5px; border-width:1px; border-radius:4px; background:#fff; }
+#nextGoal .bar > i { background:var(--gold); transition:width .4s; }
+.row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:11px; color:var(--mute); margin:0 0 3px; }
+.row b { color:var(--fg); font-weight:700; white-space:nowrap; font-size:12px; }
+#stageNext { text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.bar { height:8px; border:2px solid var(--line); border-radius:6px; overflow:hidden; background:#fff; }
+.bar > i { display:block; height:100%; width:0; background:var(--red); transition:width .3s; }
+.box { border:2px solid var(--line); border-radius:12px; background:var(--card); padding:8px 12px; margin-bottom:8px; }
+#goalBox { padding:6px 10px; margin:8px 0 6px; }
+#goalBox .row { margin-bottom:3px; }
+#equiv { font-size:12px; color:var(--mute); margin-top:3px; min-height:0; }
+#equiv:empty { display:none; }
+
+/* ---------- 标签页 ---------- */
+.tabs { display:flex; gap:6px; margin:8px 0 8px; }
+.tab { position:relative; flex:1; min-height:44px; font:inherit; font-size:14px; font-weight:700; color:var(--fg); background:#fff; border:2px solid var(--line); border-radius:12px; cursor:pointer; padding:0 6px; white-space:nowrap; transition:transform .1s; }
+.tab:active { transform:scale(.96); }
+.tab.on { background:var(--fg); color:#fff; }
+.tab.dot::after { content:""; position:absolute; top:5px; right:7px; width:9px; height:9px; border-radius:50%; background:var(--red); box-shadow:0 0 0 2px #fff; animation:dotp 1.4s ease-in-out infinite; }
+@keyframes dotp { 50% { transform:scale(1.35); } }
+.panel { display:none; }
+.panel.on { display:block; animation:panelin .22s ease-out; }
+@keyframes panelin { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+#projHead { display:none; }
+/* ---- 收入来源条:各来源占每秒苹果的比例,点/悬停会在果园里高亮 ---- */
+.srcbar { display:flex; height:12px; gap:2px; margin:0 0 6px; padding:0; border:1.5px solid #111; border-radius:7px; background:#fff; overflow:hidden; }
+.srcbar:empty { display:none; }
+.srcbar .seg { display:block; flex:1 1 0; min-width:4px; height:100%; border-radius:4px; transition:flex-grow .45s ease, opacity .2s, filter .2s; cursor:pointer; touch-action:manipulation; }
+.srcbar .seg:hover, .srcbar .seg:active { filter:brightness(1.12) saturate(1.2); }
+.srclegend { display:flex; flex-wrap:wrap; gap:3px 10px; margin:0 0 8px; font-size:11px; line-height:1.3; color:#444; }
+.srclegend:empty { display:none; }
+.srclegend .lg { display:inline-flex; align-items:center; gap:4px; padding:2px 0; cursor:pointer; white-space:nowrap; touch-action:manipulation; }
+.srclegend .lg b { display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.6); }
+.s-click { background:#e0202a; } .s-breeze { background:#4fb8d0; } .s-gardener { background:#5fb35a; } .s-tractor { background:#e8902a; }
+.s-shaker { background:#8f7ad6; } .s-drone { background:#2f95e0; } .s-express { background:#d6527a; } .s-cloud { background:#5b6b94; }
+.srclegend .lg.s-click, .srclegend .lg.s-breeze, .srclegend .lg.s-gardener, .srclegend .lg.s-tractor, .srclegend .lg.s-shaker, .srclegend .lg.s-drone, .srclegend .lg.s-express, .srclegend .lg.s-cloud { background:none; }
+.srclegend .lg.s-click b { background:#e0202a; } .srclegend .lg.s-breeze b { background:#4fb8d0; } .srclegend .lg.s-gardener b { background:#5fb35a; } .srclegend .lg.s-tractor b { background:#e8902a; }
+.srclegend .lg.s-shaker b { background:#8f7ad6; } .srclegend .lg.s-drone b { background:#2f95e0; } .srclegend .lg.s-express b { background:#d6527a; } .srclegend .lg.s-cloud b { background:#5b6b94; }
+.list { display:flex; flex-direction:column; gap:8px; margin:0 0 8px; }
+
+/* ---------- 升级 / 项目按钮 ---------- */
+.up { position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px; border:2px solid var(--line); border-radius:12px; background:var(--card); padding:8px 12px; min-height:56px; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer; transition:transform .09s ease-out, background .2s; touch-action:manipulation; }
+.up > span:first-child { min-width:0; flex:1; }
+.up:disabled { opacity:.45; cursor:not-allowed; }
+.up:not(:disabled):active { transform:scale(.965); }
+.up .n { font-weight:700; font-size:15px; }
+.up .d { font-size:12px; color:var(--mute); }
+.up .f { font-size:12px; color:var(--mute); font-style:italic; margin-left:4px; white-space:pre-line; }
+.up .c { flex:none; min-width:64px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.up .c::before { content:"🍎 "; filter:grayscale(1) contrast(5); font-size:.9em; }
+.up:not(:disabled) .c::before { filter:none; }
+.up.teaser { border-style:dashed; opacity:.55; cursor:default; }
+.up.teaser .c::before, .up.owned .c::before { content:""; }
+.up.owned { border-color:#bbb; background:#f4f4f4; }
+.up.owned:disabled { opacity:1; }
+.up.owned .c { color:var(--mute); }
+/* 买得起:轻微呼吸 */
+.up:not(:disabled):not(.owned):not(.teaser)::after { content:""; position:absolute; inset:-4px; border:2px solid var(--red); border-radius:15px; opacity:0; pointer-events:none; animation:breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity:0; transform:scale(.99); } 50% { opacity:.4; transform:scale(1); } }
+.up:not(:disabled):not(.owned):not(.teaser) { background:linear-gradient(180deg,#fff,#fff6f6); }
+/* 特别项目:红色高亮 + 更明显的呼吸 */
+.up.cook:not(:disabled) { border-color:var(--red); background:linear-gradient(180deg,#fff2f2,#ffe3e3); box-shadow:0 0 0 0 rgba(224,32,42,.45); animation:cookpulse 1.5s ease-in-out infinite; }
+.up.cook:not(:disabled):not(.owned):not(.teaser)::after { opacity:.75; animation:none; border-color:var(--gold); inset:-5px; }
+@keyframes cookpulse { 0% { box-shadow:0 0 0 0 rgba(224,32,42,.45); } 70%,100% { box-shadow:0 0 0 9px rgba(224,32,42,0); } }
+.up.buy { animation:buy .38s ease-out; }
+/* 刚刚买得起:短暂闪一下(main.ts 加 .justready,1.5 秒后移除) */
+.up.justready { animation:justready 1.5s ease-out; }
+@keyframes justready { 0% { box-shadow:0 0 0 0 rgba(242,183,5,.9); background:#fff2b8; transform:scale(1.03); } 30% { transform:scale(1); } 100% { box-shadow:0 0 0 14px rgba(242,183,5,0); } }
+@keyframes buy { 0% { transform:scale(1); } 25% { transform:scale(.95); } 60% { transform:scale(1.03); } 100% { transform:scale(1); } }
+
+/* ---------- 成就 ---------- */
+#achList { gap:6px; }
+.ach { display:flex; flex-direction:column; gap:1px; border:2px solid var(--line); border-radius:12px; padding:7px 12px; background:#fff; }
+.ach .n { font-weight:700; font-size:14px; }
+.ach .d { font-size:12px; color:var(--mute); }
+.ach.done { border-left:8px solid var(--gold); }
+.ach.locked { border-style:dashed; border-color:#bbb; background:#f7f7f7; }
+.ach.locked .n { color:#aaa; }
+
+/* ---------- 页脚(次要) ---------- */
+footer { padding:14px 0 18px; margin-top:6px; border-top:1px solid #e4e4e4; font-size:12px; color:var(--mute); display:flex; flex-wrap:wrap; gap:0 6px; align-items:center; }
+footer button { font:inherit; font-size:12px; min-height:40px; padding:0 8px; border:0; background:none; color:var(--mute); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; cursor:pointer; border-radius:8px; }
+footer button:active { background:#eee; }
+footer #btnReset:hover { color:var(--red); }
+.warn { color:var(--red); }
+.toast { position:fixed; left:50%; top:calc(14px + env(safe-area-inset-top)); transform:translateX(-50%); background:var(--fg); color:#fff; padding:8px 14px; border-radius:10px; font-size:13px; max-width:90vw; opacity:0; pointer-events:none; transition:opacity .25s; z-index:30; }
+.toast.on { opacity:1; }
+
+/* ---------- 布局断点 ---------- */
+@media (max-width:699px) {
+  #left { box-shadow:0 8px 8px -8px rgba(0,0,0,.25); }
+  #right > .tabs:first-child { margin-top:4px; }
+}
+@media (min-width:700px) {
+  #app { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:0 20px; align-items:start; }
+  #left { top:0; margin:0; padding-left:0; padding-right:0; }
+  #left #news { margin:0 0 6px; }
+  #stage { height:auto; aspect-ratio:4 / 3; max-height:calc(100vh - 118px); }
+  #right > .tabs:first-child { margin-top:0; }
+}
+@media (min-width:900px) {
+  #right { display:flex; flex-direction:column; }
+  #right > * { order:0; }
+  #goalBox { order:0; } .tabs { order:1; } #panelProjs { order:2; } #panelUps { order:3; } #panelAch { order:4; } footer { order:5; }
+  #tabProjs { display:none !important; }
+  #panelUps.on ~ #panelProjs { display:block; }
+}
+@media (max-height:520px) and (min-width:700px) { #stage { max-height:calc(100vh - 96px); } .counts b { font-size:22px; } }
+
+/* ---------- 阶段升级:柔和闪光 + 彩带 ---------- */
+body.stageup::before { content:""; position:fixed; inset:0; z-index:20; pointer-events:none; background:radial-gradient(circle at 50% 28%,rgba(242,183,5,.5),rgba(242,183,5,.12) 45%,transparent 70%); animation:stageflash 1.2s ease-out forwards; }
+body.stageup::after { content:""; position:fixed; left:50%; top:-12px; width:8px; height:8px; z-index:21; pointer-events:none; border-radius:2px; background:var(--red);
+  box-shadow:-44vw 10px 0 var(--gold),-36vw -4px 0 #111,-28vw 24px 0 var(--red),-20vw 0 0 var(--gold),-12vw 30px 0 #111,-5vw 8px 0 var(--red),4vw 22px 0 var(--gold),11vw -6px 0 #111,19vw 28px 0 var(--red),27vw 4px 0 var(--gold),34vw 18px 0 #111,41vw -2px 0 var(--red),-40vw 52px 0 var(--red),-16vw 60px 0 var(--gold),8vw 48px 0 #111,30vw 56px 0 var(--gold);
+  animation:confetti 1.2s cubic-bezier(.3,.6,.5,1) forwards; }
+@keyframes stageflash { 0% { opacity:0; } 18% { opacity:1; } 100% { opacity:0; } }
+@keyframes confetti { 0% { transform:translateY(0) rotate(0); opacity:1; } 100% { transform:translateY(80vh) rotate(540deg); opacity:0; } }
+
+/* ---------- 平安夜 ---------- */
+body.xmas #app::before { content:""; position:fixed; inset:0; z-index:4; pointer-events:none; border:3px solid transparent; border-image:repeating-linear-gradient(90deg,rgba(224,32,42,.3) 0 14px,rgba(31,138,76,.3) 14px 28px) 3; }
+body.xmas h1 { color:#b3141c; }
+body.xmas .tab.on { background:#1f8a4c; border-color:#1f8a4c; }
+
+/* ---------- 动效降级 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important; scroll-behavior:auto !important; }
+  #newsTrack { animation:none !important; }
+  #news { overflow-x:auto; -webkit-mask-image:none; mask-image:none; scrollbar-width:none; }
+  #news::-webkit-scrollbar { display:none; }
+  .up::after { display:none !important; }
+  .up.justready { animation:none; box-shadow:0 0 0 3px var(--gold); }
+  body.stageup::before, body.stageup::after { display:none; }
+}
 </style>
 </head>
 <body>
-<div id="game"></div>
-<div id="boot"><i>🎅</i>圣诞帽帽 加载中…<b></b></div>
-<div id="fatal"><div id="fatalMsg">画面出了点问题</div><button id="fatalBtn" type="button">重新加载</button></div>
-<noscript><div style="position:fixed;inset:0;z-index:30;background:#1b1626;color:#ffe9b0;display:flex;align-items:center;justify-content:center;font:600 20px system-ui,sans-serif;text-align:center">需要启用 JavaScript 才能玩《圣诞帽帽》。</div></noscript>
-<div id="rotate"><i>📱</i>请横屏游玩<br><small style="opacity:.7;font-weight:400">Please rotate your device</small></div>
+<h1>Shake the Apple</h1>
+<div id="app">
+<section id="left">
+<div id="news" role="marquee" aria-live="off"><div id="newsTrack"></div></div>
+<div id="stage" role="button" tabindex="0" aria-label="摇树">
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <div class="counts"><b id="apples">0</b><span>苹果</span><span id="rate"></span></div>
+    <div id="buffs"></div>
+  </div>
+  <div id="hint">点一点,摇一摇。</div>
+</div>
+<div id="stageBox">
+  <div class="row"><b id="stageName">第 1 期</b><span id="stageNext"></span></div>
+  <div class="bar" role="progressbar" aria-label="本期进度" aria-valuemin="0" aria-valuemax="100"><i id="stageBar"></i></div>
+</div>
+<div id="nextGoal" class="hidden"><span id="nextGoalText"></span><div class="bar"><i id="nextGoalBar"></i></div></div>
+</section>
+<section id="right">
+<div id="goalBox" class="box hidden">
+  <div class="row"><b>累计送出平安果</b><span id="goalNum">0 / 82亿</span></div>
+  <div class="bar" role="progressbar" aria-label="平安果总进度" aria-valuemin="0" aria-valuemax="100"><i id="goalBar"></i></div>
+  <div id="equiv"></div>
+</div>
+<div class="tabs" role="tablist">
+  <button class="tab on" id="tabUps" role="tab" aria-selected="true">升级</button>
+  <button class="tab hidden" id="tabProjs" role="tab" aria-selected="false">项目</button>
+  <button class="tab" id="tabAch" role="tab" aria-selected="false">成就</button>
+</div>
+<div class="panel on" id="panelUps" role="tabpanel"><div id="srcBar" class="srcbar" aria-label="收入来源占比"></div><div id="srcLegend" class="srclegend"></div><div class="list" id="ups"></div></div>
+<div class="panel" id="panelProjs" role="tabpanel">
+  <h2 id="projHead" class="hidden">项目</h2>
+  <div class="list" id="projs"></div>
+</div>
+<div class="panel" id="panelAch" role="tabpanel"><div id="achList" class="list"></div></div>
+<footer>
+  <button id="btnSound">声音:开</button>
+  <button id="btnExport">导出存档</button>
+  <button id="btnImport">导入存档</button>
+  <button id="btnReset">重新开始</button>
+  <span id="saveWarn" class="warn"></span>
+</footer>
+</section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* 标签页切换 / 小红点 / 数字弹跳 / 购买反馈:仅依赖 DOM,不依赖 main.ts */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var names = ['Ups', 'Projs', 'Ach'];
+  var cur = 'Ups';
+  function show(n) {
+    cur = n;
+    names.forEach(function (k) {
+      var on = k === n, t = $('tab' + k), p = $('panel' + k);
+      t.classList.toggle('on', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      p.classList.toggle('on', on);
+      if (on) t.classList.remove('dot');
+    });
+  }
+  names.forEach(function (k) { $('tab' + k).addEventListener('click', function () { show(k); }); });
+  var head = $('projHead'), tp = $('tabProjs'), projs = $('projs'), ta = $('tabAch');
+  function syncProjTab() {
+    var hide = head.classList.contains('hidden');
+    tp.classList.toggle('hidden', hide);
+    if (hide && cur === 'Projs') show('Ups');
+    else if (!hide && cur !== 'Projs' && !tp.dataset.seen) { tp.dataset.seen = '1'; tp.classList.add('dot'); }
+    if (hide) delete tp.dataset.seen;
+  }
+  new MutationObserver(syncProjTab).observe(head, { attributes: true, attributeFilter: ['class'] });
+  syncProjTab();
+  var raf = 0;
+  function syncDot() {
+    raf = 0;
+    if (cur === 'Projs' || tp.classList.contains('hidden')) return;
+    var any = projs.querySelector('.up:not(.hidden):not(.teaser):not(.owned):not(:disabled)');
+    tp.classList.toggle('dot', !!any);
+  }
+  new MutationObserver(function () { if (!raf) raf = requestAnimationFrame(syncDot); })
+    .observe(projs, { attributes: true, subtree: true, attributeFilter: ['class', 'disabled'] });
+  var achInit = 0;
+  new MutationObserver(function () { if (!achInit) { achInit = 1; return; } if (cur !== 'Ach') ta.classList.add('dot'); })
+    .observe(ta, { childList: true, characterData: true, subtree: true });
+  // 数字变化时轻微弹跳(节流)
+  var ap = $('apples'), last = 0;
+  new MutationObserver(function () {
+    var now = performance.now();
+    if (now - last < 450) return;
+    last = now;
+    ap.classList.remove('bump'); void ap.offsetWidth; ap.classList.add('bump');
+  }).observe(ap, { childList: true, characterData: true, subtree: true });
+  // 购买反馈:按钮弹一下 + 数字大弹跳
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('.up') : null;
+    if (!b || b.disabled) return;
+    b.classList.remove('buy'); void b.offsetWidth; b.classList.add('buy');
+    ap.classList.remove('bump'); void ap.offsetWidth; ap.classList.add('bump');
+  });
+})();
+</script>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
