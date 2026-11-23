@@ -1,60 +1,99 @@
 import { SAVE_VERSION } from './constants.ts';
+import type { GateId } from './content.ts';
+import { GATE_SLOTS, TIER_COUNT } from './content.ts';
 
-export const UPGRADE_IDS = ['shake', 'breeze', 'gardener', 'tractor', 'branches', 'breed', 'shaker', 'drone', 'express', 'cloud'] as const;
-export type UpgradeId = (typeof UPGRADE_IDS)[number];
-export type UpgradeLevels = Record<UpgradeId, number>;
+/** 一个"车"。n > 24 时多辆车合并成一个车队,w 是它代表几辆。 */
+export interface Vehicle {
+  /** 运输档 0..5 */
+  tier: number;
+  /** 代表几辆车(≥1) */
+  w: number;
+  /**
+   * 往返进度 0..1:0 = 停在堆场装货;0..0.5 去终点(装满的);0.5 = 到达并结算;0.5..1 空车返回。
+   * 画面:位置 = 路线上 phase<0.5 ? phase×2 : (1-phase)×2。
+   */
+  phase: number;
+  /** 已装苹果数(绝对数量)。装满 = w × cap × 当前容量乘数 */
+  load: number;
+}
 
-export const PROJECT_IDS = ['gravity', 'fairest', 'cook', 'duo', 'garage', 'doctor', 'witch', 'onemore'] as const;
-export type ProjectId = (typeof PROJECT_IDS)[number];
+export interface Line {
+  /** 当前最高档 0..5 */
+  tier: number;
+  /** units[t] = 第 t 档已有数量(产出线是树/果园…,运输线是篮子/推车…) */
+  units: number[];
+  /** branch[t] = 升到第 t 档时选的分支 0/1;第 0 档恒为 -1 */
+  branch: (0 | 1 | -1)[];
+}
 
 export interface State {
   version: number;
-  /** 本轮持有的苹果,用来买升级 */
-  apples: number;
-  /** 累计送出的平安果,永不重置,是进度条 */
+  /** 果钱:买东西用 */
+  coins: number;
+  /** 累计送达(进度条,82 亿) */
   delivered: number;
   clicks: number;
-  upgrades: UpgradeLevels;
-  /** 已购买的项目(一次性) */
-  projects: Record<ProjectId, boolean>;
-  /** 计时型加成,毫秒时间戳 */
-  buffs: { cookUntil: number; cookReadyAt: number; goldUntil: number };
-  /** 禁果已咬几口(0-3),每口全部产出 ×2 */
-  bites: number;
-  /** 女巫苹果是否已用过(整局一次) */
-  witchUsed: boolean;
-  /** 已解锁的成就 id -> 解锁时间戳 */
-  achievements: Record<string, number>;
-  /** 沉睡状态:离线按 100% 效率结算(女巫苹果,M2 使用) */
-  sleeping: boolean;
+  /** 累计画圈圈数(crank 的 amount 之和) */
+  turns: number;
+  /** 本局已玩秒数(游戏内时钟,所有计时器用它) */
+  playSec: number;
+  source: Line;
+  route: Line;
+  /** 3 个道具槽 */
+  gates: (GateId | null)[];
+  gatesUnlocked: GateId[];
+  /** 堆场库存 */
+  stock: number;
+  /** 飞轮储能 0..1 */
+  flywheel: number;
+  /** 连击数(嗖!) */
+  combo: number;
+  /** 连击剩余秒数,到 0 清零 */
+  comboT: number;
+  vehicles: Vehicle[];
+  /** 累计浪费(堆场满了溢出)的苹果 */
+  wasted: number;
+  /** 累计"飞出去"次数 */
+  flings: number;
+  /** 牛顿路过:playSec 到这之前手动储能 ×2 */
+  newtonUntil: number;
+  /** 通关时的 playSec;未通关 null */
+  wonAt: number | null;
+  /** 各次升档时的 playSec,[0]=产出线,[1]=运输线,各 5 项(用于结局回顾) */
+  tierTimes: { source: number[]; route: number[] };
   lastSeen: number;
   startedAt: number;
-  settings: { sound: boolean; reducedMotion: boolean };
+  settings: { sound: boolean; reducedMotion: boolean; dark: 'auto' | 'light' | 'dark' };
 }
 
-export function emptyLevels(): UpgradeLevels {
-  return Object.fromEntries(UPGRADE_IDS.map((id) => [id, 0])) as UpgradeLevels;
-}
-
-export function emptyProjects(): Record<ProjectId, boolean> {
-  return Object.fromEntries(PROJECT_IDS.map((id) => [id, false])) as Record<ProjectId, boolean>;
+export function newLine(): Line {
+  return { tier: 0, units: Array(TIER_COUNT).fill(0).map((_, i) => (i === 0 ? 1 : 0)), branch: Array(TIER_COUNT).fill(-1) as (0 | 1 | -1)[] };
 }
 
 export function newState(now: number): State {
   return {
     version: SAVE_VERSION,
-    apples: 0,
+    coins: 0,
     delivered: 0,
     clicks: 0,
-    upgrades: emptyLevels(),
-    projects: emptyProjects(),
-    buffs: { cookUntil: 0, cookReadyAt: 0, goldUntil: 0 },
-    bites: 0,
-    witchUsed: false,
-    achievements: {},
-    sleeping: false,
+    turns: 0,
+    playSec: 0,
+    source: newLine(),
+    route: newLine(),
+    gates: Array(GATE_SLOTS).fill(null) as (GateId | null)[],
+    gatesUnlocked: ['wash', 'wax', 'rush'],
+    stock: 0,
+    flywheel: 0,
+    combo: 0,
+    comboT: 0,
+    vehicles: [{ tier: 0, w: 1, phase: 0, load: 0 }],
+    wasted: 0,
+    flings: 0,
+    newtonUntil: 0,
+    wonAt: null,
+    tierTimes: { source: [], route: [] },
     lastSeen: now,
     startedAt: now,
-    settings: { sound: false, reducedMotion: false },
+    settings: { sound: false, reducedMotion: false, dark: 'auto' },
   };
 }

@@ -1,34 +1,4 @@
-// 世界时钟:收获周期、昼夜、季节、天气。全部是"游戏时间(秒,从开局算)"的纯函数,
-// 画面和数值共用同一份,调试加速时也一起加速。
-export const world = { harvestOn: true };
-
-/** 收获周期:100 秒一轮。前 75 秒「生长期」自动产出 ×0.75,后 25 秒「收获期」×1.75,平均恰好 ×1。 */
-export const HARVEST_CYCLE_S = 100;
-export const HARVEST_S = 25;
-export const GROW_MULT = 0.75;
-export const HARVEST_MULT = 1.75;
-
-export interface HarvestInfo {
-  harvesting: boolean;
-  /** 本轮已走过的比例 0..1 */
-  phase: number;
-  /** 果子成熟度 0..1:生长期线性增长,收获期保持 1,收获结束后回落 */
-  ripe: number;
-  /** 当前阶段剩余秒数 */
-  leftS: number;
-}
-
-export function harvestInfo(t: number): HarvestInfo {
-  const x = ((t % HARVEST_CYCLE_S) + HARVEST_CYCLE_S) % HARVEST_CYCLE_S;
-  const growS = HARVEST_CYCLE_S - HARVEST_S;
-  if (x < growS) return { harvesting: false, phase: x / HARVEST_CYCLE_S, ripe: x / growS, leftS: growS - x };
-  return { harvesting: true, phase: x / HARVEST_CYCLE_S, ripe: 1, leftS: HARVEST_CYCLE_S - x };
-}
-
-export function harvestMult(t: number): number {
-  if (!world.harvestOn || !Number.isFinite(t)) return 1;
-  return harvestInfo(t).harvesting ? HARVEST_MULT : GROW_MULT;
-}
+// 世界时钟:昼夜、季节、天气。只是画面用的纯函数(游戏时间秒的函数),不影响数值。
 
 /** 一天 240 秒;一个季节 300 秒(春夏秋冬 = 0..3) */
 export const DAY_S = 240;
@@ -71,11 +41,4 @@ export function worldAt(t: number, seasonOverride?: number): WorldInfo {
   else if (season === 1) weather = r < 0.2 ? 'rain' : r < 0.3 ? 'cloudy' : 'clear';
   else weather = r < 0.2 ? 'rain' : r < 0.45 ? 'cloudy' : 'clear';
   return { dayPhase, daylight, isNight: h < -0.15, season, seasonT, weather };
-}
-
-/** 下雨时自动产出 +10%(雨水滋润) */
-export const RAIN_MULT = 1.1;
-export function envMult(t: number): number {
-  if (!world.harvestOn || !Number.isFinite(t)) return 1;
-  return harvestMult(t) * (worldAt(t).weather === 'rain' ? RAIN_MULT : 1);
 }

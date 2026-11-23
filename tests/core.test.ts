@@ -1,359 +1,502 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
+import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from '../src/core/constants.ts';
+import { FLY, GATES, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, describeEffect } from '../src/core/content.ts';
+import { EVENT_GAP_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
-  buffMult, buy, buyProject, canBuyProject, click, clickPieces, cookReady, cost, goldRate, grabFairest,
-  gravityGain, milestoneMult, nextStageAt, rate, settle, stageIndex, stageProgress, STAGES, tick,
-  upgradeDef, useCook, COOK_CD_MS, COOK_MS, GOLD_MULT, breezeBoost, milestoneCount, MILESTONE_GLOBAL,
+  appleValue, baseProduce, buyUnit, canBuyUnit, canUpgradeTier, click, comboMult, crank, era, fleetView, isWon, mods,
+  nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
+  upgradeTier,
 } from '../src/core/game.ts';
-import { exportSave, importSave, load, save, serialize, type KV } from '../src/core/save.ts';
-import { newState } from '../src/core/state.ts';
-import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY } from '../src/core/constants.ts';
-import { fmt, equiv } from '../src/ui/format.ts';
-import { newsIndex, NEWS } from '../src/core/news.ts';
+import { giftOpen } from '../src/core/gift.ts';
+import { SEALED } from '../src/core/copy.ts';
+import { exportSave, fnv, importSave, load, parse, save, serialize, storageWritable, type KV } from '../src/core/save.ts';
+import { newState, type State } from '../src/core/state.ts';
+import { DAY_S, SEASON_NAMES, worldAt } from '../src/core/world.ts';
+import { equiv, fmt } from '../src/ui/format.ts';
 
 const mem = (): KV & { m: Map<string, string> } => {
   const m = new Map<string, string>();
   return { m, getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v) };
 };
-const NO_GOLD = () => 1;
-const ALL_GOLD = () => 0;
-
-test('点击得到苹果,同时累计平安果', () => {
-  const s = newState(0);
-  const r = click(s, { rng: NO_GOLD });
-  assert.equal(r.value, 1);
-  assert.equal(s.apples, 1);
-  assert.equal(s.delivered, 1);
-  assert.equal(s.clicks, 1);
-});
-
-test('买升级扣苹果但不扣累计平安果', () => {
-  const s = newState(0);
-  s.apples = 100;
-  s.delivered = 100;
-  assert.equal(buy(s, 'shake'), true);
-  assert.equal(s.apples, 90);
-  assert.equal(s.delivered, 100);
-  assert.equal(clickPieces(s), 2);
-  s.apples = 0;
-  assert.equal(buy(s, 'shake'), false);
-});
-
-test('价格公式 base×growth^n 向下取整', () => {
-  const d = upgradeDef('shake');
-  assert.equal(cost(d, 0), 10);
-  assert.equal(cost(d, 1), Math.floor(10 * d.growth));
-  assert.equal(cost(d, 10), Math.floor(10 * d.growth ** 10));
-});
-
-test('每 25 级产出翻倍', () => {
-  assert.equal(milestoneMult(24), 1);
-  assert.equal(milestoneMult(25), 2);
-  assert.equal(milestoneMult(50), 4);
-});
-
-test('金苹果:价值 ×25,掉率随品种改良上升并封顶 20%', () => {
-  const s = newState(0);
-  assert.equal(click(s, { rng: ALL_GOLD }).value, GOLD_MULT);
-  assert.equal(goldRate(s), 0.02);
-  s.upgrades.breed = 5;
-  assert.ok(Math.abs(goldRate(s) - 0.07) < 1e-9);
-  s.upgrades.breed = 500;
-  assert.equal(goldRate(s), 0.2);
-});
-
-test('自动产出按秒累计(含金苹果期望)', () => {
-  const s = newState(0);
-  s.upgrades.breeze = 10;
-  const per = 10 * breezeBoost(s) * (1 + 0.02 * (GOLD_MULT - 1));
-  assert.ok(Math.abs(rate(s) - per) < 1e-9);
-  tick(s, 10);
-  assert.ok(Math.abs(s.apples - per * 10) < 1e-6);
-});
-
-test('项目只能买一次;iPhone Duo 多掉 1 个并提高全局产出', () => {
-  const s = newState(0);
-  s.apples = 1e9;
-  assert.equal(canBuyProject(s, 'duo'), true);
-  assert.equal(buyProject(s, 'duo'), true);
-  assert.equal(buyProject(s, 'duo'), false);
-  assert.equal(clickPieces(s), 2);
-  assert.equal(click(s, { rng: NO_GOLD }).value, 2 * 1.25);
-});
-
-test('库克发布会:×3 持续 30 秒,冷却 5 分钟;最美的苹果 ×2 可叠加', () => {
-  const s = newState(0);
-  s.projects.cook = true;
-  assert.equal(cookReady(s, 1000), true);
-  assert.equal(useCook(s, 1000), true);
-  assert.equal(useCook(s, 2000), false);
-  assert.equal(buffMult(s, 1000 + COOK_MS - 1), 3);
-  assert.equal(buffMult(s, 1000 + COOK_MS + 1), 1);
-  assert.equal(cookReady(s, 1000 + COOK_CD_MS - 1), false);
-  assert.equal(cookReady(s, 1000 + COOK_CD_MS), true);
-  useCook(s, 1000);
-  grabFairest(s, 1000);
-  assert.equal(buffMult(s, 1500), 6);
-});
-
-test('万有引力:约 3 秒的产出;开局无自动产出时按 3 次摇算', () => {
-  const s = newState(0);
-  assert.ok(gravityGain(s, 0) > 0);
-  s.upgrades.breeze = 10;
-  assert.ok(Math.abs(gravityGain(s, 0) - rate(s, 0) * 3) < 1e-9);
-});
-
-test('期:门槛递增、树数递增,进度条按对数刻度', () => {
-  for (let i = 1; i < STAGES.length; i++) {
-    assert.ok(STAGES[i].at > STAGES[i - 1].at);
-    assert.ok(STAGES[i].trees > STAGES[i - 1].trees);
+const fresh = () => newState(1000);
+/** 给足钱并直接升到指定档(绕过价格) */
+function atTiers(src: number, rt: number): State {
+  const s = fresh();
+  for (const [line, n] of [['source', src], ['route', rt]] as const) {
+    for (let i = 0; i < n; i++) {
+      s.coins = 1e18;
+      assert.ok(upgradeTier(s, line, 0));
+    }
   }
-  assert.equal(stageIndex(0), 0);
-  assert.equal(stageIndex(STAGES[2].at), 2);
-  assert.equal(nextStageAt(0), STAGES[1].at);
-  assert.equal(nextStageAt(STAGES[STAGES.length - 1].at), GOAL);
-  assert.equal(stageProgress(0), 0);
-  assert.ok(stageProgress(Math.sqrt(STAGES[1].at)) > 0.4);
+  s.coins = 0;
+  return s;
+}
+
+test('初始状态', () => {
+  const s = fresh();
+  assert.equal(s.version, SAVE_VERSION);
+  assert.deepEqual(s.source.units, [1, 0, 0, 0, 0, 0]);
+  assert.equal(s.vehicles.length, 1);
+  assert.equal(s.vehicles[0].tier, 0);
+  assert.equal(s.gates.length, GATE_SLOTS);
+  assert.ok(s.gates.every((g) => g === null));
+  assert.equal(throughput(s).produce, 1);
 });
 
-test('数字格式与折算', () => {
+test('买单位:扣钱、涨价、不够钱不成', () => {
+  const s = fresh();
+  assert.equal(buyUnit(s, 'source'), false);
+  assert.equal(canBuyUnit(s, 'source'), false);
+  s.coins = 1e6;
+  const c1 = unitCost(s, 'source');
+  assert.equal(c1, SOURCE_TIERS[0].baseCost);
+  assert.ok(buyUnit(s, 'source'));
+  assert.equal(s.coins, 1e6 - c1);
+  assert.equal(s.source.units[0], 2);
+  const c2 = unitCost(s, 'source');
+  assert.equal(c2, Math.floor(SOURCE_TIERS[0].baseCost * SOURCE_TIERS[0].growth));
+  assert.ok(c2 > c1);
+  assert.equal(buyUnit(s, 'source', 3), false, '没到的档不能买');
+});
+
+test('买车:每买一辆多一辆;超过上限合并成车队', () => {
+  const s = fresh();
+  s.coins = 1e30;
+  for (let i = 0; i < MAX_CONVOYS + 10; i++) assert.ok(buyUnit(s, 'route'));
+  const mine = s.vehicles.filter((v) => v.tier === 0);
+  assert.equal(mine.length, MAX_CONVOYS);
+  assert.equal(mine.reduce((a, v) => a + v.w, 0), s.route.units[0]);
+  assert.equal(fleetView(s)[0].count, s.route.units[0]);
+});
+
+test('升档:要钱、要选分支、送 1 个单位、记录时间、解锁道具', () => {
+  const s = fresh();
+  assert.equal(canUpgradeTier(s, 'source'), false);
+  assert.equal(upgradeTier(s, 'source', 0), null, '没钱');
+  s.coins = tierCost(s, 'source')! - 1;
+  assert.equal(upgradeTier(s, 'source', 0), null);
+  s.coins = 1e18;
+  assert.equal(upgradeTier(s, 'source', 2 as 0), null, '分支只能是 0/1');
+  const br = nextBranches(s, 'source')!;
+  assert.equal(br.length, 2);
+  s.playSec = 42;
+  const before = s.coins;
+  const r = upgradeTier(s, 'source', 1)!;
+  assert.ok(r);
+  assert.equal(r.tier, 1);
+  assert.equal(s.source.tier, 1);
+  assert.equal(s.source.branch[1], 1);
+  assert.equal(s.source.units[1], 1);
+  assert.equal(s.coins, before - SOURCE_TIERS[1].tierCost);
+  assert.equal(s.tierTimes.source[0], 42);
+  // 分支效果生效
+  assert.deepEqual(mods(s).value, br[1].effect.value ?? 1);
+  // 总档数到 2 解锁第四个道具
+  assert.ok(!s.gatesUnlocked.includes('pack'));
+  const r2 = upgradeTier(s, 'route', 0)!;
+  assert.ok(r2.newGates.includes('pack'));
+  assert.ok(s.gatesUnlocked.includes('pack'));
+  assert.equal(s.vehicles.filter((v) => v.tier === 1).length, 1, '升运输档送一辆新车');
+});
+
+test('升到最高档后不能再升', () => {
+  const s = atTiers(5, 5);
+  s.coins = 1e30;
+  assert.equal(tierCost(s, 'source'), null);
+  assert.equal(nextBranches(s, 'route'), null);
+  assert.equal(upgradeTier(s, 'source', 0), null);
+  assert.equal(era(s), 10);
+  assert.equal(s.gatesUnlocked.length, GATES.length);
+});
+
+test('吞吐 = min(产出, 运力),瓶颈标签', () => {
+  const s = fresh();
+  s.source.units[0] = 20; // 产出 20,运力 5/5=1
+  let t = throughput(s);
+  assert.equal(t.produce, 20);
+  assert.equal(t.carry, ROUTE_TIERS[0].cap / ROUTE_TIERS[0].trip);
+  assert.equal(t.flow, t.carry);
+  assert.equal(t.bottleneck, 'carry');
+  s.route.units[0] = 100;
+  t = throughput(s);
+  assert.equal(t.flow, t.produce);
+  assert.equal(t.bottleneck, 'produce');
+  s.route.units[0] = 20;
+  assert.equal(throughput(s).bottleneck, 'balanced');
+  assert.equal(t.income, t.flow * t.value);
+});
+
+test('tick:送达速度≈吞吐,果钱 = 送达 × 价值', () => {
+  const s = atTiers(1, 1);
+  s.source.units[0] = 0;
+  s.source.units[1] = 4;
+  s.route.units[0] = 0;
+  s.route.units[1] = 0;
+  s.vehicles = [];
+  for (let i = 0; i < 6; i++) s.vehicles.push({ tier: 1, w: 1, phase: 0, load: 0 });
+  s.route.units[1] = 6;
+  const th = throughput(s);
+  tick(s, 60);
+  const d0 = s.delivered;
+  const c0 = s.coins;
+  tick(s, 120 - 1e-9);
+  const rate = (s.delivered - d0) / 120;
+  assert.ok(Math.abs(rate / th.flow - 1) < 0.1, `rate ${rate} vs flow ${th.flow}`);
+  assert.ok(Math.abs((s.coins - c0) / (s.delivered - d0) - th.value) < 1e-6);
+});
+
+test('堆场满了就浪费;堆场不超容量', () => {
+  const s = fresh();
+  s.source.units[0] = 50;
+  tick(s, 100);
+  assert.ok(s.wasted > 0);
+  assert.ok(s.stock <= stockMax(s, mods(s)) + 1e-9);
+  assert.ok(stockFill(s) <= 1);
+  const small = fresh();
+  tick(small, 3);
+  assert.equal(small.wasted, 0);
+});
+
+test('确定性:同样的输入同样的结果', () => {
+  const run = () => {
+    const s = atTiers(2, 2);
+    s.source.units[2] = 3;
+    for (let i = 0; i < 200; i++) { if (i % 7 === 0) click(s); tick(s, 0.25); }
+    return JSON.stringify(s);
+  };
+  assert.equal(run(), run());
+});
+
+test('道具:换槽改变价值,互换,未解锁不能放,可清空', () => {
+  const s = fresh();
+  const v0 = throughput(s).value;
+  assert.equal(v0, 1);
+  assert.ok(setGate(s, 0, 'wash'));
+  const v1 = throughput(s).value;
+  assert.ok(Math.abs(v1 - 1.25) < 1e-9);
+  assert.equal(setGate(s, 1, 'brand'), false, '没解锁');
+  assert.equal(setGate(s, 5, 'wash'), false);
+  assert.ok(setGate(s, 2, 'wash'));
+  assert.deepEqual(s.gates, [null, null, 'wash'], '同一道具只占一个槽,从原槽拿走');
+  assert.ok(setGate(s, 1, 'wax'));
+  assert.ok(setGate(s, 1, 'wash'));
+  assert.deepEqual(s.gates, [null, 'wash', 'wax'], '互换');
+  assert.ok(setGate(s, 1, null));
+  assert.equal(s.gates[1], null);
+  assert.equal(describeEffect({ value: 1.25 }), '价值 ×1.25');
+});
+
+test('道具改变运力:打蜡 +价值 但更慢,加急更快', () => {
+  const s = fresh();
+  const c0 = throughput(s).carry;
+  setGate(s, 0, 'wax');
+  assert.ok(throughput(s).carry < c0);
+  setGate(s, 0, 'rush');
+  assert.ok(throughput(s).carry > c0);
+});
+
+test('红绳:放大相邻槽的道具,不相邻没用', () => {
+  const s = fresh();
+  s.gatesUnlocked.push('red');
+  setGate(s, 0, 'wash');
+  setGate(s, 1, 'red');
+  assert.ok(Math.abs(mods(s).value - Math.pow(1.25, RED_EXP)) < 1e-9);
+  setGate(s, 1, null);
+  setGate(s, 2, 'red');
+  assert.ok(Math.abs(mods(s).value - 1.25) < 1e-9, '槽 0 与槽 2 不相邻');
+  setGate(s, 1, 'wax');
+  setGate(s, 0, 'wash');
+  // 槽 1 的 wax 被红绳(槽 2)放大,槽 0 的 wash 没有
+  const expect = 1.25 * Math.pow(1.6, RED_EXP);
+  assert.ok(Math.abs(mods(s).value - expect) < 1e-9);
+});
+
+test('preview:不改状态,数字与真正执行一致', () => {
+  const s = fresh();
+  s.coins = 1e6;
+  const snap = JSON.stringify(s);
+  const p = preview(s, { kind: 'unit', line: 'route' });
+  assert.equal(JSON.stringify(s), snap);
+  assert.equal(p.cost, unitCost(s, 'route'));
+  assert.ok(p.affordable);
+  const before = throughput(s).flow;
+  buyUnit(s, 'route');
+  assert.ok(Math.abs(throughput(s).flow - before - p.flowDelta) < 1e-9);
+  const g = preview(s, { kind: 'gate', slot: 0, id: 'wash' });
+  assert.ok(g.valueDelta > 1.2);
+  assert.equal(g.cost, 0);
+  const t = preview(s, { kind: 'tier', line: 'source', branch: 0 });
+  assert.equal(t.cost, tierCost(s, 'source'));
+  assert.equal(preview(atTiers(5, 5), { kind: 'tier', line: 'source', branch: 0 }).ok, false);
+});
+
+test('nextHints:价格、等待秒数、建议', () => {
+  const s = fresh();
+  s.source.units[0] = 30;
+  const h = nextHints(s);
+  assert.equal(h.suggest, 'route');
+  assert.equal(h.route.unit.cost, unitCost(s, 'route'));
+  assert.ok(h.route.tier && h.route.tier.cost > 0);
+  assert.ok(h.route.unit.waitSec > 0);
+  s.coins = 1e9;
+  assert.equal(nextHints(s).route.unit.waitSec, 0);
+  assert.equal(nextHints(atTiers(5, 5)).source.tier, null);
+});
+
+test('飞轮:点按加储能,不摇就衰减', () => {
+  const s = fresh();
+  click(s);
+  assert.equal(s.clicks, 1);
+  assert.ok(Math.abs(s.flywheel - FLY.perClick) < 1e-12);
+  s.flywheel = 1;
+  tick(s, 5);
+  assert.ok(Math.abs(s.flywheel - Math.exp(-FLY.decay * 5)) < 1e-9);
+  // 储能提高产出
+  s.flywheel = 0.5;
+  const withF = throughput(s).produce;
+  s.flywheel = 0;
+  assert.ok(withF > throughput(s).produce);
+});
+
+test('过速:储能满了再摇就"飞出去",连击提高价值,超时断掉', () => {
+  const s = fresh();
+  const r0 = crank(s, 0.5);
+  assert.equal(r0.flung, false);
+  assert.equal(s.combo, 0);
+  assert.ok(Math.abs(s.turns - 0.5) < 1e-12);
+  const r = crank(s, 10);
+  assert.equal(r.flung, true);
+  assert.equal(s.flywheel, 1);
+  assert.equal(s.combo, 1);
+  assert.equal(s.flings, 1);
+  crank(s, 10);
+  assert.equal(s.combo, 2);
+  const v = appleValue(s);
+  assert.ok(Math.abs(v - (1 + 2 * FLY.comboStep)) < 1e-12);
+  assert.equal(comboMult({ combo: 1000 }), 1 + FLY.comboMax * FLY.comboStep);
+  tick(s, FLY.comboWindow + 0.5);
+  assert.equal(s.combo, 0);
+  assert.equal(crank(s, 0).flung, false);
+  assert.equal(crank(s, -1).flung, false);
+});
+
+test('牛顿 buff:储能翻倍', () => {
+  const a = fresh();
+  const b = fresh();
+  b.newtonUntil = 10;
+  crank(a, 0.5);
+  crank(b, 0.5);
+  assert.ok(Math.abs(b.flywheel - 2 * a.flywheel) < 1e-12);
+  b.playSec = 11;
+  const c = b.flywheel;
+  b.flywheel = 0;
+  crank(b, 0.5);
+  assert.ok(Math.abs(b.flywheel - a.flywheel) < 1e-12, '过期后恢复');
+  void c;
+});
+
+test('自转摇柄:不摇也有储能保底', () => {
+  const s = atTiers(4, 0);
+  const idx = SOURCE_TIERS[4].branches!.findIndex((b) => (b.effect.floor ?? 0) > 0);
+  assert.ok(idx >= 0);
+  const s2 = atTiers(3, 0);
+  s2.coins = 1e18;
+  upgradeTier(s2, 'source', idx as 0 | 1);
+  s2.coins = 0;
+  const base = atTiers(3, 0);
+  base.coins = 1e18;
+  upgradeTier(base, 'source', (1 - idx) as 0 | 1);
+  assert.ok(throughput(s2).produce / baseProduce(s2.source) > throughput(base).produce / baseProduce(base.source) * 0.9);
+  tick(s2, 300);
+  assert.ok(s2.flywheel < 1e-6);
+  void s;
+});
+
+test('settle:离线按闭式结算,封顶 8 小时', () => {
+  const s = atTiers(2, 2);
+  s.source.units[2] = 5;
+  s.route.units[2] = 5;
+  s.vehicles = s.vehicles.filter((v) => v.tier !== 2);
+  for (let i = 0; i < 5; i++) s.vehicles.push({ tier: 2, w: 1, phase: 0, load: 0 });
+  const th = throughput(s);
+  const r = settle(s, 3600 * 1000);
+  assert.equal(r.capped, false);
+  assert.equal(r.seconds, 3600);
+  assert.ok(Math.abs(r.delivered / (th.flow * 3600) - 1) < 0.05);
+  const s2 = atTiers(2, 2);
+  const huge = settle(s2, 1000 * 3600 * 1000);
+  assert.equal(huge.capped, true);
+  assert.equal(huge.seconds, OFFLINE_CAP_MS / 1000);
+  const s3 = atTiers(2, 2);
+  settle(s3, OFFLINE_CAP_MS);
+  assert.equal(s3.delivered, s2.delivered, '正好 8 小时与超出 8 小时结果一样');
+  assert.deepEqual(settle(s3, 0), { delivered: 0, coins: 0, seconds: 0, capped: false });
+  assert.deepEqual(settle(s3, -5), { delivered: 0, coins: 0, seconds: 0, capped: false });
+});
+
+test('settle:短离开按普通 tick;大 dt 的 tick 走聚合', () => {
+  const s = fresh();
+  const r = settle(s, 2000);
+  assert.equal(r.seconds, 2);
+  assert.ok(Math.abs(s.playSec - 2) < 1e-9);
+  const a = atTiers(1, 1);
+  const b = atTiers(1, 1);
+  tick(a, 1000);
+  settle(b, 1000 * 1000);
+  assert.equal(a.delivered, b.delivered);
+  assert.ok(a.delivered > 0);
+});
+
+test('通关:累计送达 ≥ 82 亿时 wonAt 记下一次', () => {
+  const s = atTiers(2, 2);
+  assert.equal(isWon(s), false);
+  s.delivered = GOAL - 1;
+  assert.ok(progress(s) < 1);
+  s.playSec = 100;
+  tick(s, 60);
+  assert.equal(isWon(s), true);
+  assert.ok(s.wonAt !== null && s.wonAt > 100 && s.wonAt <= 160);
+  const at = s.wonAt;
+  tick(s, 30);
+  assert.equal(s.wonAt, at);
+  const t = atTiers(2, 2);
+  t.delivered = GOAL - 10;
+  settle(t, 3600 * 1000);
+  assert.ok(t.wonAt !== null);
+});
+
+test('存档:往返、备份、损坏回落、新版只读、旧版重开', () => {
+  const kv = mem();
+  const s = atTiers(2, 1);
+  s.coins = 12345;
+  s.delivered = 777;
+  s.gates[0] = 'wash';
+  assert.ok(save(kv, s, 5000));
+  assert.equal(s.lastSeen, 5000);
+  const r = load(kv, 9000);
+  assert.equal(r.kind, 'ok');
+  if (r.kind === 'ok') {
+    assert.equal(r.state.coins, 12345);
+    assert.equal(r.state.delivered, 777);
+    assert.equal(r.state.source.tier, 2);
+    assert.deepEqual(r.state.gates, ['wash', null, null]);
+    assert.equal(r.fromBackup, false);
+  }
+  // 第二次存:上一份进备份
+  s.coins = 99;
+  save(kv, s, 6000);
+  assert.ok(kv.m.get(SAVE_BAK_KEY));
+  // 主档损坏 → 用备份
+  kv.m.set(SAVE_KEY, '{"sum":"x","body":"oops"}');
+  const r2 = load(kv, 9000);
+  assert.equal(r2.kind, 'ok');
+  if (r2.kind === 'ok') {
+    assert.equal(r2.fromBackup, true);
+    assert.equal(r2.state.coins, 12345);
+  }
+  // 都坏 → 新档
+  kv.m.set(SAVE_BAK_KEY, 'garbage');
+  const r3 = load(kv, 9000);
+  assert.equal(r3.kind, 'new');
+  assert.equal(r3.state.coins, 0);
+  assert.equal(load(mem(), 1).kind, 'new');
+});
+
+test('存档:校验和、新版只读、旧版(v1/v2)直接重开', () => {
+  const s = fresh();
+  assert.equal(fnv('abc'), fnv('abc'));
+  assert.notEqual(fnv('abc'), fnv('abd'));
+  const raw = JSON.parse(serialize(s));
+  raw.body = raw.body.replace('"coins":0', '"coins":9');
+  assert.equal(parse(JSON.stringify(raw)), null, '改一个数字校验和就对不上');
+  const wrap = (st: object) => { const body = JSON.stringify(st); return JSON.stringify({ sum: fnv(body), body }); };
+  const kv = mem();
+  kv.setItem(SAVE_KEY, wrap({ ...s, version: SAVE_VERSION + 1, coins: 5 }));
+  const n = load(kv, 1);
+  assert.equal(n.kind, 'readonly');
+  const kv2 = mem();
+  kv2.setItem(SAVE_KEY, wrap({ version: 2, apples: 1e9, upgrades: { shake: 5 } }));
+  assert.equal(load(kv2, 1).kind, 'new');
+  const kv3 = mem();
+  kv3.setItem(SAVE_KEY, wrap({ ...s, version: 1 }));
+  assert.equal(load(kv3, 1).kind, 'new');
+  // 缺字段会被补齐
+  const kv4 = mem();
+  const partial: any = { ...s };
+  delete partial.vehicles;
+  delete partial.gates;
+  delete partial.settings;
+  kv4.setItem(SAVE_KEY, wrap(partial));
+  const l = load(kv4, 1);
+  assert.equal(l.kind, 'ok');
+  if (l.kind === 'ok') {
+    assert.equal(l.state.vehicles.length, 1);
+    assert.equal(l.state.gates.length, GATE_SLOTS);
+    assert.equal(l.state.settings.sound, false);
+  }
+});
+
+test('存档:导出/导入、坏文本、存储不可写', () => {
+  const s = atTiers(1, 1);
+  s.coins = 321;
+  const text = exportSave(s);
+  const back = importSave(text)!;
+  assert.equal(back.coins, 321);
+  assert.equal(back.source.tier, 1);
+  assert.equal(importSave('not base64 !!'), null);
+  assert.equal(importSave(btoa('hello')), null);
+  assert.equal(importSave(exportSave({ ...s, version: SAVE_VERSION + 1 } as State)), null, '新版导出文件不收');
+  assert.equal(importSave('  ' + text + '\n')!.coins, 321, '首尾空白无所谓');
+  assert.equal(storageWritable(mem()), true);
+  assert.equal(storageWritable({ getItem: () => null, setItem: () => { throw new Error('quota'); } }), false);
+  assert.equal(save({ getItem: () => null, setItem: () => { throw new Error('quota'); } }, s, 1), false);
+});
+
+test('事件:间隔、昼夜选择、奖励', () => {
+  assert.equal(nextEventGap(() => 0), EVENT_GAP_S[0]);
+  assert.equal(nextEventGap(() => 1), EVENT_GAP_S[1]);
+  const seen = new Set<string>();
+  for (let i = 0; i < 100; i++) seen.add(pickEvent(true, () => i / 100));
+  assert.deepEqual([...seen].sort(), ['bird', 'meteor']);
+  const day = new Set<string>();
+  for (let i = 0; i < 100; i++) day.add(pickEvent(false, () => i / 100));
+  assert.deepEqual([...day].sort(), ['bird', 'newton']);
+  const s = atTiers(1, 1);
+  s.source.units[1] = 5;
+  s.route.units[1] = 5;
+  const flow = throughput(s).flow;
+  const c = claimEvent(s, 'bird');
+  assert.equal(c.apples, Math.floor(flow * EVENT_REWARD_S.bird));
+  assert.equal(s.delivered, c.apples);
+  assert.ok(s.coins > 0);
+  const m = claimEvent(s, 'meteor');
+  assert.ok(m.apples > c.apples);
+  s.playSec = 50;
+  const n = claimEvent(s, 'newton');
+  assert.equal(n.apples, 0);
+  assert.equal(s.newtonUntil, 50 + NEWTON_S);
+  assert.ok(claimEvent(fresh(), 'bird').apples >= 1);
+});
+
+test('世界与礼物日期', () => {
+  assert.equal(DAY_S, 240);
+  assert.equal(SEASON_NAMES.length, 4);
+  const w = worldAt(0);
+  assert.ok(w.daylight >= 0 && w.daylight <= 1);
+  assert.deepEqual(worldAt(123), worldAt(123));
+  assert.equal(giftOpen(new Date(2026, 11, 23, 23, 59).getTime()), false);
+  assert.equal(giftOpen(new Date(2026, 11, 24, 0, 0).getTime()), true);
+  assert.equal(SEALED.length, 3);
+});
+
+test('格式化:中文万/亿', () => {
+  assert.equal(fmt(0), '0');
   assert.equal(fmt(999), '999');
   assert.equal(fmt(12345), '1.23万');
-  assert.equal(fmt(8.2e9), '82亿');
   assert.equal(fmt(1e8), '1亿');
-  assert.equal(equiv(3), '');
-  assert.ok(equiv(1000).includes('箱'));
-  assert.ok(equiv(GOAL).includes('地球'));
-});
-
-test('新闻按累计数量单调推进', () => {
-  assert.equal(newsIndex(0), 0);
-  let last = 0;
-  for (const x of [1, 10, 100, 1e3, 1e5, 1e7, 1e9, GOAL]) {
-    const i = newsIndex(x);
-    assert.ok(i >= last);
-    last = i;
-  }
-  assert.equal(last, NEWS.length - 1);
-});
-
-test('离线补算:50% 效率,8 小时封顶', () => {
-  const s = newState(0);
-  s.upgrades.breeze = 10;
-  const per = rate(s);
-  const r = settle(s, 3600_000);
-  assert.ok(Math.abs(r.gain - per * 3600 * 0.5) < 1e-6);
-  const s2 = newState(0);
-  s2.upgrades.breeze = 10;
-  const r2 = settle(s2, 20 * 3600_000);
-  assert.equal(r2.capped, true);
-  assert.ok(Math.abs(r2.gain - per * (OFFLINE_CAP_MS / 1000) * 0.5) < 1e-3);
-});
-
-test('离线补算:短暂离开全效率,沉睡 100%,时钟回拨不给收益', () => {
-  const s = newState(100_000);
-  s.upgrades.breeze = 10;
-  const per = rate(s);
-  assert.ok(Math.abs(settle(s, 130_000).gain - per * 30) < 1e-6);
-  const s2 = newState(0);
-  s2.upgrades.breeze = 10;
-  s2.sleeping = true;
-  assert.ok(Math.abs(settle(s2, 3600_000).gain - per * 3600) < 1e-6);
-  assert.equal(s2.sleeping, false);
-  const s3 = newState(1_000_000);
-  s3.upgrades.breeze = 10;
-  const r = settle(s3, 500_000);
-  assert.equal(r.gain, 0);
-  assert.equal(s3.lastSeen, 500_000);
-});
-
-test('存档往返,并保留一份备份', () => {
-  const kv = mem();
-  const s = newState(0);
-  s.apples = 42;
-  assert.equal(save(kv, s, 1000), true);
-  s.apples = 43;
-  save(kv, s, 2000);
-  assert.ok(kv.m.get(SAVE_BAK_KEY));
-  const r = load(kv, 3000);
-  assert.equal(r.kind, 'ok');
-  assert.equal(r.state.apples, 43);
-  assert.equal(r.state.lastSeen, 2000);
-});
-
-test('主档损坏时回退到备份', () => {
-  const kv = mem();
-  const s = newState(0);
-  s.apples = 7;
-  save(kv, s, 1000);
-  s.apples = 8;
-  save(kv, s, 2000);
-  kv.m.set(SAVE_KEY, kv.m.get(SAVE_KEY)!.slice(0, 20)); // 半截写入
-  const r = load(kv, 3000);
-  assert.equal(r.kind, 'ok');
-  assert.equal(r.kind === 'ok' && r.fromBackup, true);
-  assert.equal(r.state.apples, 7);
-});
-
-test('版本高于代码时只读,不覆盖', () => {
-  const kv = mem();
-  const s: any = newState(0);
-  s.version = 999;
-  kv.setItem(SAVE_KEY, serialize(s));
-  assert.equal(load(kv, 0).kind, 'readonly');
-});
-
-test('没有存档时新开一局', () => {
-  assert.equal(load(mem(), 5).kind, 'new');
-});
-
-test('存储写入失败时 save 返回 false 而不抛错', () => {
-  const kv: KV = { getItem: () => null, setItem: () => { throw new Error('quota'); } };
-  assert.equal(save(kv, newState(0), 1), false);
-});
-
-test('导出再导入得到同样的存档,坏数据返回 null', () => {
-  const s = newState(0);
-  s.apples = 123;
-  s.delivered = 456;
-  const back = importSave(exportSave(s));
-  assert.equal(back?.apples, 123);
-  assert.equal(back?.delivered, 456);
-  assert.equal(importSave('not base64 !!'), null);
-});
-
-import { BITES, bite, canBite, globalMult, useWitch, witchReady, cookMult, WITCH_SKIP_S, PROJECTS } from '../src/core/game.ts';
-import { ACHIEVEMENTS, checkAchievements } from '../src/core/achievements.ts';
-import { tickerLines } from '../src/core/news.ts';
-
-test('禁果:按顺序咬,每口全部产出 ×2,需要累计门槛和苹果', () => {
-  const s = newState(0);
-  s.apples = 1e12;
-  assert.equal(canBite(s), false, '累计不够不能咬');
-  s.delivered = BITES[0].unlockAt;
-  const m0 = globalMult(s);
-  assert.equal(bite(s), true);
-  assert.equal(globalMult(s), m0 * 2);
-  assert.equal(canBite(s), false, '第二口门槛未到');
-  s.delivered = BITES[2].unlockAt;
-  assert.equal(bite(s) && bite(s), true);
-  assert.equal(s.bites, 3);
-  assert.equal(bite(s), false, '只有三口');
-});
-
-test('女巫苹果:整局一次,得到 20 分钟自动产出并进入沉睡', () => {
-  const s = newState(0);
-  s.upgrades.breeze = 10;
-  assert.equal(witchReady(s), false);
-  s.projects.witch = true;
-  const r = rate(s);
-  const gain = useWitch(s);
-  assert.ok(Math.abs(gain - r * WITCH_SKIP_S) < 1e-6);
-  assert.equal(s.sleeping, true);
-  assert.equal(useWitch(s), 0);
-});
-
-test('还有一件事:发布会倍数 3 → 5', () => {
-  const s = newState(0);
-  assert.equal(cookMult(s), 3);
-  s.projects.onemore = true;
-  assert.equal(cookMult(s), 5);
-});
-
-test('成就:解锁一次并记录时间,线索齐全', () => {
-  const s = newState(0);
-  assert.equal(checkAchievements(s, 5).length, 0);
-  s.clicks = 100;
-  const got = checkAchievements(s, 9).map((a) => a.id);
-  assert.deepEqual(got, ['first', 'shake100']);
-  assert.equal(s.achievements.first, 9);
-  assert.equal(checkAchievements(s, 10).length, 0);
-  for (const a of ACHIEVEMENTS) assert.ok(a.hint && a.desc && a.name);
-});
-
-test('项目:晚期项目的解锁门槛不晚于终点,价格低于终点', () => {
-  for (const p of PROJECTS) {
-    assert.ok(p.unlockAt < GOAL && p.cost < GOAL, p.id);
-  }
-  assert.ok(BITES.every((b) => b.cost < GOAL && b.unlockAt < GOAL));
-});
-
-test('跑马灯总有内容', () => {
-  for (const d of [0, 100, 1e6, 5e9]) assert.ok(tickerLines(d).length >= 4);
-});
-
-test('微风:每级 +1/秒,并让所有自动产出 +0.32%', () => {
-  const s = newState(0);
-  s.upgrades.breeze = 20;
-  s.upgrades.gardener = 10;
-  assert.ok(Math.abs(breezeBoost(s) - (1 + 20 * tuning.breeze)) < 1e-9);
-  const noBreeze = { ...s, upgrades: { ...s.upgrades, breeze: 0 } };
-  assert.ok(rate(s) > rate(noBreeze) + 20);
-});
-
-test('升级里程碑:每个升级每满 25 级,全部产出 ×MILESTONE_GLOBAL', () => {
-  const s = newState(0);
-  assert.equal(milestoneCount(s), 0);
-  s.upgrades.shake = 24;
-  const g0 = globalMult(s);
-  s.upgrades.shake = 25;
-  s.upgrades.gardener = 50;
-  assert.equal(milestoneCount(s), 3);
-  assert.ok(Math.abs(globalMult(s) / g0 - Math.pow(MILESTONE_GLOBAL, 3)) < 1e-9);
-});
-
-test('新升级:拖拉机/无人机/苹果云存在且存档补齐字段', () => {
-  const s = newState(0);
-  for (const id of ['tractor', 'drone', 'cloud'] as const) assert.equal(s.upgrades[id], 0);
-});
-
-import { harvestInfo, harvestMult, worldAt, envMult, HARVEST_CYCLE_S, world } from '../src/core/world.ts';
-import { eventReward, pickEvent, nextEventGap, EVENT_GAP_S } from '../src/core/events.ts';
-import { sourcePerSec, SOURCE_IDS, clickBonus, rate as rate2, clickEV as clickEV2, tuning } from '../src/core/game.ts';
-
-test('收获周期:平均倍率 1,收获期 25 秒', () => {
-  let sum = 0;
-  for (let t = 0; t < HARVEST_CYCLE_S; t += 0.5) sum += harvestMult(t) * 0.5;
-  assert.ok(Math.abs(sum / HARVEST_CYCLE_S - 1) < 1e-9);
-  assert.equal(harvestInfo(80).harvesting, true);
-  assert.equal(harvestInfo(10).harvesting, false);
-  assert.equal(harvestMult(Infinity), 1);
-  world.harvestOn = false;
-  assert.equal(envMult(80), 1);
-  world.harvestOn = true;
-});
-
-test('昼夜与季节:一天 240 秒,季节 300 秒,同一时刻天气固定', () => {
-  assert.equal(worldAt(60).isNight, false);
-  assert.equal(worldAt(180).isNight, true);
-  assert.equal(worldAt(0).season, 0);
-  assert.equal(worldAt(301).season, 1);
-  assert.equal(worldAt(1250).season, 0);
-  assert.equal(worldAt(100).weather, worldAt(100).weather);
-  assert.equal(worldAt(0, 3).season, 3);
-});
-
-test('随机事件:流星只在夜里,奖励至少 1', () => {
-  for (let i = 0; i < 50; i++) assert.notEqual(pickEvent(false), 'star');
-  const g = nextEventGap(() => 0);
-  assert.equal(g, EVENT_GAP_S[0]);
-  const s = newState(0);
-  assert.ok(eventReward(s, 'bird') >= 1);
-});
-
-test('来源:各来源之和 = 点击收入 + 自动产出', () => {
-  const s = newState(0);
-  s.upgrades.gardener = 10; s.upgrades.breeze = 20; s.upgrades.tractor = 5; s.upgrades.shake = 8;
-  s.delivered = 1e6;
-  const p = sourcePerSec(s, 2, Infinity);
-  const sum = SOURCE_IDS.reduce((a, id) => a + p[id], 0);
-  assert.ok(Math.abs(sum - (rate2(s) + 2 * clickEV2(s))) / sum < 1e-9);
-  assert.ok(p.breeze > 0 && p.click > 0 && p.drone === 0);
-});
-
-test('摇树:每次点击额外获得自动产出的一部分', () => {
-  const s = newState(0);
-  s.upgrades.gardener = 10; s.upgrades.shake = 10;
-  const b = clickBonus(s);
-  assert.ok(Math.abs(b - 10 * tuning.clickAuto * rate2(s)) < 1e-9);
+  assert.equal(fmt(8.2e9), '82亿');
+  assert.equal(fmt(3.5e12), '3.5万亿');
+  assert.equal(fmt(Infinity), '∞');
+  assert.match(equiv(8.2e9), /每个人/);
 });

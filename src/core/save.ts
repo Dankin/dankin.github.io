@@ -1,5 +1,5 @@
 import { SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from './constants.ts';
-import { emptyProjects, newState, type State } from './state.ts';
+import { newState, type State } from './state.ts';
 
 /** 只用到这三个方法,便于测试时传入内存实现 */
 export interface KV {
@@ -18,9 +18,8 @@ export function fnv(str: string): string {
 }
 
 /** migrations[v] 把 v 版存档升到 v+1 版 */
-export const migrations: Array<(s: any) => any> = [
-  (s) => s, // v0 -> v1 占位
-];
+/** v1/v2 是旧的数值模型,结构完全不同:直接换成全新存档(见 parse)。 */
+export const migrations: Array<(s: any) => any> = [];
 
 export type LoadResult =
   | { kind: 'ok'; state: State; fromBackup: boolean }
@@ -39,6 +38,8 @@ export function parse(raw: string): { state: State; newer: boolean } | null {
     let s = JSON.parse(body);
     if (typeof s.version !== 'number') return null;
     if (s.version > SAVE_VERSION) return { state: s as State, newer: true };
+    // 旧版(<3)是另一套玩法,存档不兼容:丢弃,从头开始
+    if (s.version < SAVE_VERSION) return null;
     while (s.version < SAVE_VERSION) {
       s = migrations[s.version](s);
       s.version += 1;
@@ -78,16 +79,23 @@ export function load(kv: KV, now: number): LoadResult {
   return { kind: 'new', state: newState(now) };
 }
 
-/** 迁移后补齐可能缺失的字段 */
+/** 迁移后补齐可能缺失的字段;结构对不上(旧版存档)直接当新档 */
 function fillDefaults(s: State, now: number): State {
   const d = newState(now);
+  const line = (l: any, dl: State['source']): State['source'] => ({
+    tier: Number.isInteger(l?.tier) ? l.tier : 0,
+    units: dl.units.map((_, i) => (Number.isFinite(l?.units?.[i]) ? l.units[i] : dl.units[i])),
+    branch: dl.branch.map((_, i) => (l?.branch?.[i] === 0 || l?.branch?.[i] === 1 ? l.branch[i] : -1)) as State['source']['branch'],
+  });
   return {
     ...d,
     ...s,
-    upgrades: { ...d.upgrades, ...s.upgrades },
-    projects: { ...emptyProjects(), ...s.projects },
-    buffs: { ...d.buffs, ...s.buffs },
-    achievements: { ...s.achievements },
+    source: line(s.source, d.source),
+    route: line(s.route, d.route),
+    gates: d.gates.map((_, i) => s.gates?.[i] ?? null),
+    gatesUnlocked: Array.isArray(s.gatesUnlocked) ? s.gatesUnlocked : d.gatesUnlocked,
+    vehicles: Array.isArray(s.vehicles) && s.vehicles.length ? s.vehicles : d.vehicles,
+    tierTimes: { source: s.tierTimes?.source ?? [], route: s.tierTimes?.route ?? [] },
     settings: { ...d.settings, ...s.settings },
   };
 }
