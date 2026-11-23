@@ -18,8 +18,11 @@ import { showEnding } from './ui/ending.ts';
 import { fmt } from './ui/format.ts';
 import { createAudio } from './audio/bgm.ts';
 import './ui/glue.css';
+import { attachMotion, enableMotion, motionSupported } from './input/motion.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
+/** 可能不存在的节点(UI 设计师会增删) */
+const $o = <T extends HTMLElement = HTMLElement>(id: string): T | null => document.getElementById(id) as T | null;
 const kv = localStorage;
 
 // ───────────── 调试参数 ─────────────
@@ -204,11 +207,15 @@ function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nex
 // ───────────── 老徐(自动摇树)按钮:场景左上角的小按钮,生产档 ≥1 才出现 ─────────────
 let helperBtn: HTMLButtonElement;
 function mkHelperBtn(): void {
-  helperBtn = document.createElement('button');
-  helperBtn.id = 'btnHelper';
-  helperBtn.type = 'button';
+  const existing = $o<HTMLButtonElement>('btnHelper');
+  if (existing) helperBtn = existing;
+  else {
+    helperBtn = document.createElement('button');
+    helperBtn.id = 'btnHelper';
+    helperBtn.type = 'button';
+    $('scene').append(helperBtn);
+  }
   helperBtn.hidden = true;
-  $('scene').append(helperBtn);
   helperBtn.addEventListener('click', () => {
     if (buyHelper(state)) {
       audio.sfx.buy();
@@ -240,6 +247,7 @@ function renderHelper(hints: ReturnType<typeof nextHints>): void {
 let gatesSeen = 0;
 let tipEmptyShown = false;
 function renderGates(): void {
+  if (!$o('gate0')) return; // 关卡槽改画在场景里了
   const s = state;
   const hasFree = s.gatesUnlocked.some((g) => !s.gates.includes(g));
   const noneYet = s.gates.every((g) => g === null);
@@ -440,10 +448,26 @@ function onShakeResult(r: ShakeResult): void {
   }
 }
 /** 摇一下树(点画布 / 空格 / 以后手机摇一摇都走这里) */
-function doShake(): void {
+function doShake(strength = 1): void {
   const r = shake(state);
-  if (r.ok) orchard.poke(2);
+  if (r.ok) orchard.poke(Math.max(1, Math.round(1 + strength)));
   onShakeResult(r);
+}
+
+// ───────────── 设置里的精确数字(顶栏只放 已送出) ─────────────
+let exactRows: HTMLElement[] | null = null;
+function renderExact(th: Throughput): void {
+  const box = $o('exactApples');
+  if (!box) return;
+  if (!exactRows) {
+    exactRows = [0, 1, 2, 3].map(() => box.appendChild(document.createElement('div')));
+  }
+  const n = (v: number): string => Math.floor(v).toLocaleString('en-US');
+  const s = state;
+  setText(exactRows[0], `已送出 ${n(s.delivered)} / ${n(GOAL)}`);
+  setText(exactRows[1], `果钱 ${n(s.coins)}`);
+  setText(exactRows[2], `每秒送达 ${fmt(th.flow)} · 每秒收入 ${fmt(th.income)}`);
+  setText(exactRows[3], `摇了 ${n(s.shakes)} 下 · 老徐 ${s.helpers} 位`);
 }
 
 // ───────────── 渲染(每 0.25 秒一次,以及操作后立即) ─────────────
@@ -466,7 +490,9 @@ function renderAll(): void {
     ap.textContent = shown;
     lastApples = shown;
   }
-  setText($('rate'), `果钱 ${fmt(Math.floor(s.coins))} · 每秒 ${fmt(th.flow)}`);
+  const rateEl = $o('rate');
+  if (rateEl) setText(rateEl, `果钱 ${fmt(Math.floor(s.coins))} · 每秒 ${fmt(th.flow)}`);
+  renderExact(th);
   const pct = progress(s) * 100;
   $('goalBar').style.width = `${pct.toFixed(2)}%`;
   $('goalWrap').setAttribute('aria-valuenow', pct.toFixed(1));
@@ -607,7 +633,7 @@ function nudge(line: LineId, what: 'unit' | 'tier'): void {
   toast(`果钱还差 ${fmt(lack)}${isFinite(x.waitSec) ? `,约 ${fmtWait(x.waitSec)}` : ''}。`, 2400);
 }
 function wire(): void {
-  orchard.onShake = () => doShake();
+  orchard.onShake = (st) => doShake(st ?? 1);
   orchard.onGate = (slot) => openGate(slot);
 
   const buy = (line: LineId, a: Act) => () => {
@@ -628,7 +654,7 @@ function wire(): void {
     press(btn.ru.el);
     openBranch('route');
   });
-  for (let i = 0; i < GATE_SLOTS; i++) $(`gate${i}`).addEventListener('click', () => openGate(i));
+  for (let i = 0; i < GATE_SLOTS; i++) $o(`gate${i}`)?.addEventListener('click', () => openGate(i));
   $('branch0').addEventListener('click', () => chooseBranch(0));
   $('branch1').addEventListener('click', () => chooseBranch(1));
 
@@ -639,8 +665,7 @@ function wire(): void {
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => orchard.resize()).observe($('scene'));
 
   // 声音:默认关;第一次触摸/按键时解锁 AudioContext
-  addEventListener('pointerdown', () => audio.unlock(), { capture: true });
-  addEventListener('keydown', () => audio.unlock(), { capture: true });
+  armAudioUnlock();
   $('btnSound').addEventListener('click', () => {
     state.settings.sound = !state.settings.sound;
     audio.unlock();
@@ -702,6 +727,106 @@ function wire(): void {
   });
 }
 
+// ───────────── 音频解锁:iOS 要在 pointerup/click 手势里 resume,一直试到 running 为止 ─────────────
+const UNLOCK_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+function armAudioUnlock(): void {
+  const onGesture = (): void => {
+    audio.unlock();
+    if (audio.isRunning()) disarm();
+  };
+  const arm = (): void => {
+    for (const t of UNLOCK_EVENTS) addEventListener(t, onGesture, { capture: true, passive: true });
+  };
+  const disarm = (): void => {
+    for (const t of UNLOCK_EVENTS) removeEventListener(t, onGesture, { capture: true });
+  };
+  arm();
+  // 被系统挂起(来电、切后台)后回到前台:重新挂上
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !audio.isRunning()) {
+      disarm();
+      arm();
+    }
+  });
+}
+
+// ───────────── 手机摇一摇(默认关;独立于存档,存在 localStorage) ─────────────
+const MOTION_KEY = 'shake-the-apple.motion';
+let detachMotion: (() => void) | null = null;
+const motionBtn = $o<HTMLButtonElement>('btnMotion');
+function motionStored(): boolean {
+  try {
+    return localStorage.getItem(MOTION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function motionStore(on: boolean): void {
+  try {
+    localStorage.setItem(MOTION_KEY, on ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+}
+function renderMotionBtn(): void {
+  if (motionBtn) motionBtn.textContent = detachMotion ? '摇一摇:开' : '摇一摇:关';
+}
+function motionShake(strength: number): void {
+  // 结局、设置、弹层打开时不响应
+  if (document.getElementById('ending') || !$('settings').hidden || !bp.hidden || !gp.hidden) return;
+  // 一次真实的摇动 ≈ 三下:按间隔摇,让令牌桶和音效都有喘息
+  for (let i = 0; i < 3; i++) setTimeout(() => doShake(strength), i * 110);
+}
+function startMotion(): void {
+  if (detachMotion) return;
+  detachMotion = attachMotion(motionShake);
+  renderMotionBtn();
+}
+function stopMotion(): void {
+  detachMotion?.();
+  detachMotion = null;
+  renderMotionBtn();
+}
+async function turnMotionOn(): Promise<void> {
+  const r = await enableMotion();
+  if (r === 'on') {
+    startMotion();
+    motionStore(true);
+  } else if (r === 'denied') {
+    toast('没拿到传感器权限。iPhone:设置 → Safari → 动作与方向访问。', 5000);
+  }
+  renderMotionBtn();
+}
+function setupMotion(): void {
+  if (!motionBtn) return;
+  if (!motionSupported()) {
+    motionBtn.hidden = true;
+    return;
+  }
+  motionBtn.hidden = false;
+  renderMotionBtn();
+  motionBtn.addEventListener('click', () => {
+    if (detachMotion) {
+      stopMotion();
+      motionStore(false);
+    } else void turnMotionOn();
+  });
+  // 之前开过:不需要权限弹窗的平台直接恢复;iOS 需要手势,等第一次点击时再请求
+  if (motionStored()) {
+    const needGesture = typeof (window as unknown as { DeviceMotionEvent?: { requestPermission?: unknown } }).DeviceMotionEvent?.requestPermission === 'function';
+    if (!needGesture) startMotion();
+    else {
+      const once = (): void => {
+        removeEventListener('pointerup', once, true);
+        void enableMotion().then((r) => {
+          if (r === 'on') startMotion();
+        });
+      };
+      addEventListener('pointerup', once, true);
+    }
+  }
+}
+
 // ───────────── 主循环 ─────────────
 let lastTs = performance.now();
 let slowAcc = 0;
@@ -742,6 +867,7 @@ function loop(ts: number): void {
 // ───────────── 启动 ─────────────
 canSave = storageWritable(kv);
 const loaded = load(kv, Date.now());
+const awayAtBoot = loaded.kind === 'new' ? 0 : Date.now() - loaded.state.lastSeen;
 state = loaded.state;
 if (loaded.kind === 'readonly') readOnly = true;
 mkHelperBtn();
@@ -751,9 +877,11 @@ if (loaded.kind === 'readonly') toast('存档来自更新的版本,本页只读,
 else if (loaded.kind === 'ok') {
   if (loaded.fromBackup) toast('主存档损坏,已从备份恢复。', 5000);
   catchUp(true);
+  if (awayAtBoot >= 3 * 86400_000) toast('隔了好几天。存档可以在设置里导出一份,也可以「添加到主屏幕」,下次点一下就回来。', 6000);
 }
 $('saveWarn').textContent = canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
+setupMotion();
 if (DEBUG) {
   setupDebug();
   (window as unknown as { __game: unknown }).__game = {

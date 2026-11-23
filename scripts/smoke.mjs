@@ -85,14 +85,14 @@ for (const [nm, w, h] of VIEWS) {
   await open('?debug=1');
   await sleep(500);
   const lay = await J(`(()=>{const r=e=>{const b=document.querySelector(e).getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right,w:b.width,h:b.height}};
-    const btns=['#btnSrcBuy','#btnSrcUp','#btnRtBuy','#btnRtUp','#gate0','#gate1','#gate2','#btnSettings'].map(s=>({s,...r(s)}));
+    const btns=['#btnSrcBuy','#btnSrcUp','#btnRtBuy','#btnRtUp','#btnSettings'].map(s=>({s,...r(s)}));
     return {sw:document.documentElement.scrollWidth,iw:innerWidth,sh:document.documentElement.scrollHeight,ih:innerHeight,bar:r('#bar'),stage:r('#stage'),btns}})()`);
   check(`${nm} ${w}×${h} 无横向滚动`, lay.sw <= lay.iw, `(${lay.sw}/${lay.iw})`);
   check(`${nm} 底栏完整在视口内`, lay.bar.t >= 0 && lay.bar.b <= lay.ih + 1 && lay.bar.l >= -1 && lay.bar.r <= lay.iw + 1, `(bar ${Math.round(lay.bar.t)}..${Math.round(lay.bar.b)} / ih ${lay.ih})`);
   check(`${nm} 果园画布有面积`, lay.stage.h >= 120 && lay.stage.w >= 200, `(${Math.round(lay.stage.w)}×${Math.round(lay.stage.h)})`);
   const small = lay.btns.filter((b) => b.h < 44 || b.w < 44).map((b) => `${b.s}:${Math.round(b.w)}×${Math.round(b.h)}`);
   info(`${nm} 触控目标<44px`, small.length ? small.join(' ') : '无');
-  const clip = await J(`[...document.querySelectorAll('#bar .nm,#bar .pr,#bar .gain')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className+':'+e.textContent)`);
+  const clip = await J(`[...document.querySelectorAll('#bar .nm,#bar .pr,#bar .pv')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className+':'+e.textContent)`);
   info(`${nm} 底栏文字被截断`, clip.length ? clip.join(' | ') : '无');
   const px = await ev(`(()=>{const c=document.getElementById('stage');const x=c.getContext('2d');if(!x)return -1;const d=x.getImageData(0,0,c.width,c.height).data;let k=0;for(let i=0;i<d.length;i+=16)if(d[i+3]>0&&d[i]<150)k++;return k})()`);
   check(`${nm} 画布非空(有深色线条像素)`, px > 300 || px === -1, `(${px})`);
@@ -112,12 +112,26 @@ await view(844, 390);
 await open('?speed=60');
 check('?speed 出现调试面板', (await ev('!!document.getElementById("dbgSpeed")')) === true && (await text('#dbgSpeed')) === '×60', `(${await text('#dbgSpeed')})`);
 const d0 = await num('g.state.delivered'); const clicks0 = await num('g.state.shakes');
+{ // 按下即摇:只 press 不 release 也算一下
+  const r0 = await J('(()=>{const b=document.getElementById("stage").getBoundingClientRect();return {x:b.left+b.width*0.14,y:b.top+b.height*0.5}})()');
+  const k0 = await num('g.state.shakes');
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: r0.x, y: r0.y, button: 'left', clickCount: 1 });
+  await sleep(80);
+  const k1 = await num('g.state.shakes');
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r0.x, y: r0.y, button: 'left', clickCount: 1 });
+  check('按下(pointerdown)即摇,不等抬起', k1 === k0 + 1, `(${k0} → ${k1})`);
+}
 await tapStage(15);
 check('点果园 = 摇树(clicks 增加)', (await num('g.state.shakes')) >= clicks0 + 10, `(${clicks0} → ${await num('g.state.shakes')})`);
 await sleep(5000);
 const d1 = await num('g.state.delivered');
 check('×60 几秒后已送出增加', d1 > d0 + 1, `(${d0} → ${d1.toFixed(1)}; 顶栏 ${await text('#apples')})`);
-check('顶栏显示已送出和每秒', (await text('#apples')).length > 0 && /每秒/.test(await text('#rate')), `(${await text('#rate')})`);
+check('顶栏只有已送出(果钱/每秒已移进设置)', (await text('#apples')).length > 0 && (await ev('!document.getElementById("rate")')) === true);
+await openSettings(); await sleep(300);
+const exact = await ev('document.getElementById("exactApples").innerText');
+check('设置里有精确数字(已送出/果钱/每秒/摇了)', /已送出/.test(exact) && /果钱/.test(exact) && /每秒/.test(exact) && /摇了/.test(exact), JSON.stringify(exact));
+check('设置里有静音提示与存档/主屏幕提示', /静音拨片/.test(await text('#soundNote')) && /主屏幕/.test(await text('#installNote')));
+await click('#btnCloseSettings'); await sleep(300);
 
 // 买单位
 await dbgBtn('+10亿果钱'); await sleep(400);
@@ -137,8 +151,13 @@ await click('#btnRtUp'); await sleep(300); await click('#branch1'); await sleep(
 check('运输线也能升档', (await num('g.state.route.tier')) === 1, `(tier ${await num('g.state.route.tier')})`);
 
 // 关卡槽
-await click('#gate0'); await sleep(300);
-check('点关卡槽打开选择', (await ev('!document.getElementById("gatePick").hidden')) === true && (await ev('document.querySelectorAll("#gateOpts .opt").length')) >= 2, `(${await ev('document.querySelectorAll("#gateOpts .opt").length')} 项)`);
+{
+  const gp0 = await J('(()=>{const b=document.getElementById("stage").getBoundingClientRect();const p=window.__game.orchard.gateScreen(0);return {x:b.left+p.x,y:b.top+p.y}})()');
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: gp0.x, y: gp0.y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: gp0.x, y: gp0.y, button: 'left', clickCount: 1 });
+}
+await sleep(300);
+check('点场景里的关卡圈打开选择', (await ev('!document.getElementById("gatePick").hidden')) === true && (await ev('document.querySelectorAll("#gateOpts .opt").length')) >= 2, `(${await ev('document.querySelectorAll("#gateOpts .opt").length')} 项)`);
 const opt = await ev('(()=>{const o=[...document.querySelectorAll("#gateOpts .opt")].find(b=>!b.disabled&&!b.classList.contains("none"));if(!o)return null;const t=o.querySelector("b").textContent;o.click();return t})()');
 await sleep(300);
 check('选一个关卡放入槽 0', opt && (await G('g.state.gates[0]')) !== null, `(${opt} → ${await G('g.state.gates[0]')})`);
@@ -164,6 +183,43 @@ await send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space',
 await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' });
 await sleep(150);
 check('空格 = 摇一下', (await num('g.state.shakes')) === c1 + 1, `(${c1} → ${await num('g.state.shakes')})`);
+
+// ───────── 2b. 摇一摇 / 清单 / 久别提示 ─────────
+check('有 manifest 与 apple-touch-icon 链接', (await ev('!!document.querySelector("link[rel=manifest]")&&!!document.querySelector("link[rel=apple-touch-icon]")')) === true);
+await view(1280, 800); await open('?debug=1');
+check('桌面(无触控/传感器):摇一摇开关隐藏', (await ev('document.getElementById("btnMotion").hidden')) === true);
+await view(390, 844); await open('?debug=1');
+check('手机:摇一摇开关出现,默认关', (await ev('!document.getElementById("btnMotion").hidden')) === true && /关/.test(await text('#btnMotion')), `(${await text('#btnMotion')})`);
+await openSettings(); await sleep(200); await click('#btnMotion'); await sleep(300);
+check('点开后显示"开"并写入 localStorage', /开/.test(await text('#btnMotion')) && (await ev('localStorage.getItem("shake-the-apple.motion")')) === '1', `(${await text('#btnMotion')})`);
+await click('#btnCloseSettings'); await sleep(300);
+{
+  const m0 = await num('g.state.shakes');
+  // 真机约 60Hz:先静止几个样本,再 ±22 m/s² 交替(每半周期 4 个样本,共 6 个半周期)
+  await ev(`(async()=>{const f=(x)=>dispatchEvent(Object.assign(new Event('devicemotion'),{acceleration:{x,y:0,z:0},accelerationIncludingGravity:{x,y:0,z:9.8},interval:16}));
+    for(let i=0;i<3;i++){f(0);await new Promise(r=>setTimeout(r,16))}
+    for(let h=0;h<6;h++)for(let i=0;i<4;i++){f(h%2?-22:22);await new Promise(r=>setTimeout(r,16))}})()`);
+  await sleep(500);
+  const m1 = await num('g.state.shakes');
+  check('手机摇一摇 = 摇树(约 3 下)', m1 - m0 >= 2 && m1 - m0 <= 6, `(${m0} → ${m1})`);
+  check('摇动无报错', errors.length === 0, errors.slice(0, 2).join(' | '));
+}
+// 久别 ≥3 天:回来 toast 一次
+await view(844, 390); await open('?debug=1');
+await ev('dispatchEvent(new Event("pagehide"))');
+{ // 在空白页里改存档的 lastSeen(在游戏页里改会被 pagehide 覆盖)
+  const raw = await ev('localStorage.getItem("shake-the-apple.save")');
+  const w = JSON.parse(raw); const b = JSON.parse(w.body); b.lastSeen = Date.now() - 4 * 86400000;
+  w.body = JSON.stringify(b);
+  let h = 0x811c9dc5; for (let i = 0; i < w.body.length; i++) { h ^= w.body.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  w.sum = h.toString(16);
+  await send('Page.navigate', { url: 'file://' + blank }); await sleep(250);
+  await ev(`localStorage.setItem("shake-the-apple.save", ${JSON.stringify(JSON.stringify(w))})`);
+  await send('Page.navigate', { url: BASE + '?debug=1' }); await sleep(900);
+}
+let seen3 = '';
+for (let i = 0; i < 12 && !/主屏幕/.test(seen3); i++) { await sleep(700); seen3 = await ev('document.getElementById("toast").textContent'); }
+check('隔 ≥3 天回来提示导出/主屏幕(排在欢迎回来之后)', /主屏幕/.test(seen3), `(${seen3})`);
 
 // ───────── 3. ×3600 推进 ─────────
 await open('?speed=3600');

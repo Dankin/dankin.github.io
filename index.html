@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
 <meta name="theme-color" content="#f4f1ea" />
 <title>Shake the Apple</title>
+<style>html,body{height:100vh}</style>
 <link rel="stylesheet" href="/src/ui/ui.css" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="摇苹果" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <script>if(matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')</script>
 </head>
 <body>
@@ -56,10 +63,13 @@
     <div class="btns">
       <button id="btnTheme" type="button">主题:自动</button>
       <button id="btnSound" type="button">声音</button>
+      <button id="btnMotion" type="button" hidden>摇一摇:关</button>
       <button id="btnExport" type="button">导出存档</button>
       <button id="btnImport" type="button">导入存档</button>
       <button id="btnReset" type="button">重新开始</button>
     </div>
+    <p id="soundNote" class="note">静音拨片开着时声音会消失;iPhone 请先关掉侧边静音。</p>
+    <p id="installNote" class="note">换手机或清缓存前,先「导出存档」;「添加到主屏幕」后可以像 App 一样打开。</p>
     <div id="exactApples"></div>
     <div id="saveWarn"></div>
     <div id="debug"></div>

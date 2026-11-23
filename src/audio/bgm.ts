@@ -16,6 +16,8 @@ import { createSfx, createVoicer, type SfxSet, type Voicer } from './sfx.ts';
 
 export interface GameAudio {
   unlock(): void;
+  /** AudioContext 是否已在运行(iOS 需要在 pointerup/click 手势里 resume,直到这里为 true 都要继续尝试) */
+  isRunning(): boolean;
   setMusic(on: boolean): void;
   setSfx(on: boolean): void;
   setVolume(v: number): void;
@@ -264,6 +266,7 @@ export function createAudio(): GameAudio {
 
   return {
     unlock,
+    isRunning: () => !!ctx && ctx.state === 'running',
     setMusic(on: boolean) {
       musicWanted = on;
       if (on) {
