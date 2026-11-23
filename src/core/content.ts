@@ -121,7 +121,7 @@ export const STOCK_MIN = 30;
 // ───────────────────────── 产出线 ─────────────────────────
 export const SOURCE_TIERS: SourceTierDef[] = [
   {
-    name: '一棵树', unit: '棵树', rate: 1, baseCost: 10, growth: 1.03, tierCost: 0, branches: null,
+    name: '一棵树', unit: '棵树', rate: 1, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
     joke: '一棵树,一个你,一点耐心。',
   },
   {
@@ -169,7 +169,7 @@ export const SOURCE_TIERS: SourceTierDef[] = [
 // ───────────────────────── 运输线 ─────────────────────────
 export const ROUTE_TIERS: RouteTierDef[] = [
   {
-    name: '篮子', unit: '只篮子', cap: 5, trip: 5, baseCost: 10, growth: 1.03, tierCost: 0, branches: null,
+    name: '篮子', unit: '只篮子', cap: 5, trip: 5, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
     joke: '提着走。累了就换只手。',
   },
   {
