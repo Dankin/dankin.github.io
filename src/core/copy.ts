@@ -1,99 +1,110 @@
 import type { ProjectId, UpgradeId } from './state.ts';
 
-/** 地点:每个地点挂 2 个升级;unlockAt 为累计送出的苹果数 */
 export type PlaceId = 'tree' | 'hut' | 'mailbox' | 'chime' | 'pond';
 export const PLACE_IDS: PlaceId[] = ['tree', 'hut', 'mailbox', 'chime', 'pond'];
-export const PLACES: Record<PlaceId, { name: string; upgrades: [UpgradeId, UpgradeId]; unlockAt: number }> = {
-  tree: { name: '老树', upgrades: ['shake', 'branches'], unlockAt: 0 },
-  hut: { name: '小屋', upgrades: ['gardener', 'tractor'], unlockAt: 0 },
-  mailbox: { name: '邮筒', upgrades: ['express', 'drone'], unlockAt: 2e3 },
-  chime: { name: '风铃', upgrades: ['breeze', 'shaker'], unlockAt: 1e5 },
-  pond: { name: '池塘', upgrades: ['breed', 'cloud'], unlockAt: 1e7 },
-};
-export const placeOf = (id: UpgradeId): PlaceId => PLACE_IDS.find((p) => PLACES[p].upgrades.includes(id))!;
 
-/** 升级的一句笑话(名字和效果在 game.ts) */
-export const UPGRADE_JOKES: Record<UpgradeId, string> = {
-  shake: '树:"别晃了。"你:"再晃一下。"',
-  breeze: '据查,是隔壁在叹气。叹气也算劳动。',
-  gardener: '合同上写的是"浇水",老徐理解成了"顺便摇树"。',
-  branches: '不是你养得好,是没人敢剪。',
-  breed: '池塘里的鱼听说有品种改良,也报了名。',
-  tractor: '突突突。苹果没运走多少,但声势很大。',
-  shaker: '邻居投诉了。你把投诉也摇了下来。',
-  drone: '它自己也想吃一个,已经偷偷吃了三个。',
-  express: '运到的时候是苹果。有时是苹果酱。',
-  cloud: '苹果上传到云端了。云端:"满了。"',
+/** 地点:卡片标题、里面挂哪两个升级、累计多少苹果后出现 */
+export const PLACES: Record<PlaceId, { name: string; ups: [UpgradeId, UpgradeId]; unlockAt: number }> = {
+  tree: { name: '老树', ups: ['shake', 'branches'], unlockAt: 0 },
+  hut: { name: '老徐的小屋', ups: ['gardener', 'tractor'], unlockAt: 0 },
+  mailbox: { name: '邮筒', ups: ['express', 'drone'], unlockAt: 2e3 },
+  chime: { name: '风铃', ups: ['breeze', 'shaker'], unlockAt: 1e5 },
+  pond: { name: '池塘', ups: ['breed', 'cloud'], unlockAt: 1e7 },
+};
+
+/** 升级的名字和一句笑话(效果文字在 game.ts 的 hint) */
+export const UPGRADE_COPY: Record<UpgradeId, { name: string; joke: string }> = {
+  shake: { name: '晃晃更健康', joke: '树:"别晃了。"你:"再晃一下。"' },
+  branches: { name: '枝繁叶茂(没人修剪)', joke: '不是你养得好,是没人敢剪。' },
+  gardener: { name: '老徐上班了', joke: '合同写的是"浇水"。老徐理解为"顺便摇树"。' },
+  tractor: { name: '老徐的拖拉机', joke: '突突突。苹果没运走多少,但声势很大。' },
+  express: { name: '平安快递(不保证平安)', joke: '送到的时候是苹果。有时候是苹果酱。' },
+  drone: { name: '无人机采摘', joke: '它自己也想吃一个。目前已经偷吃了三个。' },
+  breeze: { name: '微风(邻居叹气)', joke: '据查,是隔壁在叹气。叹气也算劳动。' },
+  shaker: { name: '摇树机(不累,但吵)', joke: '邻居投诉了。你把投诉也摇了下来。' },
+  breed: { name: '给锦鲤也改良一下', joke: '池塘里的鱼听说有品种改良,也报了名。' },
+  cloud: { name: '苹果云', joke: '苹果上传到云端了。云端:"满了。"' },
 };
 
 export interface VisitorCopy {
-  who: string;
+  name: string;
+  /** 访客站在哪个地点旁边 */
   place: PlaceId;
+  /** 对话,一行一句 */
   lines: string[];
-  yes: string;
-  no: string;
+  accept: string;
+  decline: string;
+  /** 成交后飘字 */
   after: string;
-  /** 成交后点角色冒的台词,随机一句 */
-  quips: string[];
+  /** 成交后再点它,随机说一句 */
+  idle: string[];
 }
 
 export const VISITORS: Record<ProjectId, VisitorCopy> = {
   gravity: {
-    who: '牛顿', place: 'tree',
-    lines: ['树下躺着一个人,假发歪了,睡得很香。', '他嘟囔:"别叫我。我梦到一个公式,快好了。"'],
-    yes: '让他睡', no: '改天吧', after: '苹果隔一会儿就自己砸下来一个。他翻了个身,公式更完整了。',
-    quips: ['"哎哟。……有意思。"', '"别吵,我在想。"', '"为什么是向下?"'],
+    name: '午睡的牛顿', place: 'tree',
+    lines: ['树下躺着一个人,假发歪了,睡得很香。', '他嘟囔:"别叫我,我快梦到那个公式了。"'],
+    accept: '让他睡(成交)', decline: '改天吧',
+    after: '苹果开始每隔一会儿自己砸下来。他翻了个身,公式更完整了。',
+    idle: ['"……啊,什么东西?"', '"这个重量,有点意思。"', '"再来一个,我就悟了。"'],
   },
   fairest: {
-    who: '金苹果', place: 'tree',
+    name: '最美的苹果', place: 'tree',
     lines: ['树上长出一个金灿灿的苹果,刻着一行小字:"献给最美者。"', '三位女神已经在路上了,其中一位带着律师。'],
-    yes: '先摘下来', no: '改天吧', after: '它时不时在树上闪一下。点中有奖励。',
-    quips: ['它闪了闪,像在说"我知道我最美"。', '"请排队。"'],
+    accept: '先摘下来(成交)', decline: '改天吧',
+    after: '它在树上闪了一下。点中它有奖励,别让女神先到。',
+    idle: ['金苹果闪了一下。', '"最美者"这三个字,印得有点用力。'],
   },
   cook: {
-    who: '发布会', place: 'hut',
-    lines: ['一个穿黑色高领的人走上台,灯亮了。', '"Good morning."台下只有一只松鼠,但它鼓掌了。'],
-    yes: '开发布会', no: '改天吧', after: '每隔一阵就能再开一场,开场前先等台下的松鼠坐好。',
-    quips: ['"这是我们做过最……苹果的苹果。"', '松鼠举起了手。'],
+    name: '苹果发布会', place: 'tree',
+    lines: ['一个穿黑色高领的人走上台,灯亮了。', '"Good morning."——台下只有一只松鼠,但它鼓掌了。'],
+    accept: '开发布会(成交)', decline: '改天吧',
+    after: '发布会开了。过一阵子还能再开一场。',
+    idle: ['"这是我们做过最苹果的苹果。"', '松鼠又鼓掌了。', '"它会改变一切。"——一切?哪一切?'],
   },
   duo: {
-    who: '折叠手机', place: 'mailbox',
+    name: 'iPhone Duo', place: 'hut',
     lines: ['有人递来一台能折叠的手机,屏幕正中间有一道缝。', '"一次掉两个,"他说,"这才叫 Duo。"'],
-    yes: '买一台', no: '改天吧', after: '一次摇下来两个。缝里偶尔会夹住一个。',
-    quips: ['"缝是特性,不是缺陷。"', '它又折了一下,苹果掉进了缝里。'],
+    accept: '收下(成交)', decline: '改天吧',
+    after: '每次摇都多掉一个。缝没人提。',
+    idle: ['屏幕中间那道缝,是特性。', '"Duo,不是 Duel。"'],
   },
   garage: {
-    who: '车库', place: 'hut',
-    lines: ['小屋旁边多了一间车库,灯亮着,里面有人在拧螺丝。', '墙上写着:"Stay hungry. Stay foolish."你很饿,也确实有点傻。'],
-    yes: '递一把螺丝刀', no: '改天吧', after: '车库里叮叮当当。自动产出多了一半。',
-    quips: ['"这个再做小一点。"', '"我们先从一个苹果开始。"'],
+    name: '车库里的怪人', place: 'hut',
+    lines: ['车库灯亮着,里面有个人在拧螺丝,墙上有行字。', '"Stay hungry. Stay foolish."——你很饿,而且确实有点傻。'],
+    accept: '进去看看(成交)', decline: '改天吧',
+    after: '自动产出变快了。怪人没抬头,继续拧。',
+    idle: ['"再薄一点。"', '"这个螺丝,不对。"'],
   },
   doctor: {
-    who: '老医生', place: 'pond',
-    lines: ['一位老医生路过,看了看你的苹果篮。', '"每天一个,我就不用来了。"他边说边走远了。'],
-    yes: '送他一个', no: '改天吧', after: '他在池塘边坐下,每天吃一个,然后叹气:"又没生意。"',
-    quips: ['"多吃苹果。我不是推销。"', '"我今天的号还没人挂。"'],
+    name: '路过的医生', place: 'pond',
+    lines: ['一位老医生路过,看了看你的苹果篮。', '"每天一个,我就可以不来了。"他边说边走远了。'],
+    accept: '多吃点(成交)', decline: '改天吧',
+    after: '全部产出提高了。医生没回头,摆了摆手。',
+    idle: ['"别熬夜。"', '"听我的,别熬夜。"'],
   },
   witch: {
-    who: '老太太', place: 'pond',
-    lines: ['一位老太太提着篮子过来,苹果红了一半。', '"尝尝?红的那一半有毒。"她没说是哪一半。'],
-    yes: '咬一口', no: '改天吧', after: '你睡着了。醒来的时候,树还在替你工作。',
-    quips: ['"白的那一半也别想轻松。"', '"我只是路过。"'],
+    name: '提篮子的老太太', place: 'pond',
+    lines: ['一位老太太提着篮子,里面的苹果红了一半。', '"尝尝?红的那一半有毒。"——她没说是哪一半。'],
+    accept: '咬一口(成交)', decline: '我还是不了',
+    after: '你睡着了。树还在长,世界替你做了二十分钟的事。',
+    idle: ['"睡得好吗?"', '"白雪公主那次是意外。"'],
   },
   onemore: {
-    who: '发布会返场', place: 'hut',
-    lines: ['发布会快结束了,台上那个人又走回话筒前。', '"One more thing……"台下的松鼠屏住了呼吸。'],
-    yes: '听他说', no: '改天吧', after: '发布会的加成从 ×3 升到 ×5。松鼠哭了。',
-    quips: ['"这一次,是真的最后一件。"', '松鼠已经开始鼓掌了。'],
+    name: '还有一件事', place: 'tree',
+    lines: ['发布会快结束了,台上那个人又走回话筒前。', '"One more thing……"——松鼠屏住了呼吸。'],
+    accept: '听他讲完(成交)', decline: '改天吧',
+    after: '发布会的加成更大了。松鼠晕过去了。',
+    idle: ['"还有一件事。"', '"真的就一件。"'],
   },
 };
 
-/** 夏娃 + 蛇:三口 */
-export const BITE_SCENES: { lines: string[]; yes: string; no: string; after: string }[] = [
-  { lines: ['夏娃站在树下,盯着最红的那一个。', '蛇在树上:"别吃那个。"——它的语气像是在推销。'], yes: '咬一口', no: '再想想', after: '甜的。全部产出翻倍。蛇满意地点了点头。' },
-  { lines: ['夏娃又来了。这次她带了盐。', '蛇没说话。它只是笑了一下。'], yes: '再咬一口', no: '再想想', after: '更甜了。全部产出再翻倍。' },
-  { lines: ['夏娃已经不看树了,她看着你。', '"最后一口,"蛇说,"咬完这个,世界上就有苹果的故事了。"'], yes: '最后一口', no: '再想想', after: '从此,世界上有了苹果的故事。全部产出再翻倍。' },
+/** 禁果:夏娃与蛇,每次一口 */
+export const BITE_SCENES: { lines: string[]; accept: string; decline: string; after: string }[] = [
+  { lines: ['夏娃站在树下,盯着最红的那个。', '蛇在树上说:"别吃那个。"——听起来像在推销。'], accept: '咬一口', decline: '再想想', after: '全部产出 ×2。蛇点了点头,像是赢了。' },
+  { lines: ['夏娃又来了。', '蛇没说话,只是笑了一下。'], accept: '再咬一口', decline: '再想想', after: '全部产出再 ×2。蛇不笑了,开始记账。' },
+  { lines: ['夏娃咬到了核。', '蛇小声说:"从此,世界上有了苹果的故事。"'], accept: '最后一口', decline: '再想想', after: '全部产出再 ×2。故事开始了。' },
 ];
 
-/** 82 亿到了但还没到日期时 */
-export const SEALED_TEXT = '树下多了一个盒子,上面写着:圣诞节再拆。';
+/** 82 亿到达后,没到 12/24 看到的话 */
+export const SEALED = ['树下多了一个盒子。', '盒子上写着:圣诞节再拆。', '(苹果还可以继续摇,先别急。)'];
