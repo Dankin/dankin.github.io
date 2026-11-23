@@ -31,16 +31,16 @@ export interface UpgradeDef {
 
 /** 按解锁顺序排列 */
 export const UPGRADES: UpgradeDef[] = [
-  { id: 'shake', name: '摇一摇没坏处', hint: '每级:每摇一下多掉 1 个苹果,再多得一点自动产出', baseCost: 10, growth: 1.23, unlockAt: 0 },
-  { id: 'breeze', name: '微风', hint: '每级:+1 个/秒,并让所有自动产出 +0.3%', baseCost: 15, growth: 1.23, unlockAt: 0, perSec: 1 },
-  { id: 'gardener', name: '园丁老徐', hint: '每级:+12 个/秒', baseCost: 981, growth: 1.22, unlockAt: 150, perSec: 12.2 },
-  { id: 'branches', name: '枝繁叶茂', hint: '每级:全部产出 +5%', baseCost: 500, growth: 1.23, unlockAt: 400 },
-  { id: 'breed', name: '品种改良', hint: '每级:金苹果掉率 +1%(上限 20%)', baseCost: 2e3, growth: 1.23, unlockAt: 1500 },
-  { id: 'tractor', name: '拖拉机', hint: '每级:+48 个/秒', baseCost: 222000, growth: 1.24, unlockAt: 1.5e4, perSec: 48.1 },
-  { id: 'shaker', name: '摇树机', hint: '每级:+82 个/秒', baseCost: 3.11e6, growth: 1.24, unlockAt: 6e4, perSec: 81.6 },
+  { id: 'shake', name: '晃晃更健康', hint: '每级:每摇一下多掉 1 个苹果,再多得一点自动产出', baseCost: 10, growth: 1.23, unlockAt: 0 },
+  { id: 'breeze', name: '微风(邻居叹气)', hint: '每级:+1 个/秒,并让所有自动产出 +0.3%', baseCost: 15, growth: 1.23, unlockAt: 0, perSec: 1 },
+  { id: 'gardener', name: '老徐上班了', hint: '每级:+12 个/秒', baseCost: 981, growth: 1.22, unlockAt: 150, perSec: 12.2 },
+  { id: 'branches', name: '枝繁叶茂(没人修剪)', hint: '每级:全部产出 +5%', baseCost: 500, growth: 1.23, unlockAt: 400 },
+  { id: 'breed', name: '锦鲤也想改良', hint: '每级:金苹果掉率 +1%(上限 20%)', baseCost: 2e3, growth: 1.23, unlockAt: 1500 },
+  { id: 'tractor', name: '老徐的拖拉机', hint: '每级:+48 个/秒', baseCost: 222000, growth: 1.24, unlockAt: 1.5e4, perSec: 48.1 },
+  { id: 'shaker', name: '摇树机(它不累,但吵)', hint: '每级:+82 个/秒', baseCost: 3.11e6, growth: 1.24, unlockAt: 6e4, perSec: 81.6 },
   { id: 'drone', name: '无人机采摘', hint: '每级:+238 个/秒', baseCost: 2.02e8, growth: 1.22, unlockAt: 2.5e6, perSec: 238 },
-  { id: 'express', name: '平安快递', hint: '每级:+333 个/秒', baseCost: 3.15e8, growth: 1.23, unlockAt: 6e7, perSec: 333 },
-  { id: 'cloud', name: '苹果云', hint: '每级:+478 个/秒', baseCost: 8.33e8, growth: 1.21, unlockAt: 2e8, perSec: 478 },
+  { id: 'express', name: '平安快递(不保证平安)', hint: '每级:+333 个/秒', baseCost: 3.15e8, growth: 1.23, unlockAt: 6e7, perSec: 333 },
+  { id: 'cloud', name: '苹果云(已满)', hint: '每级:+478 个/秒', baseCost: 8.33e8, growth: 1.21, unlockAt: 2e8, perSec: 478 },
 ];
 
 export const upgradeDef = (id: UpgradeId): UpgradeDef => UPGRADES.find((u) => u.id === id)!;
