@@ -6,7 +6,7 @@ import { GOAL } from '../src/core/constants.ts';
 import { GATES, GATE_SLOTS, gateDef, ROUTE_TIERS, SOURCE_TIERS, type GateId } from '../src/core/content.ts';
 import { EVENT_GAP_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
-  buyUnit, canBuyUnit, click, nextBranches, preview, setGate, tick, throughput, tierCost, unitCost, upgradeTier,
+  buyHelper, buyUnit, canBuyUnit, shake, nextBranches, preview, setGate, tick, throughput, tierCost, unitCost, upgradeTier,
   type Action, type LineId,
 } from '../src/core/game.ts';
 import { newState, type State } from '../src/core/state.ts';
@@ -72,6 +72,14 @@ interface Cand {
 function candidates(s: State, policy: Opts['policy']): Cand[] {
   const out: Cand[] = [];
   const lines: LineId[] = policy === 'balanced' ? ['source', 'route'] : policy === 'source' ? ['source'] : ['route'];
+  if (policy !== 'route') {
+    const p = preview(s, { kind: 'helper' });
+    if (p.ok) {
+      const sb = soft(p.before.produce, p.before.carry);
+      const sa = soft(p.after.produce, p.after.carry);
+      out.push({ action: { kind: 'helper' }, line: null, cost: p.cost, gain: sa * p.after.value - sb * p.before.value, gainPct: sa / sb - 1, tier: false });
+    }
+  }
   for (const line of lines) {
     const acts: { a: Action; tier: boolean }[] = [];
     for (let t = 0; t <= s[line].tier; t++) acts.push({ a: { kind: 'unit', line, tier: t }, tier: false });
@@ -102,7 +110,7 @@ function bestGates(s: State, allowed: GateId[], goalFlow: boolean): (GateId | nu
   const ids = s.gatesUnlocked.filter((g) => allowed.includes(g));
   let best = s.gates;
   let bestV = -1;
-  const probe = { source: s.source, route: s.route, gates: [] as (GateId | null)[], flywheel: s.flywheel, combo: s.combo };
+  const probe = { source: s.source, route: s.route, gates: [] as (GateId | null)[], charge: s.charge, combo: s.combo, helpers: s.helpers, shakeRate: s.shakeRate };
   for (const p of perms(ids, GATE_SLOTS)) {
     probe.gates = p;
     const th = throughput(probe);
@@ -138,7 +146,7 @@ export function play(o: Opts): Report {
     // 手动
     if (o.cps > 0) {
       clickAcc += o.cps * dt;
-      while (clickAcc >= 1) { click(s); clickAcc -= 1; }
+      while (clickAcc >= 1) { shake(s); clickAcc -= 1; }
     }
     // 事件
     evT -= dt;
@@ -192,6 +200,8 @@ export function play(o: Opts): Report {
           const before = s.vehicles.length;
           ok = buyUnit(s, a.line, a.tier);
           if (ok && a.line === 'route' && s.vehicles.length > before && Number.isNaN(rep.firstVehicle)) rep.firstVehicle = t;
+        } else if (a.kind === 'helper') {
+          ok = buyHelper(s);
         } else if (a.kind === 'tier') {
           const L = s[a.line];
           const names = nextBranches(s, a.line)!;
@@ -206,7 +216,7 @@ export function play(o: Opts): Report {
         }
         if (ok) {
           if (Number.isNaN(rep.firstBuy)) rep.firstBuy = t;
-          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
+          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
           if (best.tier || best.gainPct >= 0.01) {
             const gap = t - lastBuyT;
             rep.gaps.push(gap);

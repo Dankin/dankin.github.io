@@ -1,686 +1,679 @@
-import { SAVE_KEY, GOAL } from './core/constants.ts';
+// Shake the Apple v4 —— 把新核心(src/core)和新界面(src/ui)接起来。
+// 约定:核心只认 State;界面只认 WorldView + DOM id。这里负责:读档/存档、时间推进、渲染到 DOM、各种弹层、提示、事件、结局。
 import {
-  buy, buyProject, canBuy, canBuyProject, click, cookReady, cost, grabFairest, gravityGain, GRAVITY_EVERY_S,
-  clickPieces, globalMult, goldRate, milestoneMult, isUnlocked, isWon, nextStageAt, progress, projectUnlocked, PROJECTS, rate, settle, stageIndex,
-  stageProgress, STAGES, tick, UPGRADES, upgradeDef, useCook, addApples,
-  BITES, bite, MILESTONE_GLOBAL, breezeBoost, sourcePerSec, SOURCE_IDS, tuning, type SourceId, biteUnlocked, canBite, cookMult, useWitch, witchReady,
-  type ProjectId, type UpgradeId,
+  buyHelper, helperCost, buyUnit, canUpgradeTier, era, chargeLevel, isWon, mods, nextBranches, nextHints, preview, progress, setGate, shake,
+  settle, stockFill, throughput, tick, tierCost, tiersOf, unitCost, upgradeTier,
+  type ShakeResult, type LineId, type Throughput,
 } from './core/game.ts';
-import { newsIndex, tickerLines } from './core/news.ts';
-import { world, worldAt } from './core/world.ts';
-import { EVENT_NAMES, eventReward, nextEventGap, pickEvent } from './core/events.ts';
-import { ACHIEVEMENTS, checkAchievements } from './core/achievements.ts';
-import { createAudio } from './audio/bgm.ts';
-import { showEnding } from './ui/ending.ts';
+import { GATES, GATE_SLOTS, HELPER, ROUTE_TIERS, describeEffect, describeGate, gateDef, type GateId } from './core/content.ts';
+import { claimEvent, nextEventGap, pickEvent, type EventKind } from './core/events.ts';
+import { BOTTLENECK_TIP, EMPTY_SLOT_TIP, ERA_TOAST, EVENT_TEXT, SHAKE_TEXT, COMBO_TEXT, HELPER_TEXT, GATE_UNLOCK_TOAST, SEALED, awayLine } from './core/copy.ts';
+import { SAVE_KEY, GOAL } from './core/constants.ts';
 import { exportSave, importSave, load, save, storageWritable } from './core/save.ts';
 import { newState, type State } from './core/state.ts';
-import { equiv, fmt, fmtDuration } from './ui/format.ts';
-import { Orchard, RED, type Build } from './ui/orchard.ts';
+import { giftOpen } from './core/gift.ts';
+import { worldAt } from './core/world.ts';
+import { Orchard, EMPTY_WORLD, type WorldView } from './ui/orchard.ts';
+import { showEnding } from './ui/ending.ts';
+import { fmt } from './ui/format.ts';
+import { createAudio } from './audio/bgm.ts';
+import './ui/glue.css';
 
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const $ = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
 const kv = localStorage;
-const GOLD_TEXT = '#b88700';
 
-// ---- 调试:时间加速(?speed=60 或 ?debug=1 出面板) ----
-// 虚拟时钟:游戏里的"现在"= 真实时间 + skewMs;加速时 skewMs 持续累加,所以发布会计时/冷却/金苹果都按加速后的时间走。
-let skewMs = 0;
-let speed = 1;
+// ───────────── 调试参数 ─────────────
+// ?debug=1 出调试面板(设置里);?speed=N 把游戏时间加速 N 倍(1..3600);?date=YYYY-MM-DD 假装今天是哪天(只影响 12/24 的礼物门)
 const qs = new URLSearchParams(location.search);
 const DEBUG = qs.has('debug') || qs.has('speed');
-if (qs.has('calm')) world.harvestOn = false; // 关掉收获周期与下雨加成(冒烟测试用,数值恒定)
-if (qs.has('speed')) speed = Math.max(1, Math.min(3600, Number(qs.get('speed')) || 1));
-const nowMs = (): number => Date.now() + skewMs;
+let speed = qs.has('speed') ? Math.max(1, Math.min(3600, Number(qs.get('speed')) || 1)) : 1;
+const dateOffset = (() => {
+  const d = qs.get('date');
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return 0;
+  const t = new Date(d + 'T12:00:00').getTime();
+  return Number.isFinite(t) ? t - Date.now() : 0;
+})();
+/** 日历意义上的"现在"(只给礼物门用)。游戏内时间走 state.playSec,与它无关。 */
+const nowMs = (): number => Date.now() + dateOffset;
 
+// ───────────── 全局状态 ─────────────
+let state: State = newState(Date.now());
 let canSave = true;
 let readOnly = false;
-let state: State = newState(Date.now());
-let orchard: Orchard;
+let won = false;
 const audio = createAudio();
-let sleepAnimUntil = 0;
 
-// 圣诞彩蛋:12/24-25(可用 ?date=2025-12-24 调试)
-const xmas = (() => {
-  const q = new URLSearchParams(location.search).get('date');
-  const d = q ? new Date(q + 'T12:00:00') : new Date();
-  return d.getMonth() === 11 && (d.getDate() === 24 || d.getDate() === 25);
-})();
-
-// ---- 启动:读档 + 离线补算 ----
-function boot(): void {
-  canSave = storageWritable(kv);
-  const r = load(kv, nowMs());
-  state = r.state;
-  if (r.kind === 'readonly') {
-    readOnly = true;
-    toast('存档来自更新的版本,本页只读,不会覆盖存档。');
-  } else if (r.kind === 'ok') {
-    if (r.fromBackup) toast('主存档损坏,已从备份恢复。');
-    settleNow(true);
-  }
-  $('saveWarn').textContent = canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
+// ───────────── 提示(toast 队列) ─────────────
+const toastEl = $('toast');
+const toastQ: string[] = [];
+let toastBusy = false;
+function toast(msg: string, ms = 3200): void {
+  if (!msg || toastQ.includes(msg)) return;
+  if (toastQ.length >= 3) toastQ.shift();
+  toastQ.push(msg);
+  pumpToast(ms);
+}
+function pumpToast(ms: number): void {
+  if (toastBusy || !toastQ.length) return;
+  toastBusy = true;
+  toastEl.textContent = toastQ.shift()!;
+  toastEl.classList.add('show');
+  setTimeout(() => {
+    toastEl.classList.remove('show');
+    setTimeout(() => {
+      toastBusy = false;
+      pumpToast(ms);
+    }, 320);
+  }, ms);
 }
 
-function settleNow(showToast: boolean): void {
-  const r = settle(state, nowMs());
-  resetRateSamples();
-  if (showToast && r.gain >= 1 && r.awayMs > 60_000) {
-    toast(`离开了 ${fmtDuration(r.awayMs)},树送出了 ${fmt(r.gain)} 个苹果${r.capped ? '(离线收益最多算 8 小时)' : ''}。`);
-  }
-}
-
+// ───────────── 存档 ─────────────
 function persist(): void {
   if (readOnly || !canSave) return;
-  if (!save(kv, state, Date.now())) {
-    canSave = false;
-    $('saveWarn').textContent = '保存失败(空间不足或隐私模式),请导出存档。';
+  save(kv, state, Date.now());
+}
+
+/** 把"离开期间"补算上。短离开按 tick,长离开按流体近似(core.settle 决定)。 */
+function catchUp(showToast: boolean): void {
+  const away = Date.now() - state.lastSeen;
+  if (away < 3000) {
+    state.lastSeen = Date.now();
+    return;
   }
+  const r = settle(state, away);
+  state.lastSeen = Date.now();
+  if (showToast && r.seconds >= 30 && r.delivered > 0) toast(`${awayLine(away / 60000)} 送达了 ${fmt(Math.floor(r.delivered))} 个。`, 4200);
 }
 
-// ---- 提示 ----
-let toastTimer = 0;
-function toast(msg: string): void {
-  const el = $('toast');
-  el.textContent = msg;
-  el.classList.add('on');
-  clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => el.classList.remove('on'), 4500);
+// ───────────── 主题 / 声音 ─────────────
+const DARK_MQ = matchMedia('(prefers-color-scheme: dark)');
+const THEME_LABEL = { auto: '主题:自动', light: '主题:浅色', dark: '主题:深色' } as const;
+function applyTheme(): void {
+  const m = state.settings.dark;
+  const d = m === 'dark' || (m === 'auto' && DARK_MQ.matches);
+  orchard.dark = d;
+  document.documentElement.classList.toggle('dark', d);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', d ? '#16171b' : '#f4f1ea');
+  $('btnTheme').textContent = THEME_LABEL[m];
+}
+function applySound(): void {
+  const on = state.settings.sound;
+  audio.setMusic(on);
+  audio.setSfx(on);
+  $('btnSound').textContent = on ? '声音:开' : '声音:关';
 }
 
-// ---- 实测速率:最近几秒累计送出的增量,包含手摇 ----
-const samples: Array<[number, number]> = [];
-function resetRateSamples(): void {
-  samples.length = 0;
-}
-function sampleRate(t: number): number {
-  samples.push([t, state.delivered]);
-  while (samples.length > 2 && t - samples[0][0] > 4000) samples.shift();
-  const [t0, d0] = samples[0];
-  const span = (t - t0) / 1000;
-  return span >= 0.5 ? Math.max(0, (state.delivered - d0) / span) : 0;
+// ───────────── 画面所需数据 ─────────────
+function buildWorld(th: Throughput): WorldView {
+  const s = state;
+  const m = mods(s);
+  const rt = s.route;
+  return {
+    ...EMPTY_WORLD,
+    srcTier: s.source.tier,
+    srcUnits: s.source.units.slice(),
+    srcBranch: s.source.branch.slice(),
+    rtTier: rt.tier,
+    rtVehicles: Math.max(1, Math.round(rt.units[rt.tier])),
+    rtBranch: rt.branch[rt.tier],
+    gates: s.gates.map((g) => (g === 'red' ? 'string' : g)),
+    gatesUnlocked: GATE_SLOTS,
+    stock01: stockFill(s),
+    produce: th.produce,
+    carry: th.carry,
+    shake: Math.min(1, chargeLevel(s, m)), // 摇劲
+    combo: s.combo,
+    perTrip: ROUTE_TIERS[rt.tier].cap * m.cap,
+  };
 }
 
-// 玩家最近的点击频率(次/秒),来源占比条用
-const clickSamples: Array<[number, number]> = [];
-function sampleCps(t: number): number {
-  clickSamples.push([t, state.clicks]);
-  while (clickSamples.length > 2 && t - clickSamples[0][0] > 5000) clickSamples.shift();
-  const [t0, c0] = clickSamples[0];
-  const span = (t - t0) / 1000;
-  return span >= 0.5 ? Math.max(0, (state.clicks - c0) / span) : 0;
+const fmtWait = (sec: number): string =>
+  !isFinite(sec) ? '很久' : sec < 60 ? `${Math.max(1, Math.ceil(sec))}秒` : sec < 3600 ? `${Math.ceil(sec / 60)}分钟` : sec < 86400 ? `${(sec / 3600).toFixed(1)}小时` : '很久';
+const fmtPct = (p: number): string => `+${p < 0.1 ? (p * 100).toFixed(1) : Math.round(p * 100)}%`;
+
+// ───────────── 底栏按钮 ─────────────
+interface Act {
+  el: HTMLButtonElement;
+  nm: HTMLElement;
+  pr: HTMLElement;
+  gain: HTMLElement;
+}
+function mkAct(id: string): Act {
+  const el = $<HTMLButtonElement>(id);
+  const nm = el.querySelector('.nm') as HTMLElement;
+  const pr = el.querySelector('.pr') as HTMLElement;
+  let gain = el.querySelector('.pv') as HTMLElement | null;
+  if (!gain) {
+    gain = document.createElement('span');
+    gain.className = 'pv';
+    el.insertBefore(gain, pr);
+  }
+  return { el, nm, pr, gain };
+}
+const setText = (el: HTMLElement, t: string): void => {
+  if (el.textContent !== t) el.textContent = t;
+};
+function setCls(el: HTMLElement, on: Record<string, boolean>): void {
+  for (const k in on) el.classList.toggle(k, on[k]);
 }
 
-// ---- 来源占比条 ----
-const SRC_NAMES: Record<SourceId, string> = { click: '点击', breeze: '微风', gardener: '老徐', tractor: '拖拉机', shaker: '摇树机', drone: '无人机', express: '快递', cloud: '苹果云' };
-let cps = 0;
-function renderSources(now: number): void {
-  const bar = document.getElementById('srcBar');
-  if (!bar) return;
-  const p = sourcePerSec(state, cps, now);
-  const tot = SOURCE_IDS.reduce((a, id) => a + p[id], 0);
-  if (tot <= 0) return;
-  if (!bar.firstChild) {
-    for (const id of SOURCE_IDS) {
-      const i = document.createElement('i');
-      i.className = `seg s-${id}`;
-      i.dataset.src = id;
-      i.title = SRC_NAMES[id];
-      const on = () => orchard.highlight(id);
-      i.addEventListener('pointerenter', on);
-      i.addEventListener('pointerdown', on);
-      i.addEventListener('pointerleave', () => orchard.highlight(null));
-      bar.appendChild(i);
+let btn: { sb: Act; su: Act; rb: Act; ru: Act };
+const LINE_NAME: Record<LineId, string> = { source: '生产线', route: '运输线' };
+
+function renderAct(line: LineId, buy: Act, up: Act, hints: ReturnType<typeof nextHints>, th: Throughput): void {
+  const s = state;
+  const L = s[line];
+  const T = tiersOf(line);
+  const h = hints[line];
+
+  // +1 单位
+  const cost = unitCost(s, line);
+  const can = s.coins >= cost;
+  setText(buy.nm, `+1 ${T[L.tier].unit}`);
+  setText(buy.pr, fmt(cost));
+  const pct = h.unit.flowPct;
+  const help = pct >= 0.005;
+  const waitTxt = can || !isFinite(h.unit.waitSec) ? '' : ` · 约${fmtWait(h.unit.waitSec)}`;
+  setText(buy.gain, (help ? `${fmtPct(pct)} 送达` : th.bottleneck === (line === 'source' ? 'carry' : 'produce') ? '卡在另一边,先扩那边' : '暂时用不上') + waitTxt);
+  setCls(buy.gain, { up: help, zero: !help });
+  setCls(buy.el, { can, no: !can, bn: hints.suggest === line && th.bottleneck !== 'balanced' });
+  buy.el.setAttribute('aria-label', `${LINE_NAME[line]}:再加一个${T[L.tier].unit},${fmt(cost)} 果钱`);
+
+  // 升档
+  const tc = tierCost(s, line);
+  if (tc === null) {
+    setText(up.nm, `已是最高档:${T[L.tier].name}`);
+    setText(up.pr, '');
+    setText(up.gain, '');
+    setCls(up.el, { can: false, no: false, max: true, 'has-branch': false });
+    up.el.disabled = true;
+    return;
+  }
+  up.el.disabled = false;
+  const canUp = s.coins >= tc;
+  const tp = h.tier ? h.tier.flowPct : 0;
+  setText(up.nm, `升级 ${T[L.tier + 1].name}`);
+  setText(up.pr, fmt(tc));
+  const wt = canUp || !h.tier || !isFinite(h.tier.waitSec) ? '' : ` · 约${fmtWait(h.tier.waitSec)}`;
+  setText(up.gain, (tp >= 0.005 ? `${fmtPct(tp)} 送达` : '二选一') + wt);
+  setCls(up.gain, { up: tp >= 0.005, zero: tp < 0.005 });
+  setCls(up.el, { can: canUp, no: !canUp, max: false, 'has-branch': true });
+  up.el.setAttribute('aria-label', `${LINE_NAME[line]}:升级为${T[L.tier + 1].name},${fmt(tc)} 果钱`);
+}
+
+// ───────────── 老徐(自动摇树)按钮:场景左上角的小按钮,生产档 ≥1 才出现 ─────────────
+let helperBtn: HTMLButtonElement;
+function mkHelperBtn(): void {
+  helperBtn = document.createElement('button');
+  helperBtn.id = 'btnHelper';
+  helperBtn.type = 'button';
+  helperBtn.hidden = true;
+  $('scene').append(helperBtn);
+  helperBtn.addEventListener('click', () => {
+    if (buyHelper(state)) {
+      audio.sfx.buy();
+      toast(HELPER_TEXT.hired, 2600);
+      persist();
+      renderAll();
+    } else {
+      const c = helperCost(state);
+      if (c !== null) toast(`果钱还差 ${fmt(Math.ceil(c - state.coins))}。`, 2000);
     }
+  });
+}
+function renderHelper(hints: ReturnType<typeof nextHints>): void {
+  const h = hints.helper;
+  const have = state.helpers;
+  if (!h && have === 0) {
+    helperBtn.hidden = true;
+    return;
   }
-  const legend = document.getElementById('srcLegend');
-  const sh = {} as Record<SourceId, number>;
-  for (const id of SOURCE_IDS) {
-    sh[id] = p[id] / tot;
-    const seg = bar.querySelector<HTMLElement>(`.s-${id}`)!;
-    seg.style.flex = `${Math.max(sh[id], 0.002)}`;
-    seg.classList.toggle('empty', p[id] <= 0);
-  }
-  if (legend) {
-    legend.innerHTML = SOURCE_IDS.filter((id) => p[id] > 0)
-      .map((id) => `<span class="lg s-${id}" data-src="${id}"><b></b>${SRC_NAMES[id]} ${Math.round(sh[id] * 100)}%</span>`)
-      .join('');
-  }
-  orchard.setSources(p);
+  helperBtn.hidden = false;
+  const label = h ? `${HELPER.name} ×${have} · 再雇一位 ${fmt(h.cost)}` : `${HELPER.name} ×${have} · 满员`;
+  setText(helperBtn, label);
+  setCls(helperBtn, { can: !!h && h.affordable, no: !h || !h.affordable });
+  helperBtn.disabled = !h;
+  helperBtn.setAttribute('aria-label', label);
 }
 
-// ---- 随机事件 ----
+// ───────────── 关卡槽 ─────────────
+let gatesSeen = 0;
+let tipEmptyShown = false;
+function renderGates(): void {
+  const s = state;
+  const hasFree = s.gatesUnlocked.some((g) => !s.gates.includes(g));
+  const noneYet = s.gates.every((g) => g === null);
+  const fresh = s.gatesUnlocked.length > gatesSeen && hasFree;
+  let first = true;
+  for (let i = 0; i < GATE_SLOTS; i++) {
+    const el = $(`gate${i}`);
+    const id = s.gates[i];
+    const nm = el.querySelector('.nm') as HTMLElement;
+    setText(nm, id ? gateDef(id).name : '+');
+    const empty = id === null;
+    const pulse = empty && first && hasFree && (noneYet || fresh);
+    if (empty) first = false;
+    setCls(el, { empty, on: !empty, locked: false, can: pulse });
+    el.setAttribute('aria-label', id ? `关卡槽 ${i + 1}:${gateDef(id).name}` : `关卡槽 ${i + 1}:空`);
+  }
+}
+
+const gp = $('gatePick');
+let gateSlot = -1;
+function openGate(slot: number): void {
+  if (!gp.hidden && gateSlot === slot) {
+    gp.hidden = true;
+    return;
+  }
+  gateSlot = slot;
+  gatesSeen = state.gatesUnlocked.length;
+  $('gatePickTitle').textContent = `第 ${slot + 1} 槽 · 放什么?`;
+  const box = $('gateOpts');
+  box.replaceChildren();
+  const mk = (id: GateId | null): HTMLButtonElement => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'opt';
+    const t = document.createElement('b');
+    const d = document.createElement('span');
+    b.append(t, d);
+    if (id === null) {
+      t.textContent = '空着';
+      d.textContent = '拿下这个槽里的道具';
+      b.classList.add('none');
+      if (state.gates[slot] === null) b.classList.add('on');
+    } else {
+      const g = gateDef(id);
+      t.textContent = g.name;
+      b.title = g.joke;
+      const sum = state.source.tier + state.route.tier;
+      if (!state.gatesUnlocked.includes(id)) {
+        d.textContent = `两条线档位合计 ${g.unlockAt} 解锁`;
+        b.classList.add('no');
+        b.disabled = true;
+      } else {
+        const p = preview(state, { kind: 'gate', slot, id });
+        const dp = p.incomePct;
+        const here = state.gates[slot] === id;
+        const other = state.gates.indexOf(id);
+        const delta = Math.abs(dp) >= 0.005 ? ` · 收入 ${dp > 0 ? '+' : '-'}${Math.round(Math.abs(dp) * 100)}%` : '';
+        d.textContent = describeGate(g) + (here ? '' : delta) + (!here && other >= 0 ? ` · 与第 ${other + 1} 槽互换` : '');
+        if (here) b.classList.add('on');
+      }
+      void sum;
+    }
+    b.addEventListener('click', () => {
+      if (id !== null && !state.gatesUnlocked.includes(id)) return;
+      if (setGate(state, slot, id)) {
+        audio.sfx.coin();
+        gp.hidden = true;
+        persist();
+        renderAll();
+        if (id !== null) orchard.floatText(gateDef(id).name, orchard.worldPos().gates[slot][0], orchard.worldPos().gates[slot][1] - 26);
+      }
+    });
+    return b;
+  };
+  box.append(mk(null));
+  for (const g of GATES) box.append(mk(g.id));
+  gp.hidden = false;
+}
+
+// ───────────── 升档:分支选择 ─────────────
+const bp = $('branchPick');
+let branchLine: LineId = 'source';
+function fillBranch(): void {
+  const bs = nextBranches(state, branchLine);
+  if (!bs) {
+    bp.hidden = true;
+    return;
+  }
+  const T = tiersOf(branchLine);
+  const t = T[state[branchLine].tier + 1];
+  const c = tierCost(state, branchLine) ?? 0;
+  const can = state.coins >= c;
+  $('branchTitle').textContent = `升级:${t.name}`;
+  $('branchSub').textContent = `${LINE_NAME[branchLine]} · 二选一,选了就定了 · ${fmt(c)} 果钱`;
+  bs.forEach((b, i) => {
+    const el = $(`branch${i}`);
+    setText(el.querySelector('.nm') as HTMLElement, b.name);
+    const desc = el.querySelector('.desc') as HTMLElement;
+    const line1 = describeEffect(b.effect);
+    const key = line1 + '|' + b.joke;
+    if (desc.dataset.k !== key) {
+      desc.dataset.k = key;
+      const a = document.createElement('span');
+      a.textContent = line1;
+      a.style.color = 'var(--ink)';
+      const br = document.createElement('br');
+      const j = document.createElement('span');
+      j.textContent = b.joke;
+      desc.replaceChildren(a, br, j);
+    }
+    const p = preview(state, { kind: 'tier', line: branchLine, branch: i as 0 | 1 });
+    setText(el.querySelector('.pr') as HTMLElement, `${p.flowPct >= 0.005 ? `送达 ${fmtPct(p.flowPct)} · ` : ''}${fmt(c)}`);
+    setCls(el, { can, no: !can });
+  });
+}
+function openBranch(line: LineId): void {
+  if (!nextBranches(state, line)) return;
+  branchLine = line;
+  fillBranch();
+  bp.hidden = false;
+}
+function chooseBranch(i: 0 | 1): void {
+  if (!canUpgradeTier(state, branchLine)) {
+    const c = tierCost(state, branchLine) ?? 0;
+    toast(`果钱还差 ${fmt(Math.ceil(c - state.coins))}。`);
+    return;
+  }
+  const line = branchLine;
+  const r = upgradeTier(state, line, i);
+  if (!r) return;
+  bp.hidden = true;
+  audio.sfx.stage();
+  document.body.classList.add('stageup');
+  setTimeout(() => document.body.classList.remove('stageup'), 1300);
+  toast((ERA_TOAST[line] as readonly string[])[r.tier] ?? '', 3800);
+  for (const g of r.newGates) toast(GATE_UNLOCK_TOAST(gateDef(g).name), 3800);
+  persist();
+  renderAll();
+}
+
+// ───────────── 提示:瓶颈 / 空槽 ─────────────
+let bnKind: Throughput['bottleneck'] = 'balanced';
+let bnSince = 0;
+let bnTipAt = -1e9;
+function bottleneckTip(th: Throughput): void {
+  const t = state.playSec;
+  if (th.bottleneck !== bnKind) {
+    bnKind = th.bottleneck;
+    bnSince = t;
+    return;
+  }
+  if (bnKind === 'balanced' || state.delivered < 20) return;
+  if (t - bnSince >= 20 && t - bnTipAt >= 90 && !toastBusy && !toastQ.length && bp.hidden && gp.hidden) {
+    bnTipAt = t;
+    toast(BOTTLENECK_TIP[bnKind], 4200);
+  }
+}
+
+// ───────────── 事件(小鸟 / 牛顿 / 流星) ─────────────
 let nextEventAt = 0;
-function maybeSpawnEvent(now: number): void {
-  if (readOnly || document.hidden || orchard.eventActive) return;
-  if (state.delivered < 300) return;
-  if (nextEventAt === 0) { nextEventAt = now + nextEventGap() * 1000; return; }
-  if (now < nextEventAt) return;
-  const kind = pickEvent(worldAt((now - state.startedAt) / 1000).isNight);
-  nextEventAt = now + nextEventGap() * 1000;
+function maybeEvent(): void {
+  if (state.playSec < nextEventAt || orchard.eventActive() || document.hidden || !bp.hidden) return;
+  nextEventAt = state.playSec + nextEventGap();
+  const kind: EventKind = pickEvent(worldAt(state.playSec).isNight);
   orchard.spawnEvent(kind, (hit) => {
     if (!hit) return;
-    const gain = eventReward(state, kind, nowMs());
-    addApples(state, gain);
+    const r = claimEvent(state, kind);
     audio.sfx.golden();
-    toast(`${EVENT_NAMES[kind]}:+${fmt(gain)} 个苹果`);
-  });
-}
-
-// ---- 升级与项目面板 ----
-interface Row { seen?: boolean; btn: HTMLButtonElement; n: HTMLElement; d: HTMLElement; f: HTMLElement; c: HTMLElement }
-function makeRow(): Row {
-  const btn = document.createElement('button');
-  btn.className = 'up';
-  btn.innerHTML = '<span><span class="n"></span><br><span class="d"></span><span class="f"></span></span><span class="c"></span>';
-  return {
-    btn,
-    n: btn.querySelector('.n')!,
-    d: btn.querySelector('.d')!,
-    f: btn.querySelector('.f')!,
-    c: btn.querySelector('.c')!,
-  };
-}
-
-const upRows = new Map<UpgradeId, Row>();
-const projRows = new Map<ProjectId, Row>();
-let biteRow: Row;
-
-function buildPanels(): void {
-  for (const u of UPGRADES) {
-    const row = makeRow();
-    row.btn.addEventListener('click', () => {
-      if (readOnly) return;
-      if (buy(state, u.id)) {
-        audio.sfx.buy();
-        syncOrchard();
-        persist();
-        renderPanels();
-        renderFast(nowMs());
-      }
-    });
-    $('ups').appendChild(row.btn);
-    upRows.set(u.id, row);
-  }
-  biteRow = makeRow();
-  biteRow.btn.addEventListener('click', () => {
-    if (readOnly) return;
-    if (bite(state)) {
-      audio.sfx.bite();
-      toast(BITES[state.bites - 1].flavor);
-      syncOrchard();
-      persist();
-      renderPanels();
-      renderFast(nowMs());
-    }
-  });
-  $('projs').appendChild(biteRow.btn);
-  for (const p of PROJECTS) {
-    const row = makeRow();
-    row.btn.addEventListener('click', () => {
-      if (readOnly) return;
-      const now = nowMs();
-      if (state.projects[p.id]) {
-        if (p.id === 'cook' && useCook(state, now)) {
-          const c = orchard.crownPos();
-          orchard.floatText(c.x, c.y, 'Good morning.', RED, 22);
-          audio.sfx.fanfare();
-          toast(`苹果发布会:30 秒产出 ×${cookMult(state)}`);
-        } else if (p.id === 'witch' && witchReady(state)) {
-          const gain = useWitch(state);
-          sleepAnimUntil = performance.now() + 4200;
-          audio.sfx.sleep();
-          toast(`睡了一觉,醒来多了 ${fmt(gain)} 个苹果。睡着时离线不打折。`);
-        }
-      } else if (buyProject(state, p.id)) {
-        audio.sfx.buy();
-        toast(`项目完成:${p.name}`);
-        if (p.id === 'fairest') nextFairestIn = 8;
-      }
-      persist();
-      renderPanels();
-      renderFast(now);
-    });
-    $('projs').appendChild(row.btn);
-    projRows.set(p.id, row);
-  }
-}
-
-function setRow(row: Row, o: { show: boolean; teaser?: boolean; owned?: boolean; name: string; desc: string; flavor?: string; cost: string; disabled: boolean; cook?: boolean }): void {
-  row.btn.classList.toggle('hidden', !o.show);
-  if (!o.show) return;
-  row.btn.classList.toggle('teaser', !!o.teaser);
-  row.btn.classList.toggle('owned', !!o.owned);
-  row.btn.classList.toggle('cook', !!o.cook);
-  if (row.n.textContent !== o.name) row.n.textContent = o.name;
-  if (row.d.textContent !== o.desc) row.d.textContent = o.desc;
-  const fl = o.flavor ? `\n${o.flavor}` : '';
-  if (row.f.textContent !== fl) row.f.textContent = fl;
-  if (row.c.textContent !== o.cost) row.c.textContent = o.cost;
-  if (row.seen && row.btn.disabled && !o.disabled && !o.owned) {
-    row.btn.classList.add('justready');
-    setTimeout(() => row.btn.classList.remove('justready'), 1600);
-  }
-  row.seen = true;
-  row.btn.disabled = o.disabled;
-}
-
-/** 升级当前的效果,显示在升级名下面 */
-function effectText(id: UpgradeId, lv: number): string {
-  if (lv <= 0) return '';
-  const u = upgradeDef(id);
-  let now = '';
-  if (id === 'breeze') now = `现在:+${fmt(lv * u.perSec! * milestoneMult(lv) * globalMult(state))}/秒,自动产出 ×${breezeBoost(state).toFixed(2)}`;
-  else if (u.perSec) now = `现在:+${fmt(lv * u.perSec * milestoneMult(lv) * globalMult(state))}/秒`;
-  else if (id === 'shake') now = `现在:每摇一下掉 ${clickPieces(state)} 个,另加每秒自动产出的 ${(lv * tuning.clickAuto * 100).toFixed(1)}%`;
-  else if (id === 'branches') now = `现在:全部产出 +${5 * lv}%`;
-  else if (id === 'breed') now = `现在:金苹果掉率 ${Math.round(goldRate(state) * 100)}%`;
-  const nextMs = (Math.floor(lv / 25) + 1) * 25;
-  const ms = `再 ${nextMs - lv} 级(Lv.${nextMs}):${u.perSec ? '本项 ×2,' : ''}全部产出 ×${MILESTONE_GLOBAL}`;
-  return `${now}\n${ms}`;
-}
-
-function renderPanels(): void {
-  const now = nowMs();
-  // 升级:已解锁的显示;下一个未解锁的显示成预告
-  let teased = false;
-  for (const u of UPGRADES) {
-    const row = upRows.get(u.id)!;
-    if (isUnlocked(state, u.id)) {
-      const lv = state.upgrades[u.id];
-      setRow(row, {
-        show: true,
-        name: lv ? `${u.name}  Lv.${lv}` : u.name,
-        desc: u.hint,
-        flavor: effectText(u.id, lv),
-        cost: fmt(cost(u, lv)),
-        disabled: readOnly || !canBuy(state, u.id),
-      });
-    } else if (!teased) {
-      teased = true;
-      setRow(row, { show: true, teaser: true, name: '???', desc: `累计送出 ${fmt(u.unlockAt)} 个平安果后出现`, cost: '', disabled: true });
-    } else setRow(row, { show: false, name: '', desc: '', cost: '', disabled: true });
-  }
-  // 项目:一次性,典故都放在这里
-  teased = false;
-  let anyProj = false;
-  for (const p of PROJECTS) {
-    const row = projRows.get(p.id)!;
-    const owned = state.projects[p.id];
-    if (owned) {
-      anyProj = true;
-      if (p.id === 'cook') {
-        const ready = cookReady(state, now);
-        const left = Math.ceil((state.buffs.cookReadyAt - now) / 1000);
-        setRow(row, {
-          show: true, owned: true, cook: ready, name: p.name, desc: p.desc, flavor: p.flavor,
-          cost: ready ? '开发布会' : `冷却 ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`,
-          disabled: readOnly || !ready,
-        });
-      } else if (p.id === 'witch' && witchReady(state)) {
-        setRow(row, { show: true, owned: true, cook: true, name: p.name, desc: p.desc, flavor: p.flavor, cost: '咬一口', disabled: readOnly });
-      } else {
-        setRow(row, { show: true, owned: true, name: p.name, desc: p.desc, flavor: p.flavor, cost: '已完成', disabled: true });
-      }
-    } else if (projectUnlocked(state, p.id)) {
-      anyProj = true;
-      setRow(row, { show: true, name: p.name, desc: p.desc, flavor: p.flavor, cost: fmt(p.cost), disabled: readOnly || !canBuyProject(state, p.id) });
-    } else if (!teased && state.delivered >= 200) {
-      teased = true;
-      anyProj = true;
-      setRow(row, { show: true, teaser: true, name: '???', desc: `累计送出 ${fmt(p.unlockAt)} 个平安果后出现`, cost: '', disabled: true });
-    } else setRow(row, { show: false, name: '', desc: '', cost: '', disabled: true });
-  }
-  // 禁果:三口,按顺序出现
-  if (state.bites >= BITES.length) {
-    anyProj = true;
-    setRow(biteRow, { show: true, owned: true, name: `禁果  ${state.bites}/${BITES.length}`, desc: '全部产出 ×8。苹果的祖先,吃完了。', flavor: BITES[BITES.length - 1].flavor, cost: '已吃完', disabled: true });
-  } else if (biteUnlocked(state)) {
-    anyProj = true;
-    const b = BITES[state.bites];
-    setRow(biteRow, { show: true, name: `${b.name}  (${state.bites}/${BITES.length})`, desc: b.desc, flavor: b.flavor, cost: fmt(b.cost), disabled: readOnly || !canBite(state) });
-  } else setRow(biteRow, { show: false, name: '', desc: '', cost: '', disabled: true });
-  $('projHead').classList.toggle('hidden', !anyProj);
-}
-
-// ---- 每帧都要更新的部分 ----
-let shownApples = '';
-let shownNews = -1;
-let lastStage = -1;
-let measured = 0;
-
-function renderFast(nowMs: number): void {
-  const a = fmt(state.apples);
-  if (a !== shownApples) {
-    shownApples = a;
-    $('apples').textContent = a;
-  }
-  $('rate').textContent = measured >= 0.05 ? `+${fmt(measured)}/秒` : '';
-  // 加成倒计时
-  const buffs: string[] = [];
-  if (state.buffs.cookUntil > nowMs) buffs.push(`苹果发布会 ×${cookMult(state)} · ${Math.ceil((state.buffs.cookUntil - nowMs) / 1000)} 秒`);
-  if (state.buffs.goldUntil > nowMs) buffs.push(`最美的苹果 ×2 · ${Math.ceil((state.buffs.goldUntil - nowMs) / 1000)} 秒`);
-  const bt = buffs.join('    ');
-  if ($('buffs').textContent !== bt) $('buffs').textContent = bt;
-}
-
-/** 低频:阶段条、总进度、折算、新闻 */
-function renderSlow(): void {
-  const d = state.delivered;
-  const idx = stageIndex(d);
-  const next = nextStageAt(d);
-  $('stageName').textContent = `第 ${idx + 1} 期 · ${STAGES[idx].name}`;
-  const eta = measured > 0.05 ? (next - d) / measured : Infinity;
-  const etaText = eta === Infinity ? '摇几下就知道要多久' : eta > 86_400 ? '还要很久' : `约 ${fmtDuration(eta * 1000)}`;
-  $('stageNext').textContent =
-    idx + 1 < STAGES.length
-      ? `下一期「${STAGES[idx + 1].name}」· 累计 ${fmt(next)} · ${etaText}`
-      : `终点 · 累计 ${fmt(GOAL)} · ${etaText}`;
-  const sp = stageProgress(d) * 100;
-  ($('stageBar') as HTMLElement).style.width = `${sp.toFixed(1)}%`;
-  $('stageBar').parentElement!.setAttribute('aria-valuenow', sp.toFixed(0));
-
-  $('goalBox').classList.toggle('hidden', d < 100);
-  const p = progress(state);
-  ($('goalBar') as HTMLElement).style.width = `${(p * 100).toFixed(3)}%`;
-  $('goalBar').parentElement!.setAttribute('aria-valuenow', (p * 100).toFixed(1));
-  $('goalNum').textContent = `${fmt(d)} / ${fmt(GOAL)}`;
-  $('equiv').textContent = equiv(d);
-
-  const ni = newsIndex(d);
-  if (ni !== shownNews) {
-    shownNews = ni;
-    renderTicker(d);
-  }
-  if (idx !== lastStage) {
-    if (lastStage >= 0 && idx > lastStage) {
-      toast(`第 ${idx + 1} 期「${STAGES[idx].name}」:果园里又长出了新的树`);
-      audio.sfx.stage();
-      document.body.classList.add('stageup');
-      setTimeout(() => document.body.classList.remove('stageup'), 1300);
-    }
-    lastStage = idx;
-    audio.setIntensity(idx);
-  }
-  for (const a of checkAchievements(state, nowMs())) {
-    toast(`成就:${a.name} —— ${a.desc}`);
-    renderAchievements(true);
-  }
-  renderAchievements(false);
-  syncOrchard();
-  renderNextGoal();
-}
-
-// ---- 跑马灯与成就 ----
-function renderTicker(d: number): void {
-  const lines = tickerLines(d);
-  if (xmas) lines.splice(1, 0, '平安夜快乐。苹果的"苹"和平安的"平",是一个音。', '圣诞树上挂的不是苹果,是平安果。');
-  const html = lines.map((t) => `<span class="ni">${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`).join('');
-  const track = document.getElementById('newsTrack');
-  if (!track) {
-    $('news').textContent = lines[0];
-    return;
-  }
-  track.innerHTML = html + html;
-  const chars = lines.reduce((a, t) => a + t.length + 4, 0);
-  track.style.setProperty('--news-dur', `${Math.max(60, Math.round((chars * 15) / 45))}s`);
-}
-
-let achKey = '';
-function renderAchievements(force: boolean): void {
-  const list = document.getElementById('achList');
-  if (!list) return;
-  const key = String(Object.keys(state.achievements).length);
-  if (!force && key === achKey) return;
-  achKey = key;
-  list.innerHTML = '';
-  for (const a of ACHIEVEMENTS) {
-    const done = !!state.achievements[a.id];
-    const div = document.createElement('div');
-    div.className = `ach ${done ? 'done' : 'locked'}`;
-    div.innerHTML = '<span class="n"></span><span class="d"></span>';
-    div.querySelector('.n')!.textContent = done ? a.name : '???';
-    div.querySelector('.d')!.textContent = done ? a.desc : `线索:${a.hint}`;
-    list.appendChild(div);
-  }
-  const tab = document.getElementById('tabAch');
-  if (tab) tab.textContent = `成就 ${Object.keys(state.achievements).length}/${ACHIEVEMENTS.length}`;
-}
-
-// ---- 下一步目标:永远告诉玩家在攒什么 ----
-let goalShown = '';
-function renderNextGoal(): void {
-  const box = document.getElementById('nextGoal');
-  if (!box) return;
-  const cands: Array<{ name: string; cost: number }> = [];
-  for (const u of UPGRADES) if (isUnlocked(state, u.id) && !(u.id === 'breed' && goldRate(state) >= 0.2)) cands.push({ name: u.name, cost: cost(u, state.upgrades[u.id]) });
-  for (const p of PROJECTS) if (!state.projects[p.id] && projectUnlocked(state, p.id)) cands.push({ name: p.name, cost: p.cost });
-  if (state.bites < BITES.length && biteUnlocked(state)) cands.push({ name: BITES[state.bites].name, cost: BITES[state.bites].cost });
-  let text = '';
-  let frac = 0;
-  if (cands.length) {
-    cands.sort((a, b) => a.cost - b.cost);
-    const c = cands[0];
-    frac = Math.min(1, state.apples / c.cost);
-    if (state.apples >= c.cost) text = `可以买了:${c.name}`;
-    else {
-      const eta = measured > 0.05 ? (c.cost - state.apples) / measured : Infinity;
-      text = `下一步:${c.name} · 还差 ${fmt(c.cost - state.apples)}${eta < 86_400 ? ` · 约 ${fmtDuration(eta * 1000)}` : ''}`;
-    }
-  }
-  const key = text;
-  box.classList.toggle('hidden', !text);
-  if (key !== goalShown) {
-    goalShown = key;
-    const t = document.getElementById('nextGoalText');
-    if (t) t.textContent = text;
-  }
-  const bar = document.getElementById('nextGoalBar');
-  if (bar) bar.style.width = `${(frac * 100).toFixed(1)}%`;
-}
-
-let orchardKey = '';
-function syncOrchard(): void {
-  const trees = STAGES[stageIndex(state.delivered)].trees;
-  const u = state.upgrades;
-  const p = state.projects;
-  const build: Build = {
-    shake: u.shake, breeze: u.breeze, gardener: u.gardener, branches: u.branches, breed: u.breed,
-    shaker: u.shaker, express: u.express, tractor: u.tractor, drone: u.drone, cloud: u.cloud,
-    gravity: p.gravity, fairest: p.fairest, cook: p.cook, duo: p.duo,
-    cookActive: state.buffs.cookUntil > nowMs(),
-    bites: state.bites, garage: p.garage, doctor: p.doctor, witch: p.witch, onemore: p.onemore,
-    sleeping: performance.now() < sleepAnimUntil,
-  };
-  const key = `${trees}:${Object.values(build).join(',')}`;
-  if (key !== orchardKey) {
-    orchardKey = key;
-    orchard.setState(trees, build);
-  }
-}
-
-// ---- 摇 ----
-function onShake(px: number, py: number): void {
-  if (readOnly) return;
-  const now = nowMs();
-  if (orchard.hitFairest(px, py)) {
-    orchard.fairest = null;
-    grabFairest(state, now);
-    audio.sfx.golden();
-    orchard.floatText(px, py - 10, '最美的苹果!', GOLD_TEXT, 22);
-    toast('最美的苹果:30 秒产出 ×2');
-    nextFairestIn = 45 + Math.random() * 60;
+    orchard.floatText(r.apples > 0 ? `+${fmt(r.apples)}` : '灵感!');
+    toast(EVENT_TEXT[kind].claim, 3600);
     persist();
-    return;
-  }
-  const r = click(state, { now });
-  orchard.poke();
-  r.golds > 0 ? audio.sfx.golden() : audio.sfx.shake();
-  orchard.drop(r.pieces, r.golds);
-  orchard.floatText(px, py - 8, '+' + fmt(r.value), r.golds > 0 ? GOLD_TEXT : '#111', 18);
-  renderFast(now);
+    renderAll();
+  });
+  toast(EVENT_TEXT[kind].appear, 2800);
 }
 
-// ---- 主循环:100ms 固定 tick,渲染用 rAF ----
-let nextFairestIn = 20;
-let gravAcc = 0;
-let dropAcc = 0;
-let won = false;
-
-function step(dt: number, now: number): void {
-  if (readOnly) return;
-  const g = tick(state, dt, now);
-  void g;
-  // 自动产出的视觉:最多每秒掉 6 个(流水线画面由 orchard.setSources 驱动)
-  dropAcc += Math.min(rate(state, now), 6) * dt;
-  while (dropAcc >= 1) {
-    dropAcc -= 1;
-    orchard.drop(1);
-  }
-  if (state.projects.gravity) {
-    gravAcc += dt;
-    if (gravAcc >= GRAVITY_EVERY_S) {
-      gravAcc = 0;
-      const gain = gravityGain(state, now);
-      addApples(state, gain);
-      const c = orchard.crownPos();
-      orchard.gravityHit();
-      audio.sfx.bonk();
-      orchard.floatText(c.x, c.y, `万有引力 +${fmt(gain)}`, '#555', 16);
+// ───────────── 手感:摇树 / 苹果噼里啪啦掉下来 ─────────────
+let lastShakeText = 0;
+let lastShakeSfx = 0;
+let tapN = 0;
+function onShakeResult(r: ShakeResult): void {
+  if (!r.ok) return;
+  const now = performance.now();
+  if (r.combo > 0 && r.combo % 8 === 0) {
+    orchard.burst(2 + Math.min(4, r.combo >> 3));
+    audio.sfx.bonk();
+    if (now - lastShakeText > 700) {
+      lastShakeText = now;
+      orchard.floatText(COMBO_TEXT[(r.combo >> 3) % COMBO_TEXT.length]);
     }
+  } else if (++tapN % 17 === 0 && now - lastShakeText > 1200) {
+    lastShakeText = now;
+    orchard.floatText(SHAKE_TEXT[tapN % SHAKE_TEXT.length]);
   }
-  if (state.projects.fairest && !orchard.fairest) {
-    nextFairestIn -= dt;
-    if (nextFairestIn <= 0) {
-      orchard.spawnFairest();
-      nextFairestIn = 45 + Math.random() * 60;
+  if (now - lastShakeSfx >= 110) {
+    lastShakeSfx = now;
+    audio.sfx.shake();
+  }
+}
+/** 摇一下树(点画布 / 空格 / 以后手机摇一摇都走这里) */
+function doShake(): void {
+  const r = shake(state);
+  if (r.ok) orchard.poke(2);
+  onShakeResult(r);
+}
+
+// ───────────── 渲染(每 0.25 秒一次,以及操作后立即) ─────────────
+let lastApples = '';
+let lastEra = -1;
+function renderAll(): void {
+  const s = state;
+  const th = throughput(s);
+  const hints = nextHints(s);
+
+  // 顶栏:已送出 / 目标;果钱 + 每秒送达
+  const shown = fmt(Math.floor(s.delivered));
+  const ap = $('apples');
+  if (shown !== lastApples) {
+    if (lastApples) {
+      ap.classList.remove('bump');
+      void ap.offsetWidth;
+      ap.classList.add('bump');
     }
+    ap.textContent = shown;
+    lastApples = shown;
   }
+  setText($('rate'), `果钱 ${fmt(Math.floor(s.coins))} · 每秒 ${fmt(th.flow)}`);
+  const pct = progress(s) * 100;
+  $('goalBar').style.width = `${pct.toFixed(2)}%`;
+  $('goalWrap').setAttribute('aria-valuenow', pct.toFixed(1));
+  $('goalWrap').title = `已送出 ${Math.floor(s.delivered).toLocaleString('en-US')} / ${GOAL.toLocaleString('en-US')}`;
+
+  renderAct('source', btn.sb, btn.su, hints, th);
+  renderAct('route', btn.rb, btn.ru, hints, th);
+  renderGates();
+  renderHelper(hints);
+  if (!bp.hidden) fillBranch();
+
+  orchard.setWorld(buildWorld(th));
+  const e = era(s);
+  if (e !== lastEra) {
+    lastEra = e;
+    audio.setIntensity(Math.min(5, Math.round(e / 2)));
+  }
+  if (DEBUG) renderDebugInfo(th);
+  if (!tipEmptyShown && s.delivered >= 60 && s.gates.every((g) => g === null) && toastQ.length === 0 && !toastBusy) {
+    tipEmptyShown = true;
+    toast(EMPTY_SLOT_TIP, 4200);
+  }
+  bottleneckTip(th);
+  maybeEvent();
+  if (!won && isWon(s)) win();
 }
 
-function renderDebug(): void {
-  const el = document.getElementById('dbgSpeed');
-  if (el) el.textContent = `×${speed}`;
-}
-
-function setupDebug(): void {
-  if (!DEBUG) return;
+// ───────────── 结局 ─────────────
+function win(): void {
+  won = true;
+  persist();
+  audio.sfx.fanfare();
+  showEnding(
+    { elapsedMs: Math.max(0, (state.wonAt ?? state.playSec) * 1000), clicks: state.shakes },
+    () => {
+      /* 回到果园:游戏继续 */
+    },
+    () => resetGame(),
+  );
+  const card = document.querySelector('#ending .card');
+  if (!card) return;
   const box = document.createElement('div');
-  box.id = 'dbg';
-  box.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99;display:flex;flex-wrap:wrap;gap:4px;align-items:center;max-width:94vw;padding:4px 6px;background:#111c;color:#fff;font:12px/1.2 system-ui;border-radius:8px';
-  const mk = (label: string, fn: () => void): void => {
+  if (!giftOpen(nowMs())) {
+    box.id = 'sealed';
+    box.className = 'sealed';
+    box.style.cssText = 'margin:14px 0;padding:10px;border:1px dashed #666;border-radius:8px;font-size:14px';
+    for (const line of SEALED) {
+      const p = document.createElement('p');
+      p.textContent = line;
+      box.append(p);
+    }
+  } else {
+    // 礼物位:12 月 24 日起开放,内容以后放这里。
+    box.id = 'giftSlot';
+  }
+  card.insertBefore(box, card.lastElementChild);
+}
+
+function resetGame(): void {
+  state = newState(Date.now());
+  readOnly = false;
+  afterStateReplaced();
+  persist();
+}
+function afterStateReplaced(): void {
+  won = isWon(state);
+  lastApples = '';
+  lastEra = -1;
+  gatesSeen = state.gates.some((g) => g !== null) ? state.gatesUnlocked.length : 0;
+  bnKind = 'balanced';
+  bnSince = state.playSec;
+  bnTipAt = state.playSec;
+  nextEventAt = state.playSec + nextEventGap();
+  gp.hidden = true;
+  bp.hidden = true;
+  applyTheme();
+  applySound();
+  orchard.reducedMotion = state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  renderAll();
+}
+
+// ───────────── 调试面板 ─────────────
+let dbgInfo: HTMLElement | null = null;
+let dbgSpeed: HTMLElement | null = null;
+function setupDebug(): void {
+  const box = $('debug');
+  const mk = (label: string, fn: () => void): HTMLButtonElement => {
     const b = document.createElement('button');
+    b.type = 'button';
     b.textContent = label;
-    b.style.cssText = 'padding:3px 7px;border-radius:5px;border:1px solid #888;background:#333;color:#fff;font:inherit;cursor:pointer';
-    b.onclick = fn;
-    box.appendChild(b);
+    b.style.cssText = 'min-height:44px;min-width:48px;margin:2px;padding:0 8px;border:1.5px solid var(--ink);border-radius:10px;background:var(--f0);font:inherit;font-size:12px';
+    b.addEventListener('click', fn);
+    return b;
   };
-  box.append('调试 ');
-  const cur = document.createElement('b');
-  cur.id = 'dbgSpeed';
-  box.appendChild(cur);
-  for (const v of [1, 10, 60, 600, 3600]) mk(`×${v}`, () => { speed = v; });
-  const skip = (sec: number) => () => {
-    // 快进:按当前速率直接结算 sec 秒,并推进虚拟时钟
-    const g = tick(state, sec, nowMs());
-    skewMs += sec * 1000;
-    toast(`快进 ${fmtDuration(sec * 1000)},+${fmt(g)}`);
+  const row = document.createElement('div');
+  dbgSpeed = document.createElement('div');
+  dbgSpeed.id = 'dbgSpeed';
+  dbgSpeed.textContent = `×${speed}`;
+  for (const v of [1, 10, 60, 600, 3600]) {
+    row.append(
+      mk(`×${v}`, () => {
+        speed = v;
+        dbgSpeed!.textContent = `×${speed}`;
+      }),
+    );
+  }
+  const jump = (sec: number) => () => {
+    tick(state, sec, Date.now());
+    renderAll();
   };
-  mk('+10分', skip(600));
-  mk('+1小时', skip(3600));
-  mk('+10亿', () => { addApples(state, 1e9); });
-  document.body.appendChild(box);
+  row.append(mk('+10分', jump(600)), mk('+1小时', jump(3600)));
+  row.append(
+    mk('+10亿果钱', () => {
+      state.coins += 1e9;
+      renderAll();
+    }),
+  );
+  dbgInfo = document.createElement('pre');
+  dbgInfo.id = 'dbgInfo';
+  dbgInfo.style.margin = '4px 0 0';
+  box.append(row, dbgSpeed, dbgInfo);
+}
+function renderDebugInfo(th: Throughput): void {
+  if (!dbgInfo) return;
+  dbgInfo.textContent = `flow ${th.flow.toPrecision(3)}/s produce ${th.produce.toPrecision(3)} carry ${th.carry.toPrecision(3)} ${th.bottleneck}\nincome ${th.income.toPrecision(3)}/s era ${era(state)} play ${Math.floor(state.playSec)}s`;
 }
 
-function loop(): void {
-  let last = performance.now();
-  let acc = 0;
-  let sinceSave = 0;
-  let slow = 0;
-  const frame = (t: number) => {
-    const raw = (t - last) / 1000;
-    last = t;
-    if (raw > 5) settleNow(true); // 后台冻结后回来:一次闭式结算
-    const dt = Math.min(raw, 1);
-    if (speed > 1) skewMs += dt * (speed - 1) * 1000;
-    const now = nowMs();
-    acc += dt * speed;
-    // 加速时拉大步长,每帧最多 20 步
-    const chunk = Math.max(0.1, acc / 20);
-    while (acc >= chunk && acc >= 0.1) {
-      acc -= chunk;
-      step(chunk, now);
-    }
-    sinceSave += dt;
-    if (sinceSave >= 15) {
-      sinceSave = 0;
-      persist();
-    }
-    measured = sampleRate(now);
-    cps = sampleCps(performance.now());
-    orchard.setClock((now - state.startedAt) / 1000);
-    orchard.frame(dt);
-    renderFast(now);
-    if (DEBUG) renderDebug();
-    slow += dt;
-    if (slow >= 0.25) {
-      slow = 0;
-      renderSlow();
-      renderPanels();
-      renderSources(now);
-      maybeSpawnEvent(now);
-    }
-    if (isWon(state) && !won) {
-      won = true;
-      audio.sfx.fanfare();
-      showEnding(state, () => undefined, () => {
-        state = newState(Date.now());
-        readOnly = false;
-        afterStateReplaced();
-        persist();
-      });
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
+// ───────────── 接线 ─────────────
+function press(el: HTMLElement): void {
+  el.classList.add('pressed');
+  setTimeout(() => el.classList.remove('pressed'), 480);
 }
-
-function stagePoint(e: PointerEvent): { x: number; y: number } {
-  const r = $('stage').getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+function nudge(line: LineId, what: 'unit' | 'tier'): void {
+  const h = nextHints(state)[line];
+  const x = what === 'unit' ? h.unit : h.tier;
+  if (!x) return;
+  const lack = Math.ceil(x.cost - state.coins);
+  toast(`果钱还差 ${fmt(lack)}${isFinite(x.waitSec) ? `,约 ${fmtWait(x.waitSec)}` : ''}。`, 2400);
 }
-
 function wire(): void {
-  const stage = $('stage');
-  stage.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    const p = stagePoint(e);
-    onShake(p.x, p.y);
+  orchard.onShake = () => doShake();
+  orchard.onGate = (slot) => openGate(slot);
+
+  const buy = (line: LineId, a: Act) => () => {
+    if (buyUnit(state, line)) {
+      audio.sfx.buy();
+      press(a.el);
+      persist();
+      renderAll();
+    } else nudge(line, 'unit');
+  };
+  btn.sb.el.addEventListener('click', buy('source', btn.sb));
+  btn.rb.el.addEventListener('click', buy('route', btn.rb));
+  btn.su.el.addEventListener('click', () => {
+    press(btn.su.el);
+    openBranch('source');
   });
-  stage.addEventListener('keydown', (e) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      const c = orchard.crownPos();
-      onShake(c.x, c.y);
-    }
+  btn.ru.el.addEventListener('click', () => {
+    press(btn.ru.el);
+    openBranch('route');
   });
+  for (let i = 0; i < GATE_SLOTS; i++) $(`gate${i}`).addEventListener('click', () => openGate(i));
+  $('branch0').addEventListener('click', () => chooseBranch(0));
+  $('branch1').addEventListener('click', () => chooseBranch(1));
+
+  // 键盘空格:由 Orchard 内部监听,触发 onShake
+
+  // 尺寸:画布跟随 #scene(横竖屏切换、地址栏伸缩都会变)
   addEventListener('resize', () => orchard.resize());
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => orchard.resize()).observe($('scene'));
+
+  // 声音:默认关;第一次触摸/按键时解锁 AudioContext
   addEventListener('pointerdown', () => audio.unlock(), { capture: true });
   addEventListener('keydown', () => audio.unlock(), { capture: true });
-  setupSoundToggle();
+  $('btnSound').addEventListener('click', () => {
+    state.settings.sound = !state.settings.sound;
+    audio.unlock();
+    applySound();
+    persist();
+  });
+  $('btnTheme').addEventListener('click', () => {
+    const order = ['auto', 'light', 'dark'] as const;
+    state.settings.dark = order[(order.indexOf(state.settings.dark) + 1) % 3];
+    applyTheme();
+    persist();
+  });
+  DARK_MQ.addEventListener?.('change', () => {
+    if (state.settings.dark === 'auto') applyTheme();
+  });
+
+  // 前后台 / 关页
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) persist();
-    else settleNow(true);
+    else catchUp(true);
   });
   addEventListener('pagehide', persist);
   addEventListener('pageshow', (e) => {
-    if ((e as PageTransitionEvent).persisted) settleNow(true);
+    if ((e as PageTransitionEvent).persisted) catchUp(true);
   });
-  // 多标签页:别的标签页写了存档,就停止本页保存,避免互相覆盖
+  // 多标签页:别的标签页写了存档,本页停止保存,避免互相覆盖
   addEventListener('storage', (e) => {
     if (e.key === SAVE_KEY && !readOnly) {
       readOnly = true;
-      toast('检测到另一个标签页在玩,本页已暂停。刷新后继续。');
+      toast('检测到另一个标签页在玩,本页已暂停保存。刷新后继续。', 5000);
     }
   });
+
   $('btnExport').addEventListener('click', async () => {
     const text = exportSave(state);
     try {
@@ -697,64 +690,85 @@ function wire(): void {
     if (!s) return toast('存档无效。');
     state = s;
     readOnly = false;
-    settleNow(false);
+    catchUp(false);
     afterStateReplaced();
     persist();
     toast('导入成功。');
   });
   $('btnReset').addEventListener('click', () => {
     if (!confirm('确定重新开始?当前进度会被清除。')) return;
-    state = newState(Date.now());
-    readOnly = false;
-    afterStateReplaced();
-    persist();
+    $('settings').hidden = true;
+    resetGame();
   });
 }
 
-function setupSoundToggle(): void {
-  let btn = document.getElementById('btnSound') as HTMLButtonElement | null;
-  if (!btn) {
-    const ref = $('btnExport');
-    btn = document.createElement('button');
-    btn.id = 'btnSound';
-    btn.className = ref.className;
-    ref.parentElement!.insertBefore(btn, ref);
+// ───────────── 主循环 ─────────────
+let lastTs = performance.now();
+let slowAcc = 0;
+let saveAcc = 0;
+function loop(ts: number): void {
+  requestAnimationFrame(loop);
+  const raw = (ts - lastTs) / 1000;
+  lastTs = ts;
+  if (raw > 5) {
+    catchUp(true); // 浏览器把页面挂起了很久
+    renderAll();
+    return;
   }
-  const apply = () => {
-    audio.setMusic(state.settings.sound);
-    audio.setSfx(state.settings.sound);
-    btn!.textContent = state.settings.sound ? '声音:开' : '声音:关';
-  };
-  btn.addEventListener('click', () => {
-    state.settings.sound = !state.settings.sound;
-    audio.unlock();
-    apply();
+  const dt = Math.max(0, Math.min(raw, 1));
+  if (!readOnly) {
+    // 加速时一帧要推进很多游戏秒:分段推进,每帧最多 ~20 段
+    let left = dt * speed;
+    const chunk = Math.max(0.1, left / 20);
+    while (left > 1e-6) {
+      const step = Math.min(chunk, left);
+      tick(state, step, Date.now());
+      left -= step;
+    }
+  }
+  orchard.frame(dt);
+  slowAcc += dt;
+  saveAcc += dt;
+  if (slowAcc >= 0.25) {
+    slowAcc = 0;
+    renderAll();
+  }
+  if (saveAcc >= 15) {
+    saveAcc = 0;
     persist();
-  });
-  apply();
+  }
 }
 
-function afterStateReplaced(): void {
-  orchardKey = '';
-  lastStage = -1;
-  shownNews = -1;
-  achKey = '';
-  won = false;
-  resetRateSamples();
-  renderSlow();
-  renderPanels();
+// ───────────── 启动 ─────────────
+canSave = storageWritable(kv);
+const loaded = load(kv, Date.now());
+state = loaded.state;
+if (loaded.kind === 'readonly') readOnly = true;
+mkHelperBtn();
+btn = { sb: mkAct('btnSrcBuy'), su: mkAct('btnSrcUp'), rb: mkAct('btnRtBuy'), ru: mkAct('btnRtUp') };
+const orchard = new Orchard($<HTMLCanvasElement>('stage'));
+if (loaded.kind === 'readonly') toast('存档来自更新的版本,本页只读,不会覆盖存档。', 6000);
+else if (loaded.kind === 'ok') {
+  if (loaded.fromBackup) toast('主存档损坏,已从备份恢复。', 5000);
+  catchUp(true);
 }
-
-boot();
-if (xmas) document.body.classList.add('xmas');
-won = isWon(state);
-orchard = new Orchard($('cv') as HTMLCanvasElement);
-orchard.christmas = xmas;
-orchard.reducedMotion = state.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches;
-buildPanels();
+$('saveWarn').textContent = canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
-renderSlow();
-renderPanels();
-renderFast(nowMs());
-setupDebug();
-loop();
+if (DEBUG) {
+  setupDebug();
+  (window as unknown as { __game: unknown }).__game = {
+    get state() {
+      return state;
+    },
+    get speed() {
+      return speed;
+    },
+    orchard,
+    GOAL,
+  };
+}
+afterStateReplaced();
+requestAnimationFrame((ts) => {
+  lastTs = ts;
+  requestAnimationFrame(loop);
+});

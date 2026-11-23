@@ -87,9 +87,16 @@ function fillDefaults(s: State, now: number): State {
     units: dl.units.map((_, i) => (Number.isFinite(l?.units?.[i]) ? l.units[i] : dl.units[i])),
     branch: dl.branch.map((_, i) => (l?.branch?.[i] === 0 || l?.branch?.[i] === 1 ? l.branch[i] : -1)) as State['source']['branch'],
   });
-  return {
+  const legacy = s as any;
+  const num = (v: unknown, dv: number) => (typeof v === 'number' && Number.isFinite(v) ? v : dv);
+  const out: any = {
     ...d,
     ...s,
+    shakes: num(legacy.shakes ?? legacy.clicks, 0),
+    charge: Math.min(1, Math.max(0, num(legacy.charge ?? legacy.flywheel, 0))),
+    shakeRate: 0,
+    shakeTok: Math.min(3, Math.max(0, num(legacy.shakeTok, 3))),
+    helpers: Math.max(0, Math.floor(num(legacy.helpers, 0))),
     source: line(s.source, d.source),
     route: line(s.route, d.route),
     gates: d.gates.map((_, i) => s.gates?.[i] ?? null),
@@ -98,6 +105,11 @@ function fillDefaults(s: State, now: number): State {
     tierTimes: { source: s.tierTimes?.source ?? [], route: s.tierTimes?.route ?? [] },
     settings: { ...d.settings, ...s.settings },
   };
+  delete out.clicks;
+  delete out.flywheel;
+  delete out.turns;
+  delete out.flings;
+  return out as State;
 }
 
 export function exportSave(s: State): string {

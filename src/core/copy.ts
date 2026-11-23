@@ -39,7 +39,11 @@ export const EVENT_TEXT: Record<EventKind, { appear: string; claim: string }> = 
   meteor: { appear: '一颗流星拖着红光划过天空。', claim: '它落下来的是一整车苹果。' },
 };
 
-export const FLING_TEXT = ['嗖!', '飞出去了!', '转过头了!', '连着来!'];
+/** 摇树时冒出来的小字(UI 随机挑) */
+export const SHAKE_TEXT = ['哗啦!', '掉了掉了!', '树:别摇了别摇了', '再来!', '叶子也掉了'];
+/** 连摇到一定数时的小字 */
+export const COMBO_TEXT = ['连摇!', '手速!', '树晕了!', '这手速,树要报警了'];
+export const HELPER_TEXT = { hired: '老徐来了,他说他只摇一会儿。', none: '还没人帮你摇。' };
 
 export const awayLine = (minutes: number): string =>
   minutes < 2 ? '你刚走开一会儿,苹果在继续送。'

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#f4f1ea" />
+<title>Shake the Apple · preview</title>
+<link rel="stylesheet" href="/src/ui/ui.css" />
+<script>if(matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')</script>
+</head>
+<body>
+<header id="topbar">
+  <div class="counts"><span class="lbl">已送出</span><b id="apples">0</b><span id="goalNum">/ 82亿</span></div>
+  <div id="rate" class="rate"></div>
+  <button id="btnSettings" class="ib" type="button" aria-label="设置">⚙</button>
+  <div id="goalWrap" role="progressbar" aria-label="送达进度" aria-valuemin="0" aria-valuemax="100"><i id="goalBar"></i></div>
+</header>
+
+<main id="scene"><canvas id="stage" aria-label="苹果传送线"></canvas><div id="toast" role="status" aria-live="polite"></div></main>
+
+<footer id="bar">
+  <section class="side" id="srcSide" aria-label="生产线">
+    <button id="btnSrcBuy" class="act" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
+    <button id="btnSrcUp" class="act up" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
+  </section>
+  <section id="gates" aria-label="关卡">
+    <button class="slot" id="gate0" type="button" data-slot="0"><b class="nm">+</b></button>
+    <button class="slot" id="gate1" type="button" data-slot="1"><b class="nm">+</b></button>
+    <button class="slot" id="gate2" type="button" data-slot="2"><b class="nm">+</b></button>
+  </section>
+  <section class="side" id="rtSide" aria-label="运输线">
+    <button id="btnRtBuy" class="act" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
+    <button id="btnRtUp" class="act up" type="button"><b class="nm"></b><span class="pv"></span><span class="pr"></span><i class="fx"></i></button>
+  </section>
+</footer>
+
+<div id="gatePick" hidden role="dialog" aria-label="选择关卡">
+  <div class="gp-head"><b id="gatePickTitle">选择关卡</b><button id="gatePickClose" class="ib sm" type="button" aria-label="关闭">✕</button></div>
+  <div id="gateOpts" class="opts"></div>
+</div>
+
+<div id="branchPick" hidden role="dialog" aria-label="选择分支">
+  <div class="bp-box">
+    <div class="bp-head"><b id="branchTitle">升级</b><span id="branchSub"></span></div>
+    <div class="bp-cards">
+      <button id="branch0" class="bcard" type="button" data-branch="0"><b class="nm"></b><span class="desc"></span><span class="pr"></span></button>
+      <button id="branch1" class="bcard" type="button" data-branch="1"><b class="nm"></b><span class="desc"></span><span class="pr"></span></button>
+    </div>
+    <button id="branchCancel" class="plain" type="button">再想想</button>
+  </div>
+</div>
+
+<div id="settings" hidden role="dialog" aria-label="设置">
+  <div class="sheet">
+    <h2>设置</h2>
+    <div class="btns">
+      <button id="btnTheme" type="button">主题:自动</button>
+      <button id="btnSound" type="button">声音</button>
+      <button id="btnExport" type="button">导出存档</button>
+      <button id="btnImport" type="button">导入存档</button>
+      <button id="btnReset" type="button">重新开始</button>
+    </div>
+    <div id="saveWarn"></div>
+    <div id="debug"></div>
+    <div class="foot">原创小游戏,与苹果公司无关。</div>
+    <button class="close" id="btnCloseSettings" type="button">关闭</button>
+  </div>
+</div>
+
+<div id="dev" style="position:fixed;right:4px;top:44px;z-index:60;font:11px sans-serif;background:rgba(128,128,128,.25);padding:4px;border-radius:6px;max-width:46vw"></div>
+<script type="module" src="/src/ui/preview.ts"></script>
+<script>
+// 仅处理:设置抽屉开关、关卡/分支弹层的关闭(点空白/Esc)。不依赖 main.ts。
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var s=$('settings'),gp=$('gatePick'),bp=$('branchPick');
+  function closeAll(){s.hidden=true;gp.hidden=true;bp.hidden=true}
+  $('btnSettings').addEventListener('click',function(){s.hidden=!s.hidden});
+  $('btnCloseSettings').addEventListener('click',function(){s.hidden=true});
+  $('gatePickClose').addEventListener('click',function(){gp.hidden=true});
+  $('branchCancel').addEventListener('click',function(){bp.hidden=true});
+  s.addEventListener('pointerdown',function(e){if(e.target===s)s.hidden=true});
+  bp.addEventListener('pointerdown',function(e){if(e.target===bp)bp.hidden=true});
+  document.addEventListener('pointerdown',function(e){
+    if(gp.hidden||gp.contains(e.target)||e.target.closest&&e.target.closest('.slot'))return;
+    gp.hidden=true;
+  },true);
+  addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
+})();
+</script>
+</body>
+</html>

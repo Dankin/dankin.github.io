@@ -1,17 +1,18 @@
 // 调价格曲线:价格由几个参数生成(每档单位价 = 该档产量 × 回本秒数 PB·ρ^(k-1),升档价 = τ × 单位价),
 // 随机局部搜索让 cps 0/1/4 的通关时间、时代切换时间贴近目标,同时惩罚"两次有意义购买间隔 >60s"。
 //   node scripts/tune.ts [迭代次数=200] [PB,rho,tau,g,fw,late,tauLate 初值]   最后打印可贴进 content.ts 的数字
-import { FLY, ROUTE_TIERS, SOURCE_TIERS } from '../src/core/content.ts';
+import { SHAKE, ROUTE_TIERS, SOURCE_TIERS } from '../src/core/content.ts';
 import { play, type Opts } from './sim.ts';
 
 const base = (cps: number): Opts => ({ cps, delay: 1.5, policy: 'balanced', gates: 'auto', events: 0.7, maxMin: 200, seed: 1, verbose: false });
-const FW0 = [...FLY.maxByTier];
+const FW0 = [...SHAKE.maxByTier];
+const DROP0 = [...SHAKE.dropSec];
 const SR = SOURCE_TIERS.map((t) => t.rate);
 const RR = ROUTE_TIERS.map((t) => t.cap / t.trip);
 
-/** p = [PB, rho, tau, g, fw, late, tauLate]:k≥4 的档回本再乘 late^(k-3)、升档系数乘 tauLate */
+/** p = [PB, rho, tau, g, fw, late, tauLate, drop]:drop = 摇一下掉落量(dropSec)的倍率;k≥4 的档回本再乘 late^(k-3)、升档系数乘 tauLate */
 export function apply(p: number[]): void {
-  const [PB, rho, tau, g, fw, late, tauLate] = p;
+  const [PB, rho, tau, g, fw, late, tauLate, drop = 1] = p;
   let pb = PB;
   for (let k = 1; k <= 5; k++) {
     if (k > 1) pb *= rho;
@@ -23,7 +24,8 @@ export function apply(p: number[]): void {
     ROUTE_TIERS[k].tierCost = ROUTE_TIERS[k].baseCost * tk * 1.05;
   }
   for (const t of [...SOURCE_TIERS, ...ROUTE_TIERS]) t.growth = g;
-  FLY.maxByTier.splice(0, 6, ...FW0.map((x) => x * fw));
+  SHAKE.maxByTier.splice(0, 6, ...FW0.map((x) => x * fw));
+  SHAKE.dropSec.splice(0, 6, ...DROP0.map((x) => x * drop));
 }
 
 export const bakeText = (): string => {
@@ -34,7 +36,7 @@ export const bakeText = (): string => {
     `SOURCE tierCost [${a(SOURCE_TIERS.map((t) => t.tierCost))}]`,
     `ROUTE  baseCost [${a(ROUTE_TIERS.map((t) => t.baseCost))}]`,
     `ROUTE  tierCost [${a(ROUTE_TIERS.map((t) => t.tierCost))}]`,
-    `growth ${SOURCE_TIERS[1].growth}  fw [${FLY.maxByTier.map((x) => +x.toFixed(2)).join(', ')}]`,
+    `growth ${SOURCE_TIERS[1].growth}  fw [${SHAKE.maxByTier.map((x) => +x.toFixed(2)).join(', ')}]  dropSec [${SHAKE.dropSec.map((x) => +x.toFixed(2)).join(', ')}]`,
   ].join('\n');
 };
 
@@ -57,7 +59,7 @@ function loss(p: number[]): { l: number; info: string } {
 
 if (process.argv[1]?.endsWith('tune.ts')) {
   const iters = +(process.argv[2] ?? 200);
-  let p = [300, 2, 0.15, 1.1, 1, 1, 1];
+  let p = [380, 2.1, 0.2, 1.127, 1.15, 1.05, 1, 1.5];
   if (process.argv[3]) p = process.argv[3].split(',').map(Number);
   let cur = loss(p);
   console.log('start', cur.l.toFixed(3), cur.info);

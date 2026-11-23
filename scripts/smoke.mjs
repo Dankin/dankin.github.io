@@ -1,17 +1,21 @@
-// Chrome 冒烟测试:无依赖,直接用 CDP。用法: node scripts/smoke.mjs
+// Chrome 冒烟测试(v4):无依赖,直接用 CDP。用法: npm run build && node scripts/smoke.mjs
+// 读 dist/index.html(file://),在 844×390 横屏 / 390×844 竖屏 / 1280×800 桌面 下检查布局与主要玩法,截图到 shots/v4m_*.png。
 import { spawn } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const URL = 'file://' + resolve('dist/index.html') + '?calm';
+const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const BASE = 'file://' + resolve('dist/index.html');
 const port = 9333;
 const dir = mkdtempSync(join(tmpdir(), 'smoke-'));
+if (!existsSync('shots')) mkdirSync('shots');
+if (!existsSync('dist/index.html')) { console.error('先 npm run build'); process.exit(2); }
 const chrome = spawn(CHROME, [`--remote-debugging-port=${port}`, `--user-data-dir=${dir}`, '--headless=new', '--no-first-run', '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${extra}`); if (!ok) failed++; };
+const info = (name, extra) => console.log(`INFO ${name} ${extra}`);
 
 async function connect() {
   for (let i = 0; i < 50; i++) {
@@ -36,121 +40,154 @@ ws.onmessage = (m) => {
 };
 const send = (method, params = {}) => new Promise((res) => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
 const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.result?.value;
-async function shot(name, w, h) {
+const J = async (expr) => JSON.parse(await ev(`JSON.stringify(${expr})`));
+const blank = join(dir, 'blank.html'); writeFileSync(blank, '<html><body>blank</body></html>');
+
+async function view(w, h) {
   await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 });
-  await sleep(300);
-  const r = await send('Page.captureScreenshot', { format: 'png' });
-  writeFileSync(`shots/${name}.png`, Buffer.from(r.result.data, 'base64'));
+  await send('Emulation.setTouchEmulationEnabled', { enabled: w < 600 });
+  await sleep(150);
 }
-async function load() { await send('Page.navigate', { url: URL }); await sleep(800); }
+/** 打开游戏页。fresh=true 先清存档(在空白页里清,避免游戏 pagehide 又写回去)。 */
+async function open(query = '', fresh = true) {
+  await send('Page.navigate', { url: 'file://' + blank }); await sleep(250);
+  if (fresh) await ev('localStorage.clear()');
+  await send('Page.navigate', { url: BASE + query }); await sleep(900);
+}
+async function shot(name) {
+  await sleep(250);
+  const r = await send('Page.captureScreenshot', { format: 'png' });
+  writeFileSync(`shots/v4m_${name}.png`, Buffer.from(r.result.data, 'base64'));
+}
+const text = (sel) => ev(`(document.querySelector(${JSON.stringify(sel)})||{}).textContent`);
+const click = (sel) => ev(`document.querySelector(${JSON.stringify(sel)}).click()`);
+const G = (expr) => ev(`(()=>{const g=window.__game;return ${expr}})()`);
+/** 在果园里点一下(鼠标事件 → pointer 事件),避开关卡槽 */
+async function tapStage(n = 1) {
+  const r = await J('(()=>{const b=document.getElementById("stage").getBoundingClientRect();return {x:b.left,y:b.top,w:b.width,h:b.height}})()');
+  const x = r.x + r.w * 0.14, y = r.y + r.h * 0.5;
+  for (let i = 0; i < n; i++) {
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    await sleep(60);
+  }
+}
+const num = async (expr) => Number(await G(expr));
+const openSettings = () => click('#btnSettings');
+const dbgBtn = (label) => ev(`[...document.querySelectorAll('#debug button')].find(b=>b.textContent==='${label}').click()`);
 
 await send('Runtime.enable'); await send('Page.enable');
-await load();
-await ev('localStorage.clear()'); await load();
 
-const CLICK = 'document.getElementById("stage").dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true,clientX:200,clientY:200}))';
-const blank = join(dir, 'blank.html'); writeFileSync(blank, '<html></html>');
-// 先离开游戏页(触发 pagehide 保存),再在同源的空白页里改写存档,避免被游戏的退出保存覆盖
-async function seed(mut) {
-  await ev('document.dispatchEvent(new Event("visibilitychange"))');
-  const raw = await ev('localStorage.getItem("shake-the-apple.save")');
-  const body = JSON.parse(JSON.parse(raw).body);
-  mut(body);
-  await send('Page.navigate', { url: 'file://' + blank }); await sleep(500);
-  await ev(`(() => { const b = ${JSON.stringify(JSON.stringify(body))}; let h=0x811c9dc5; for (let i=0;i<b.length;i++){h^=b.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;} localStorage.setItem("shake-the-apple.save", JSON.stringify({sum:h.toString(16), body:b})); })()`);
-  await load();
+// ───────── 1. 三个视口:布局 ─────────
+const VIEWS = [['land', 844, 390], ['port', 390, 844], ['desk', 1280, 800]];
+for (const [nm, w, h] of VIEWS) {
+  await view(w, h);
+  await open('?debug=1');
+  await sleep(500);
+  const lay = await J(`(()=>{const r=e=>{const b=document.querySelector(e).getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right,w:b.width,h:b.height}};
+    const btns=['#btnSrcBuy','#btnSrcUp','#btnRtBuy','#btnRtUp','#gate0','#gate1','#gate2','#btnSettings'].map(s=>({s,...r(s)}));
+    return {sw:document.documentElement.scrollWidth,iw:innerWidth,sh:document.documentElement.scrollHeight,ih:innerHeight,bar:r('#bar'),stage:r('#stage'),btns}})()`);
+  check(`${nm} ${w}×${h} 无横向滚动`, lay.sw <= lay.iw, `(${lay.sw}/${lay.iw})`);
+  check(`${nm} 底栏完整在视口内`, lay.bar.t >= 0 && lay.bar.b <= lay.ih + 1 && lay.bar.l >= -1 && lay.bar.r <= lay.iw + 1, `(bar ${Math.round(lay.bar.t)}..${Math.round(lay.bar.b)} / ih ${lay.ih})`);
+  check(`${nm} 果园画布有面积`, lay.stage.h >= 120 && lay.stage.w >= 200, `(${Math.round(lay.stage.w)}×${Math.round(lay.stage.h)})`);
+  const small = lay.btns.filter((b) => b.h < 44 || b.w < 44).map((b) => `${b.s}:${Math.round(b.w)}×${Math.round(b.h)}`);
+  info(`${nm} 触控目标<44px`, small.length ? small.join(' ') : '无');
+  const clip = await J(`[...document.querySelectorAll('#bar .nm,#bar .pr,#bar .gain')].filter(e=>e.scrollWidth>e.clientWidth+1).map(e=>e.className+':'+e.textContent)`);
+  info(`${nm} 底栏文字被截断`, clip.length ? clip.join(' | ') : '无');
+  const px = await ev(`(()=>{const c=document.getElementById('stage');const x=c.getContext('2d');if(!x)return -1;const d=x.getImageData(0,0,c.width,c.height).data;let k=0;for(let i=0;i<d.length;i+=16)if(d[i+3]>0&&d[i]<150)k++;return k})()`);
+  check(`${nm} 画布非空(有深色线条像素)`, px > 300 || px === -1, `(${px})`);
+  if (nm === 'land') await shot('land_light'); else if (nm === 'port') await shot('port_light'); else await shot('desk_light');
+  if (nm === 'land') {
+    await openSettings(); await sleep(200);
+    await click('#btnTheme'); await click('#btnTheme'); // 自动 → 浅 → 深
+    check('主题切到深色', (await ev('document.documentElement.classList.contains("dark")')) === true, `(${await text('#btnTheme')})`);
+    await click('#btnCloseSettings'); await sleep(400);
+    await shot('land_dark');
+  }
+  check(`${nm} 无控制台报错`, errors.length === 0, errors.slice(0, 2).join(' | '));
 }
-const text = (id) => ev(`document.getElementById("${id}").textContent`);
 
-check('页面标题', (await ev('document.title')) === 'Shake the Apple');
-check('新闻栏有内容', (await text('news')).length > 5);
-check('阶段栏一开始就有预期', /下一期「小院」/.test(await text('stageNext')), `(${await text('stageNext')})`);
-check('总进度和折算一开始隐藏', (await ev('document.getElementById("goalBox").classList.contains("hidden")')) === true);
-const n0 = Number(await text('apples'));
-for (let i = 0; i < 12; i++) await ev(CLICK);
+// ───────── 2. 玩法(横屏) ─────────
+await view(844, 390);
+await open('?speed=60');
+check('?speed 出现调试面板', (await ev('!!document.getElementById("dbgSpeed")')) === true && (await text('#dbgSpeed')) === '×60', `(${await text('#dbgSpeed')})`);
+const d0 = await num('g.state.delivered'); const clicks0 = await num('g.state.shakes');
+await tapStage(15);
+check('点果园 = 摇树(clicks 增加)', (await num('g.state.shakes')) >= clicks0 + 10, `(${clicks0} → ${await num('g.state.shakes')})`);
+await sleep(5000);
+const d1 = await num('g.state.delivered');
+check('×60 几秒后已送出增加', d1 > d0 + 1, `(${d0} → ${d1.toFixed(1)}; 顶栏 ${await text('#apples')})`);
+check('顶栏显示已送出和每秒', (await text('#apples')).length > 0 && /每秒/.test(await text('#rate')), `(${await text('#rate')})`);
+
+// 买单位
+await dbgBtn('+10亿果钱'); await sleep(400);
+const u0 = await num('g.state.source.units[0]'); const rv0 = await num('g.state.route.units[0]');
+await click('#btnSrcBuy'); await click('#btnRtBuy'); await sleep(300);
+check('买 +1 生产单位', (await num('g.state.source.units[0]')) === u0 + 1, `(${u0}→${await num('g.state.source.units[0]')})`);
+check('买 +1 运输单位', (await num('g.state.route.units[0]')) === rv0 + 1, `(${rv0}→${await num('g.state.route.units[0]')})`);
+check('按钮显示价格与预览', /\S/.test(await text('#btnSrcBuy .pr')) && /\S/.test(await text('#btnSrcBuy .nm')), `(${await text('#btnSrcBuy .nm')} / ${await text('#btnSrcBuy .pr')} / ${await text('#btnSrcBuy .pv')})`);
+
+// 升档 → 分支选择
+await click('#btnSrcUp'); await sleep(300);
+check('升档打开分支选择', (await ev('!document.getElementById("branchPick").hidden')) === true);
+info('分支卡', `${await text('#branch0')} || ${await text('#branch1')}`);
+await click('#branch0'); await sleep(400);
+check('选分支后升档生效', (await num('g.state.source.tier')) === 1 && (await ev('document.getElementById("branchPick").hidden')) === true, `(tier ${await num('g.state.source.tier')}, branch ${await G('JSON.stringify(g.state.source.branch)')})`);
+await click('#btnRtUp'); await sleep(300); await click('#branch1'); await sleep(400);
+check('运输线也能升档', (await num('g.state.route.tier')) === 1, `(tier ${await num('g.state.route.tier')})`);
+
+// 关卡槽
+await click('#gate0'); await sleep(300);
+check('点关卡槽打开选择', (await ev('!document.getElementById("gatePick").hidden')) === true && (await ev('document.querySelectorAll("#gateOpts .opt").length')) >= 2, `(${await ev('document.querySelectorAll("#gateOpts .opt").length')} 项)`);
+const opt = await ev('(()=>{const o=[...document.querySelectorAll("#gateOpts .opt")].find(b=>!b.disabled&&!b.classList.contains("none"));if(!o)return null;const t=o.querySelector("b").textContent;o.click();return t})()');
 await sleep(300);
-const n1 = Number(await text('apples'));
-check('点击后苹果增加(含金苹果)', n1 >= n0 + 12, `(${n0} -> ${n1})`);
-check('点击后显示实时速率', /\/秒/.test(await text('rate')), `(${await text('rate')})`);
+check('选一个关卡放入槽 0', opt && (await G('g.state.gates[0]')) !== null, `(${opt} → ${await G('g.state.gates[0]')})`);
+check('选择后弹层关闭', (await ev('document.getElementById("gatePick").hidden')) === true);
 
-check('攒够 10 个后可买「摇一摇」', (await ev('document.querySelectorAll("#ups button")[0].disabled')) === false);
-await ev('document.querySelectorAll("#ups button")[0].click()'); await sleep(300);
-check('购买后出现 Lv.1', /Lv\.1/.test(await ev('document.querySelector("#ups .n").textContent')));
-check('预告:下一个升级显示 ??? 和解锁条件', /累计送出 150/.test(await ev('document.querySelector("#ups .teaser .d").textContent')));
-
-await ev('document.dispatchEvent(new Event("visibilitychange"))');
+// 存档/刷新
+const snap = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier,g.state.gates])');
 await ev('dispatchEvent(new Event("pagehide"))');
-await load();
-check('刷新后进度保留(Lv.1)', /Lv\.1/.test(await ev('document.querySelector("#ups .n").textContent')));
+await send('Page.navigate', { url: BASE + '?speed=60' }); await sleep(900);
+const snap2 = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier,g.state.gates])');
+check('刷新后进度保留', snap === snap2, snap === snap2 ? '' : `\n  ${snap}\n  ${snap2}`);
 
-// 离线补算:10 级微风(含金苹果期望 14.8/s,微风 +5% 自动产出 = 15.5/s),拨回 1 小时前 → 15.5×3600×0.5 ≈ 2.8万
-await seed((b) => { b.upgrades.breeze = 10; b.lastSeen = Date.now() - 3600_000; b.apples = 0; b.delivered = 0; });
-const off = await text('toast');
-check('离线 1 小时给出提示', /离开了 1 小时/.test(off ?? ''), `(${off})`);
-const got = await text('apples');
-check('离线收益约 2.8万', /^2\.[78]/.test(got ?? '') && got.endsWith('万'), `(${got})`);
+// 中期截图:加钱 +1小时
+await dbgBtn('+10亿果钱'); await dbgBtn('+1小时'); await sleep(900);
+await shot('land_mid');
+check('中期画面无报错', errors.length === 0, errors.slice(0, 2).join(' | '));
+await view(390, 844); await sleep(500); await shot('port_mid'); await view(844, 390);
 
-// 前期:3 棵树,只买了一点升级
-await seed((b) => {
-  b.delivered = 3000; b.apples = 500;
-  b.upgrades = { shake: 4, breeze: 3, gardener: 5, branches: 3, breed: 2, shaker: 0, express: 0 };
-  b.projects = { gravity: true, fairest: false, cook: false, duo: false };
-  b.lastSeen = Date.now();
-});
-await sleep(700);
-await shot('mid-desktop', 1280, 900);
-await shot('mid-mobile', 375, 740);
+// 键盘 Space
+await open('?debug=1');
+const c1 = await num('g.state.shakes');
+await send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', text: ' ' });
+await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space' });
+await sleep(150);
+check('空格 = 摇一下', (await num('g.state.shakes')) === c1 + 1, `(${c1} → ${await num('g.state.shakes')})`);
 
-// 中后期:21 棵树、项目全开
-await seed((b) => {
-  b.delivered = 5e8; b.apples = 3e7;
-  b.upgrades = { shake: 20, breeze: 30, gardener: 25, branches: 20, breed: 8, shaker: 12, express: 3 };
-  b.projects = { gravity: true, fairest: true, cook: true, duo: true };
-  b.lastSeen = Date.now();
-});
-await sleep(500);
-check('阶段:第 5 期·苹果谷', /第 5 期/.test(await text('stageName')), `(${await text('stageName')})`);
-check('总进度和折算出现', /≈/.test(await text('equiv')), `(${await text('equiv')})`);
-check('项目栏出现且库克可用', (await ev('document.querySelector("#projs .cook") !== null')) === true);
-await shot('late-desktop', 1280, 900);
-await shot('late-mobile', 375, 740);
-// 往下拉时果园画面必须还在视口里
-for (const [nm, w, h] of [['mobile', 375, 740], ['desktop', 1280, 900]]) {
-  await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 });
-  await sleep(300);
-  await ev('window.scrollTo(0, 99999)'); await sleep(300);
-  const r = JSON.parse(await ev('JSON.stringify((()=>{const b=document.getElementById("stage").getBoundingClientRect();return {t:b.top,b:b.bottom,h:b.height,sy:scrollY}})())'));
-  check(`${nm}:滚到底后果园仍在视口内`, r.sy > 100 && r.t >= -1 && r.b <= h && r.h >= 150, JSON.stringify(r));
-  await shot(`late-${nm}-scrolled`, w, h);
-  await ev('window.scrollTo(0, 0)');
-}
-const px = await ev(`(() => { const c = document.getElementById("cv"); const d = c.getContext("2d").getImageData(0,0,c.width,c.height).data; let k = 0; for (let i = 0; i < d.length; i += 16) if (d[i] < 200) k++; return k; })()`);
-check('画布上画出了树(深色像素)', px > 2000, `(${px})`);
-
-await seed((b) => { b.delivered = 0; b.apples = 0; b.upgrades = { shake: 0, breeze: 0, gardener: 0, branches: 0, breed: 0, shaker: 0, express: 0 }; b.projects = { gravity: false, fairest: false, cook: false, duo: false }; b.buffs = { cookUntil: 0, cookReadyAt: 0, goldUntil: 0 }; });
-await sleep(300);
-await shot('early-desktop', 1280, 800);
-await shot('early-mobile', 375, 740);
-check('375px 无横向滚动', (await ev('document.documentElement.scrollWidth <= 375')) === true);
-check('无控制台报错', errors.length === 0, errors.join(' | '));
-
-// 调试模式:?speed=60 时 3 秒内累计时间走得明显更快,且有调试面板;普通模式没有面板
-await ev('localStorage.clear()'); await load();
-check('普通模式没有调试面板', (await ev('!document.getElementById("dbg")')) === true);
-await send('Page.navigate', { url: URL + '&speed=60' }); await sleep(600);
-check('?speed 出现调试面板', (await ev('!!document.getElementById("dbg")')) === true);
-await ev(CLICK); await ev(CLICK); await ev(CLICK);
-const d0 = await ev('document.getElementById("apples").textContent');
+// ───────── 3. ×3600 推进 ─────────
+await open('?speed=3600');
+await dbgBtn('+10亿果钱');
+const t0 = await num('g.state.playSec');
 await sleep(3000);
-const t = await ev('document.getElementById("dbgSpeed").textContent');
-check('调试面板显示速度 ×60', t === '×60', `(${t}; 苹果 ${d0})`);
-const rateTxt = await ev('document.getElementById("rate").textContent');
-await ev('document.querySelectorAll("#dbg button")[5].click()');
-await sleep(300);
-check('+10分 快进按钮可点且无报错', errors.length === 0, errors.slice(0, 1).join(''));
-await ev(CLICK); await ev(CLICK); await sleep(700);
-check('来源占比条有 8 段且点击占主要', (await ev('document.querySelectorAll("#srcBar .seg").length')) === 8);
-check('来源图例已生成', (await ev('document.querySelectorAll("#srcLegend .lg").length')) >= 1);
+const t1 = await num('g.state.playSec');
+check('×3600 游戏时间快速推进', t1 - t0 > 3 * 3600 * 0.5, `(+${Math.round(t1 - t0)}s 游戏时间)`);
+check('×3600 无报错', errors.length === 0, errors.slice(0, 2).join(' | '));
+
+// ───────── 4. 结局与 SEALED ─────────
+for (const [date, sealed] of [['2026-12-23', true], ['2026-12-24', false]]) {
+  await open(`?debug=1&date=${date}`);
+  await G('(g.state.delivered = g.GOAL + 1, 0)');
+  await sleep(1500);
+  const has = await ev('!!document.getElementById("ending")');
+  check(`${date} 达成目标后出现结局`, has === true);
+  const seal = await ev('!!document.getElementById("sealed")');
+  check(`${date} ${sealed ? '显示 SEALED' : '不显示 SEALED'}`, seal === sealed, `(sealed=${seal})`);
+  if (date === '2026-12-23') { await shot('land_ending'); await view(390, 844); await sleep(300); await shot('port_ending'); await view(844, 390); }
+  if (has) { await click('#endKeep'); await sleep(400); check(`${date} 关闭结局后继续游戏`, (await ev('!document.getElementById("ending")')) === true); }
+}
+check('全程无控制台报错', errors.length === 0, errors.join(' | '));
+
 ws.close(); chrome.kill();
 console.log(failed ? `\n${failed} 项失败` : '\n全部通过');
 process.exit(failed ? 1 : 0);

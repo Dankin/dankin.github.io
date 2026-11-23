@@ -7,7 +7,7 @@ export const EVENT_NAMES: Record<EventKind, string> = { bird: '偷苹果的小�
 /** 奖励说明(UI 提示用) */
 export const EVENT_DESC: Record<EventKind, string> = {
   bird: '小鸟衔来一份苹果(约 15 秒的送达量)',
-  newton: '牛顿被砸了一下,灵感爆发:10 秒内摇一摇的储能翻倍',
+  newton: '牛顿被砸了一下,灵感爆发:10 秒内摇树掉的苹果和摇劲翻倍',
   meteor: '流星带来一整车苹果(约 25 秒的送达量)',
 };
 /** 事件间隔 [min,max] 秒 */

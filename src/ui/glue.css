@@ -1,0 +1,20 @@
+/* main.ts 动态加的小部件样式(与 ui.css 分开,避免和界面设计互相覆盖) */
+.act .pv { font-size: 11px; line-height: 1.1; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act .pv.up { color: var(--ink); font-weight: 700; }
+.act .pv.zero { color: var(--dim); }
+.act.bn::after { content: "瓶颈"; position: absolute; right: 6px; top: 4px; font-size: 9px; font-weight: 800; color: #fff; background: var(--red); border-radius: 6px; padding: 1px 5px; }
+.act.bn { border-color: var(--red); }
+#btnHelper { position: absolute; left: 8px; bottom: 8px; z-index: 5; min-height: 44px; padding: 0 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#btnHelper[hidden] { display: none; }
+#btnHelper.can { border-color: var(--red); animation: breathe 2.2s ease-in-out infinite; }
+#btnHelper.no { opacity: 0.6; }
+
+/* 结局卡:内容超高(横屏手机)时要能滚到顶,不能被 flex 居中裁掉 */
+body #ending { align-items: flex-start; padding: 16px; }
+body #ending .card { margin: auto; }
+@media (max-height: 480px) {
+  body #ending .apple { width: 36px; height: 36px; margin-bottom: 8px; }
+  body #ending h2 { margin-bottom: 6px; }
+  body #ending p { margin: 2px 0; line-height: 1.5; }
+  body #ending .stats { margin: 8px 0; padding: 6px; }
+}

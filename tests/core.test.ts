@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from '../src/core/constants.ts';
-import { FLY, GATES, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, describeEffect } from '../src/core/content.ts';
+import { GATES, HELPER, SHAKE, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, describeEffect } from '../src/core/content.ts';
 import { EVENT_GAP_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
-  appleValue, baseProduce, buyUnit, canBuyUnit, canUpgradeTier, click, comboMult, crank, era, fleetView, isWon, mods,
+  appleValue, baseProduce, buyHelper, buyUnit, canBuyHelper, canBuyUnit, canUpgradeTier, click, comboMult, era, helperCost, shake, fleetView, isWon, mods,
   nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
   upgradeTier,
 } from '../src/core/game.ts';
@@ -244,73 +244,165 @@ test('nextHints:价格、等待秒数、建议', () => {
   assert.equal(nextHints(atTiers(5, 5)).source.tier, null);
 });
 
-test('飞轮:点按加储能,不摇就衰减', () => {
+test('摇树:苹果直接掉进堆场,蓄摇劲,计数', () => {
   const s = fresh();
-  click(s);
-  assert.equal(s.clicks, 1);
-  assert.ok(Math.abs(s.flywheel - FLY.perClick) < 1e-12);
-  s.flywheel = 1;
+  const expect = throughput(s).shakeDrop;
+  const r = shake(s);
+  assert.equal(r.ok, true);
+  assert.ok(Math.abs(r.dropped - expect) < 1e-9);
+  assert.ok(r.dropped >= 1);
+  assert.equal(s.shakes, 1);
+  assert.ok(Math.abs(s.stock - r.dropped) < 1e-9);
+  assert.ok(Math.abs(s.charge - SHAKE.perShake) < 1e-12);
+  assert.equal(click, shake);
+  // 产出越高,每下掉得越多
+  const hi = atTiers(2, 2);
+  hi.source.units[2] = 10;
+  assert.ok(throughput(hi).shakeDrop > r.dropped);
+});
+
+test('摇树:每秒有效次数有上限,令牌随时间回复', () => {
+  const s = fresh();
+  let ok = 0;
+  for (let i = 0; i < 50; i++) if (shake(s).ok) ok++;
+  assert.equal(ok, SHAKE.burst);
+  assert.equal(s.shakes, SHAKE.burst, '无效的不计数');
+  tick(s, 1);
+  ok = 0;
+  for (let i = 0; i < 50; i++) if (shake(s).ok) ok++;
+  assert.ok(ok >= SHAKE.burst && ok <= SHAKE.burst + 1);
+  assert.ok(SHAKE.maxRate >= 5 && SHAKE.maxRate <= 10);
+});
+
+test('摇树:堆场满了溢出算浪费', () => {
+  const s = fresh();
+  s.stock = stockMax(s, mods(s)) - 0.5;
+  const w0 = s.wasted;
+  shake(s);
+  assert.equal(s.stock, stockMax(s, mods(s)));
+  assert.ok(s.wasted > w0);
+});
+
+test('摇劲:摇一下蓄一点,不摇就衰减,产出变高', () => {
+  const s = fresh();
+  s.charge = 1;
   tick(s, 5);
-  assert.ok(Math.abs(s.flywheel - Math.exp(-FLY.decay * 5)) < 1e-9);
-  // 储能提高产出
-  s.flywheel = 0.5;
+  assert.ok(Math.abs(s.charge - Math.exp(-SHAKE.decay * 5)) < 1e-9);
+  s.charge = 0.5;
   const withF = throughput(s).produce;
-  s.flywheel = 0;
+  s.charge = 0;
   assert.ok(withF > throughput(s).produce);
+  s.charge = 0.99;
+  for (let i = 0; i < 5; i++) { s.shakeTok = 3; shake(s); }
+  assert.equal(s.charge, 1);
 });
 
-test('过速:储能满了再摇就"飞出去",连击提高价值,超时断掉', () => {
+test('手摇频率算进吞吐估算,过一会儿衰减', () => {
   const s = fresh();
-  const r0 = crank(s, 0.5);
-  assert.equal(r0.flung, false);
-  assert.equal(s.combo, 0);
-  assert.ok(Math.abs(s.turns - 0.5) < 1e-12);
-  const r = crank(s, 10);
-  assert.equal(r.flung, true);
-  assert.equal(s.flywheel, 1);
-  assert.equal(s.combo, 1);
-  assert.equal(s.flings, 1);
-  crank(s, 10);
-  assert.equal(s.combo, 2);
-  const v = appleValue(s);
-  assert.ok(Math.abs(v - (1 + 2 * FLY.comboStep)) < 1e-12);
-  assert.equal(comboMult({ combo: 1000 }), 1 + FLY.comboMax * FLY.comboStep);
-  tick(s, FLY.comboWindow + 0.5);
-  assert.equal(s.combo, 0);
-  assert.equal(crank(s, 0).flung, false);
-  assert.equal(crank(s, -1).flung, false);
+  const t0 = throughput(s).produce;
+  for (let i = 0; i < 3; i++) shake(s);
+  assert.ok(s.shakeRate > 0);
+  const th = throughput(s);
+  assert.ok(th.manual > 0 && th.produce > t0);
+  tick(s, 30);
+  assert.ok(s.shakeRate < 1e-5);
 });
 
-test('牛顿 buff:储能翻倍', () => {
+test('连摇:0.6 秒内续上,价值加成,超时断掉', () => {
+  const s = fresh();
+  shake(s);
+  assert.equal(s.combo, 1);
+  tick(s, 0.3);
+  shake(s);
+  assert.equal(s.combo, 2);
+  const v = appleValue(s, mods(s));
+  assert.ok(Math.abs(v - mods(s).value * (1 + 2 * SHAKE.comboStep)) < 1e-12);
+  assert.equal(comboMult({ combo: 1000 }), 1 + SHAKE.comboMax * SHAKE.comboStep);
+  tick(s, SHAKE.comboWindow + 0.3);
+  assert.equal(s.combo, 0);
+  shake(s);
+  assert.equal(s.combo, 1, '断了重新数');
+});
+
+test('牛顿 buff:掉落和摇劲翻倍,过期恢复', () => {
   const a = fresh();
   const b = fresh();
   b.newtonUntil = 10;
-  crank(a, 0.5);
-  crank(b, 0.5);
-  assert.ok(Math.abs(b.flywheel - 2 * a.flywheel) < 1e-12);
-  b.playSec = 11;
-  const c = b.flywheel;
-  b.flywheel = 0;
-  crank(b, 0.5);
-  assert.ok(Math.abs(b.flywheel - a.flywheel) < 1e-12, '过期后恢复');
-  void c;
+  const ra = shake(a);
+  const rb = shake(b);
+  assert.ok(Math.abs(rb.dropped - 2 * ra.dropped) < 1e-9);
+  assert.ok(Math.abs(b.charge - 2 * a.charge) < 1e-12);
+  const c = fresh();
+  c.newtonUntil = 10;
+  c.playSec = 11;
+  shake(c);
+  assert.ok(Math.abs(c.charge - a.charge) < 1e-12);
 });
 
-test('自转摇柄:不摇也有储能保底', () => {
-  const s = atTiers(4, 0);
+test('老徐:价格涨、有解锁和上限、自动摇出苹果和摇劲', () => {
+  const s = fresh();
+  assert.equal(helperCost(s), null, '果园之前没有老徐');
+  assert.equal(buyHelper(s), false);
+  const t = atTiers(1, 0);
+  const c0 = helperCost(t)!;
+  assert.equal(c0, HELPER.baseCost);
+  t.coins = c0 - 1;
+  assert.equal(canBuyHelper(t), false);
+  t.coins = 1e18;
+  const before = throughput(t);
+  const pv = preview(t, { kind: 'helper' });
+  assert.equal(pv.cost, c0);
+  assert.equal(buyHelper(t), true);
+  assert.equal(t.helpers, 1);
+  assert.ok(helperCost(t)! > c0);
+  const after = throughput(t);
+  assert.ok(after.auto > 0 && after.produce > before.produce);
+  assert.ok(Math.abs(after.produce - pv.after.produce) < 1e-9);
+  assert.ok(after.charge > 0, '老徐把摇劲稳住');
+  // tick 里老徐真的在掉苹果
+  const u = atTiers(1, 0);
+  u.coins = 1e18;
+  buyHelper(u);
+  tick(u, 10);
+  assert.ok(u.stock + u.wasted > 0);
+  assert.ok(Math.abs((u.stock + u.wasted + u.delivered) / 10 - throughput(u).produce) / throughput(u).produce < 0.15);
+  // 上限
+  t.helpers = HELPER.max;
+  assert.equal(helperCost(t), null);
+  assert.equal(nextHints(t).helper, null);
+  assert.ok(nextHints(atTiers(1, 0)).helper);
+});
+
+test('分支:铁砂掌、号子、摇树手套让摇一下掉得更多', () => {
+  const s = atTiers(0, 0);
+  s.source.units[0] = 20;
+  const base = throughput(s).shakeDrop;
+  s.gatesUnlocked.push('glove', 'chant');
+  s.gates[0] = 'glove';
+  assert.ok(throughput(s).shakeDrop > base);
+  const iron = SOURCE_TIERS[1].branches!.findIndex((b) => (b.effect.shake ?? 1) > 1);
+  assert.ok(iron >= 0);
+  const a = atTiers(0, 0);
+  a.coins = 1e18;
+  upgradeTier(a, 'source', iron as 0 | 1);
+  const b = atTiers(0, 0);
+  b.coins = 1e18;
+  upgradeTier(b, 'source', (1 - iron) as 0 | 1);
+  assert.ok(mods(a).shake > mods(b).shake);
+  assert.ok(comboMult({ combo: 10 }, { combo: 3 }) > comboMult({ combo: 10 }, { combo: 1 }));
+});
+
+test('自转摇柄:不摇也有摇劲保底', () => {
   const idx = SOURCE_TIERS[4].branches!.findIndex((b) => (b.effect.floor ?? 0) > 0);
   assert.ok(idx >= 0);
   const s2 = atTiers(3, 0);
   s2.coins = 1e18;
   upgradeTier(s2, 'source', idx as 0 | 1);
   s2.coins = 0;
-  const base = atTiers(3, 0);
-  base.coins = 1e18;
-  upgradeTier(base, 'source', (1 - idx) as 0 | 1);
-  assert.ok(throughput(s2).produce / baseProduce(s2.source) > throughput(base).produce / baseProduce(base.source) * 0.9);
+  assert.ok(throughput(s2).charge >= SOURCE_TIERS[4].branches![idx].effect.floor!);
   tick(s2, 300);
-  assert.ok(s2.flywheel < 1e-6);
-  void s;
+  assert.ok(s2.charge < 1e-6);
+  assert.ok(throughput(s2).charge > 0, '保底不衰减');
 });
 
 test('settle:离线按闭式结算,封顶 8 小时', () => {

@@ -32,9 +32,8 @@ export interface State {
   coins: number;
   /** 累计送达(进度条,82 亿) */
   delivered: number;
-  clicks: number;
-  /** 累计画圈圈数(crank 的 amount 之和) */
-  turns: number;
+  /** 累计点按/摇树次数(含没算上的) */
+  shakes: number;
   /** 本局已玩秒数(游戏内时钟,所有计时器用它) */
   playSec: number;
   source: Line;
@@ -44,18 +43,22 @@ export interface State {
   gatesUnlocked: GateId[];
   /** 堆场库存 */
   stock: number;
-  /** 飞轮储能 0..1 */
-  flywheel: number;
-  /** 连击数(嗖!) */
+  /** 摇劲 0..1(摇树蓄的力,临时提高产出,不摇会衰减) */
+  charge: number;
+  /** 连摇数(连续有效摇树,间隔 ≤ SHAKE.comboWindow) */
   combo: number;
-  /** 连击剩余秒数,到 0 清零 */
+  /** 连摇剩余秒数,到 0 清零 */
   comboT: number;
+  /** 摇树令牌(限速:每秒 SHAKE.maxRate 次,最多存 SHAKE.burst) */
+  shakeTok: number;
+  /** 近期摇树频率(次/秒,约 2 秒滑动平均):吞吐估算要把手摇算进去 */
+  shakeRate: number;
+  /** 雇了几位老徐(自动摇树) */
+  helpers: number;
   vehicles: Vehicle[];
   /** 累计浪费(堆场满了溢出)的苹果 */
   wasted: number;
-  /** 累计"飞出去"次数 */
-  flings: number;
-  /** 牛顿路过:playSec 到这之前手动储能 ×2 */
+  /** 牛顿路过:playSec 到这之前摇树掉落与摇劲 ×2 */
   newtonUntil: number;
   /** 通关时的 playSec;未通关 null */
   wonAt: number | null;
@@ -75,20 +78,21 @@ export function newState(now: number): State {
     version: SAVE_VERSION,
     coins: 0,
     delivered: 0,
-    clicks: 0,
-    turns: 0,
+    shakes: 0,
     playSec: 0,
     source: newLine(),
     route: newLine(),
     gates: Array(GATE_SLOTS).fill(null) as (GateId | null)[],
     gatesUnlocked: ['wash', 'wax', 'rush'],
     stock: 0,
-    flywheel: 0,
+    charge: 0,
     combo: 0,
     comboT: 0,
+    shakeTok: 3,
+    shakeRate: 0,
+    helpers: 0,
     vehicles: [{ tier: 0, w: 1, phase: 0, load: 0 }],
     wasted: 0,
-    flings: 0,
     newtonUntil: 0,
     wonAt: null,
     tierTimes: { source: [], route: [] },

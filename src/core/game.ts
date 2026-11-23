@@ -1,7 +1,7 @@
 // v4 核心玩法:产出 → 堆场 → 车 → 送达。所有函数都改传入的 State(除非注明纯函数)。
 import { GOAL, OFFLINE_CAP_MS, SHORT_AWAY_MS } from './constants.ts';
 import {
-  FLY, GATES, MAX_CONVOYS, MAX_TIER, ROUTE_TIERS, SOURCE_TIERS, STOCK_MIN, STOCK_SECONDS, gateDef,
+  GATES, HELPER, MAX_CONVOYS, MAX_TIER, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
   type BranchDef, type Effect, type GateId,
 } from './content.ts';
 import { RED_EXP } from './content.ts';
@@ -17,9 +17,12 @@ export interface Mods {
   stock: number;
   fw: number;
   floor: number;
+  shake: number;
+  auto: number;
+  combo: number;
 }
 
-const unit1 = (): Mods => ({ produce: 1, value: 1, cap: 1, time: 1, stock: 1, fw: 1, floor: 0 });
+const unit1 = (): Mods => ({ produce: 1, value: 1, cap: 1, time: 1, stock: 1, fw: 1, floor: 0, shake: 1, auto: 1, combo: 1 });
 
 function addEffect(m: Mods, e: Effect, k = 1): void {
   if (e.produce) m.produce *= Math.pow(e.produce, k);
@@ -29,6 +32,9 @@ function addEffect(m: Mods, e: Effect, k = 1): void {
   if (e.stock) m.stock *= Math.pow(e.stock, k);
   if (e.fw) m.fw *= Math.pow(e.fw, k);
   if (e.floor) m.floor = Math.max(m.floor, e.floor);
+  if (e.shake) m.shake *= Math.pow(e.shake, k);
+  if (e.auto) m.auto *= Math.pow(e.auto, k);
+  if (e.combo) m.combo *= Math.pow(e.combo, k);
 }
 
 export const tiersOf = (line: LineId) => (line === 'source' ? SOURCE_TIERS : ROUTE_TIERS);
@@ -54,20 +60,37 @@ export function mods(s: Pick<State, 'source' | 'route' | 'gates'>): Mods {
   return m;
 }
 
-export const comboMult = (s: Pick<State, 'combo'>): number => 1 + Math.min(s.combo, FLY.comboMax) * FLY.comboStep;
+/** 连摇带来的价值乘数:1 + 连摇数 × comboStep × 号子 */
+export const comboMult = (s: Pick<State, 'combo'>, m?: Pick<Mods, 'combo'>): number =>
+  1 + Math.min(s.combo, SHAKE.comboMax) * SHAKE.comboStep * (m?.combo ?? 1);
 
-/** 飞轮保底:自转摇柄之类让它不摇也有 */
-export const flywheelLevel = (s: Pick<State, 'flywheel' | 'source' | 'route' | 'gates'>, m: Mods = mods(s)): number => Math.max(s.flywheel, m.floor);
+/** 老徐们每秒总共摇几下 */
+export const helperRate = (s: Pick<State, 'helpers'>, m: Pick<Mods, 'auto'>): number => s.helpers * HELPER.rate * m.auto;
 
-/** 每个苹果的价值(果钱),含连击 */
-export const appleValue = (s: Pick<State, 'source' | 'route' | 'gates' | 'combo'>, m: Mods = mods(s)): number => m.value * comboMult(s);
+/** 老徐把摇劲稳定在多少(0..1):每秒蓄 rate×perShake,衰减 decay */
+export const autoCharge = (s: Pick<State, 'helpers'>, m: Pick<Mods, 'auto'>): number => Math.min(1, (helperRate(s, m) * SHAKE.perShake) / SHAKE.decay);
+
+/** 摇劲水平:手动蓄的、保底、老徐稳住的,取最大 */
+export const chargeLevel = (s: Pick<State, 'charge' | 'helpers'>, m: Pick<Mods, 'floor' | 'auto'>): number =>
+  Math.max(s.charge, m.floor, autoCharge(s, m));
+
+/** 每个苹果的价值(果钱),含连摇 */
+export const appleValue = (s: Pick<State, 'combo'>, m: Pick<Mods, 'value' | 'combo'>): number => m.value * comboMult(s, m);
 
 // ───────────────────────── 吞吐 ─────────────────────────
 export interface Throughput {
-  /** 当前产出 个/秒(含飞轮) */
+  /** 当前总产出 个/秒(树 × 摇劲 + 老徐摇下来的) */
   produce: number;
-  /** 不含飞轮(只算保底)的产出 */
+  /** 只算保底摇劲、不含老徐的树产出 */
   produceBase: number;
+  /** 老徐摇下来的苹果 个/秒 */
+  auto: number;
+  /** 手摇掉下来的苹果 个/秒(按近期摇树频率 s.shakeRate 估算) */
+  manual: number;
+  /** 手动摇一下掉多少个 */
+  shakeDrop: number;
+  /** 当前摇劲水平 0..1 */
+  charge: number;
   /** 运力 个/秒(所有车装满跑满) */
   carry: number;
   /** min(produce, carry):真正送达的速度 */
@@ -94,7 +117,11 @@ export function carryRate(R: Line, m: Mods): number {
   return (c * m.cap) / m.time;
 }
 
-export const fwMax = (s: Pick<State, 'source'>, m: Mods): number => FLY.maxByTier[s.source.tier] * m.fw;
+export const fwMax = (s: Pick<State, 'source'>, m: Mods): number => SHAKE.maxByTier[s.source.tier] * m.fw;
+
+/** 摇一下掉多少个:1 + 当前产出 × dropSec[档] × 手劲 */
+export const dropOf = (s: Pick<State, 'source'>, m: Mods, produceNow: number): number =>
+  1 + produceNow * SHAKE.dropSec[s.source.tier] * m.shake;
 
 export function stockMax(s: Pick<State, 'source'>, m: Mods): number {
   return Math.max(STOCK_MIN, STOCK_SECONDS * baseProduce(s.source) * m.produce) * m.stock;
@@ -105,16 +132,23 @@ export function bottleneckOf(produce: number, carry: number): Bottleneck {
   return r > 1.1 ? 'carry' : r < 0.9 ? 'produce' : 'balanced';
 }
 
-export function throughput(s: Pick<State, 'source' | 'route' | 'gates' | 'flywheel' | 'combo'>): Throughput {
+export function throughput(s: Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helpers' | 'shakeRate'>): Throughput {
   const m = mods(s);
   const bp = baseProduce(s.source) * m.produce;
   const fm = fwMax(s, m);
-  const produce = bp * (1 + fm * flywheelLevel(s, m));
+  const level = chargeLevel(s, m);
+  const main = bp * (1 + fm * level);
+  const auto = helperRate(s, m) * dropOf(s, m, main);
+  const manual = Math.max(0, s.shakeRate) * dropOf(s, m, main);
+  const produce = main + auto + manual;
   const produceBase = bp * (1 + fm * m.floor);
   const carry = carryRate(s.route, m);
   const flow = Math.min(produce, carry);
   const value = appleValue(s, m);
-  return { produce, produceBase, carry, flow, value, income: flow * value, stockMax: stockMax(s, m), bottleneck: bottleneckOf(produce, carry) };
+  return {
+    produce, produceBase, auto, manual, shakeDrop: dropOf(s, m, main), charge: level, carry, flow, value, income: flow * value,
+    stockMax: stockMax(s, m), bottleneck: bottleneckOf(produce, carry),
+  };
 }
 
 // ───────────────────────── 购买 ─────────────────────────
@@ -213,10 +247,29 @@ export function setGate(s: State, slot: number, id: GateId | null): boolean {
   return true;
 }
 
+// ───────────────────────── 老徐(自动摇树) ─────────────────────────
+/** 下一位老徐的价格;没解锁(果园之前)或已满员为 null */
+export function helperCost(s: Pick<State, 'source' | 'helpers'>): number | null {
+  if (s.source.tier < HELPER.unlockTier || s.helpers >= HELPER.max) return null;
+  return Math.floor(HELPER.baseCost * Math.pow(HELPER.growth, s.helpers));
+}
+export function canBuyHelper(s: State): boolean {
+  const c = helperCost(s);
+  return c !== null && s.coins >= c;
+}
+export function buyHelper(s: State): boolean {
+  const c = helperCost(s);
+  if (c === null || s.coins < c) return false;
+  s.coins -= c;
+  s.helpers += 1;
+  return true;
+}
+
 // ───────────────────────── 预览 ─────────────────────────
 export type Action =
   | { kind: 'unit'; line: LineId; tier?: number }
   | { kind: 'tier'; line: LineId; branch: 0 | 1 }
+  | { kind: 'helper' }
   | { kind: 'gate'; slot: number; id: GateId | null };
 
 export interface Preview {
@@ -235,13 +288,15 @@ export interface Preview {
   after: Throughput;
 }
 
-type Lite = Pick<State, 'source' | 'route' | 'gates' | 'flywheel' | 'combo' | 'gatesUnlocked'>;
+type Lite = Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helpers' | 'shakeRate' | 'gatesUnlocked'>;
 const lite = (s: State): Lite => ({
   source: { ...s.source, units: [...s.source.units], branch: [...s.source.branch] },
   route: { ...s.route, units: [...s.route.units], branch: [...s.route.branch] },
   gates: [...s.gates],
-  flywheel: s.flywheel,
+  charge: s.charge,
   combo: s.combo,
+  helpers: s.helpers,
+  shakeRate: s.shakeRate,
   gatesUnlocked: s.gatesUnlocked,
 });
 
@@ -257,6 +312,13 @@ export function preview(s: State, a: Action): Preview {
     if (ok) {
       cost = unitCost(s, a.line, tier);
       l[a.line].units[tier] += 1;
+    }
+  } else if (a.kind === 'helper') {
+    const c = helperCost(s);
+    ok = c !== null;
+    if (ok) {
+      cost = c!;
+      l.helpers += 1;
     }
   } else if (a.kind === 'tier') {
     const c = tierCost(s, a.line);
@@ -301,6 +363,8 @@ export interface LineHints {
 export interface Hints {
   source: LineHints;
   route: LineHints;
+  /** 下一位老徐;没解锁/满员为 null */
+  helper: { cost: number; affordable: boolean; waitSec: number; flowPct: number } | null;
   /** 现在该加哪一边:瓶颈在哪边就是哪边;平衡时 null */
   suggest: LineId | null;
 }
@@ -325,49 +389,51 @@ export function nextHints(s: State): Hints {
             },
     };
   };
-  return { source: mk('source'), route: mk('route'), suggest: th.bottleneck === 'carry' ? 'route' : th.bottleneck === 'produce' ? 'source' : null };
+  const hc = helperCost(s);
+  const helper = hc === null ? null : { cost: hc, affordable: s.coins >= hc, waitSec: wait(hc), flowPct: preview(s, { kind: 'helper' }).flowPct };
+  return { source: mk('source'), route: mk('route'), helper, suggest: th.bottleneck === 'carry' ? 'route' : th.bottleneck === 'produce' ? 'source' : null };
 }
 
 /** 画面用:当前总时代 0..10(产出档 + 运输档);两条线都到才算整档 = min */
 export const era = (s: State): number => s.source.tier + s.route.tier;
 export const eraMin = (s: State): number => Math.min(s.source.tier, s.route.tier);
 
-// ───────────────────────── 手动 ─────────────────────────
-export interface CrankResult {
-  /** 这一下有没有转过头("嗖"飞出去) */
-  flung: boolean;
+// ───────────────────────── 手动:摇树 ─────────────────────────
+export interface ShakeResult {
+  /** 这一下有没有生效(超过每秒上限会被忽略) */
+  ok: boolean;
+  /** 这一下直接掉进堆场的苹果数 */
+  dropped: number;
+  /** 当前连摇数 */
   combo: number;
 }
 
-function addEnergy(s: State, gain: number): CrankResult {
-  if (s.playSec < s.newtonUntil) gain *= 2;
-  let f = s.flywheel + gain;
-  let flung = false;
-  if (f > 1) {
-    flung = f - 1 >= 0.005;
-    f = 1;
+/**
+ * 摇一下树:苹果直接掉进堆场(1 + 当前产出×dropSec×手劲),同时蓄一点摇劲、续上连摇。
+ * 有效频率上限 SHAKE.maxRate 次/秒(令牌桶 s.shakeTok,突发 SHAKE.burst)。牛顿事件期间掉落与摇劲翻倍。
+ */
+export function shake(s: State): ShakeResult {
+  if (s.shakeTok < 1) return { ok: false, dropped: 0, combo: s.combo };
+  s.shakeTok -= 1;
+  s.shakes += 1;
+  const m = mods(s);
+  const k = s.playSec < s.newtonUntil ? 2 : 1;
+  const dropped = throughput(s).shakeDrop * k;
+  s.charge = Math.min(1, s.charge + SHAKE.perShake * k);
+  s.shakeRate += 1 / SHAKE.rateTau;
+  s.combo = s.comboT > 0 ? s.combo + 1 : 1;
+  s.comboT = SHAKE.comboWindow;
+  s.stock += dropped;
+  const smax = stockMax(s, m);
+  if (s.stock > smax) {
+    s.wasted += s.stock - smax;
+    s.stock = smax;
   }
-  s.flywheel = f;
-  if (flung) {
-    s.combo += 1;
-    s.comboT = FLY.comboWindow;
-    s.flings += 1;
-  }
-  return { flung, combo: s.combo };
+  return { ok: true, dropped, combo: s.combo };
 }
 
-/** 画圈:amount ≈ 圈数(1 = 整圈)。给飞轮储能,转过头苹果飞出去并连击。 */
-export function crank(s: State, amount: number): CrankResult {
-  if (!(amount > 0)) return { flung: false, combo: s.combo };
-  s.turns += amount;
-  return addEnergy(s, amount * FLY.perTurn);
-}
-
-/** 点按:一小份储能 */
-export function click(s: State): CrankResult {
-  s.clicks += 1;
-  return addEnergy(s, FLY.perClick);
-}
+/** shake 的别名(点击/空格/手机摇一摇都调这个) */
+export const click = shake;
 
 // ───────────────────────── 推进 ─────────────────────────
 export interface TickResult {
@@ -392,14 +458,17 @@ export function tick(s: State, dtSec: number, now = NaN): TickResult {
   const smax = stockMax(s, m);
   const base = baseProduce(s.source) * m.produce;
   const fm = fwMax(s, m);
-  const decay = FLY.decay;
+  const hr = helperRate(s, m);
   const n = Math.ceil(dtSec / STEP_S);
   const h = dtSec / n;
-  const dk = Math.exp(-decay * h);
+  const dk = Math.exp(-SHAKE.decay * h);
+  const rk = Math.exp(-h / SHAKE.rateTau);
   for (let i = 0; i < n; i++) {
     s.playSec += h;
-    // 飞轮衰减(保底不衰减)与连击
-    s.flywheel = s.flywheel * dk;
+    // 摇劲衰减(保底/老徐不衰减)、连摇计时、摇树令牌回复
+    s.charge = s.charge * dk;
+    s.shakeRate *= rk;
+    s.shakeTok = Math.min(SHAKE.burst, s.shakeTok + SHAKE.maxRate * h);
     if (s.comboT > 0) {
       s.comboT -= h;
       if (s.comboT <= 0) {
@@ -407,9 +476,9 @@ export function tick(s: State, dtSec: number, now = NaN): TickResult {
         s.combo = 0;
       }
     }
-    const f = Math.max(s.flywheel, m.floor);
-    s.stock += base * (1 + fm * f) * h;
-    const val = m.value * comboMult(s);
+    const main = base * (1 + fm * chargeLevel(s, m));
+    s.stock += (main + hr * dropOf(s, m, main)) * h;
+    const val = appleValue(s, m);
     for (const v of s.vehicles) {
       const d = ROUTE_TIERS[v.tier];
       const full = v.w * d.cap * m.cap;
@@ -452,11 +521,12 @@ export function tick(s: State, dtSec: number, now = NaN): TickResult {
 /**
  * 闭式聚合推进(离线/切后台很久):不逐车,按稳态算。
  * 送达速度 = min(产出, 运力);运力 > 产出时先把堆场清空;产出 > 运力时堆场灌满后溢出浪费。
- * 飞轮按保底算(衰减掉),连击清零,车全部回堆场重新装。
+ * 摇劲按保底/老徐算(手动的衰减掉),连击清零,车全部回堆场重新装。
  */
 function fluid(s: State, dt: number): TickResult {
   const m = mods(s);
-  const p = baseProduce(s.source) * m.produce * (1 + fwMax(s, m) * m.floor);
+  const main = baseProduce(s.source) * m.produce * (1 + fwMax(s, m) * Math.max(m.floor, autoCharge(s, m)));
+  const p = main + helperRate(s, m) * dropOf(s, m, main);
   const c = carryRate(s.route, m);
   const smax = stockMax(s, m);
   const val = m.value;
@@ -485,7 +555,9 @@ function fluid(s: State, dt: number): TickResult {
   s.delivered += delivered;
   s.coins += delivered * val;
   s.wasted += wasted;
-  s.flywheel *= Math.exp(-FLY.decay * dt);
+  s.charge *= Math.exp(-SHAKE.decay * dt);
+  s.shakeTok = SHAKE.burst;
+  s.shakeRate = 0;
   s.combo = 0;
   s.comboT = 0;
   if (s.newtonUntil > 0 && s.playSec + dt >= s.newtonUntil) s.newtonUntil = 0;
