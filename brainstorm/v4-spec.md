@@ -66,3 +66,7 @@ engineer 可调整签名但须在 `brainstorm/core-v4.md` 写清楚并保持 UI 
 - 性能:同上(30fps 空闲/2s 60fps/隐藏停)。
 - 横屏/竖屏同一套 DOM,用 `@media (orientation)` 和 `env(safe-area-inset-*)` 适配(iPhone 刘海/灵动岛);触点 ≥ 44pt。
 - Orchard 接口由 ui-designer 在 `brainstorm/ui-v4.md` 定义,字段从 core State 直接读(以 WorldView 形式),main.ts 传入。
+
+## 更正(摇树,非画圈)
+手动操作是**摇苹果树**(点/空格/以后手机摇),不是画圈、不抄 Round and Round 的曲柄:`shake(s)` 直接把苹果摇进堆场并蓄摇劲(临时产出加成),0.6 秒内连续摇出"连摇"加价值;没有"飞出去"。
+产出端:玩家摇 + 升级;运输端自动。决策:分支铁砂掌/老徐的徒弟,道具摇树手套/号子,以及雇"老徐"(自动摇树)。详见 `brainstorm/core-v4.md`。
