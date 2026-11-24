@@ -8,7 +8,7 @@ import {
   buyExpand, canExpand, expandCost, nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
   upgradeTier,
 } from '../src/core/game.ts';
-import { giftOpen } from '../src/core/gift.ts';
+import { GIFT_DATE, giftOpen } from '../src/core/gift.ts';
 import { AMBIENT_TEXT, DAILY_NEWS, ERA_SWITCH_TOAST, NEWTON_STAGES, SEALED, awayLine } from '../src/core/copy.ts';
 import { exportSave, fnv, importSave, load, parse, save, serialize, storageWritable, type KV } from '../src/core/save.ts';
 import { newState, type State } from '../src/core/state.ts';
@@ -625,8 +625,12 @@ test('世界与礼物日期', () => {
   const w = worldAt(0);
   assert.ok(w.daylight >= 0 && w.daylight <= 1);
   assert.deepEqual(worldAt(123), worldAt(123));
-  assert.equal(giftOpen(new Date(2026, 11, 23, 23, 59).getTime()), false);
-  assert.equal(giftOpen(new Date(2026, 11, 24, 0, 0).getTime()), true);
+  // 北京时间 2026-12-24 00:00 = UTC 2026-12-23 16:00,与本机时区无关
+  assert.equal(GIFT_DATE, Date.parse('2026-12-24T00:00:00+08:00'));
+  assert.equal(giftOpen(Date.parse('2026-12-23T23:59:59+08:00')), false);
+  assert.equal(giftOpen(Date.parse('2026-12-24T00:00:00+08:00')), true);
+  assert.equal(giftOpen(Date.UTC(2026, 11, 23, 15, 59, 59)), false);
+  assert.equal(giftOpen(Date.UTC(2026, 11, 23, 16, 0, 0)), true);
   assert.equal(SEALED.length, 2);
 });
 

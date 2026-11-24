@@ -7,13 +7,13 @@ import type { Orchard } from '../ui/orchard.ts';
 
 // ───────────── 调试参数 ─────────────
 // ?debug=1 出调试面板(设置里);?speed=N 把游戏时间加速 N 倍(1..3600);
-// ?date=YYYY-MM-DD 假装今天是哪天(只影响 12/24 的礼物门)
+// ?debug=1&date=YYYY-MM-DD 假装今天(北京时间 12:00)是哪天(只影响 12/24 的礼物门);没有 ?debug=1 时 ?date= 不生效
 export const qs = new URLSearchParams(location.search);
 export const DEBUG = qs.has('debug') || qs.has('speed');
 const dateOffset = (() => {
-  const d = qs.get('date');
+  const d = qs.has('debug') ? qs.get('date') : null;
   if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return 0;
-  const t = new Date(d + 'T12:00:00').getTime();
+  const t = Date.parse(d + 'T12:00:00+08:00');
   return Number.isFinite(t) ? t - Date.now() : 0;
 })();
 /** 日历意义上的"现在"(只给礼物门用)。游戏内时间走 state.playSec,与它无关。 */
