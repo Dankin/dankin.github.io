@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>art-nature preview</title>
+<style>
+  body{margin:0;background:#f6efdc;color:#1b1410;font:13px/1.4 -apple-system,"PingFang SC",sans-serif}
+  h2{margin:14px 12px 4px;font-size:15px}
+  .row{display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px}
+  .cell{display:flex;flex-direction:column;align-items:center;font-size:11px}
+  canvas{display:block;background:transparent}
+  .bar{padding:6px 12px;position:sticky;top:0;background:#e8dcc0;z-index:5;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  #fps{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="bar"><b>art-nature</b>
+  <label>shake <input id="shake" type="range" min="0" max="1" step="0.01" value="0"></label>
+  <label><input id="anim" type="checkbox"> 动画</label>
+  <span id="fps"></span> <span id="info"></span></div>
+<div id="root"></div>
+<script type="module" src="/src/art/nature/preview.ts"></script>
+</body>
+</html>
