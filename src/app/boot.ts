@@ -21,6 +21,8 @@ import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
 import { initSys, sysAway } from './sys.ts';
 import { initAudioBridge } from './audiobridge.ts';
+import { mountPanels } from './panels.ts';
+import { initFtue } from './ftue.ts';
 
 function wire(): void {
   app.orchard.onShake = (st) => doShake(st ?? 1);
@@ -122,6 +124,8 @@ if (loaded.kind === 'new') sysAway(0);
 $('saveWarn').textContent = app.canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
 setupMotion();
+mountPanels();
+initFtue();
 if (app.DEBUG) {
   setupDebug();
   (window as unknown as { __game: unknown }).__game = {
