@@ -27,9 +27,8 @@ export const FTUE: FtueStep[] = [
   { id: 'ftue-first-buy', at: 11, when: '库存够买第一件东西', kind: 'highlight', text: '买它。', target: 'first-buy-card' },
   { id: 'ftue-basket', at: 30, when: '第一个篮子到站(已送出首次增加)', kind: 'narration', text: '送出才算数。' },
   { id: 'ftue-water', at: 60, when: '完成首次购买', kind: 'narration', text: '花的是仓库,送出的不会少。' },
-  { id: 'ftue-wash', at: 90, when: '洗果槽位解锁', kind: 'highlight', text: '这个槽可以放道具。', target: 'slot-wash' },
   { id: 'ftue-bird', at: 120, when: '第一次事件(强制为小鸟)', kind: 'toast', text: '有只小鸟飞过来了。点它。', target: 'event-bird' },
-  { id: 'ftue-tier-up', at: 180, when: '第一次升档到小果园', kind: 'toast', text: '果园开张了。二选一,选哪边都行。' },
+  { id: 'ftue-tier-up', at: 180, when: '第一次升档到老树', kind: 'toast', text: '树粗了一圈。二选一,选哪边都行。' },
   { id: 'ftue-laoxu', at: 240, when: '老徐解锁', kind: 'narration', text: '树下多了个人。他说他只是路过。' },
   { id: 'ftue-pin', at: 300, when: '图钉解锁', kind: 'highlight', text: '图钉:钉住的东西,不会因为你手滑而卖掉。', target: 'pin' },
   { id: 'ftue-order', at: 360, when: '出现第一张订单', kind: 'toast', text: '有人要货。送到了有奖,送不到没事。', target: 'orders' },
@@ -71,7 +70,7 @@ export interface Chapter {
 
 export const CHAPTERS: Chapter[] = [
   {
-    era: 0, title: '第一章 一棵树', sub: '一棵树 · 篮子',
+    era: 0, title: '第一章 小树', sub: '小树 · 篮子',
     letter: '听说你会摇树。我腰不好,苹果要送人,拜托了。',
     goals: [
       { kind: 'deliver', text: '累计送出 {n} 个苹果' },
@@ -81,47 +80,47 @@ export const CHAPTERS: Chapter[] = [
     reward: '奖励:一个苹果箱外观,和 10 秒收入',
   },
   {
-    era: 1, title: '第二章 小果园', sub: '小果园 · 小推车',
-    letter: '听说你的树多了。别担心,我的手套还在柜子里。',
-    goals: [
-      { kind: 'deliver', text: '累计送出 {n} 个苹果' },
-      { kind: 'build', text: '把两个槽都放满' },
-      { kind: 'collect', text: '图鉴里集齐 {n} 种苹果' },
-    ],
-    reward: '奖励:一条红围巾(老徐),和 10 秒收入',
-  },
-  {
-    era: 2, title: '第三章 果山', sub: '果山 · 卡车',
-    letter: '山上风大,记得加件衣服。有人会来查证件,别慌。',
+    era: 1, title: '第二章 老树', sub: '老树 · 扁担与小推车',
+    letter: '听说你的树粗了。别担心,我的手套还在柜子里。',
     goals: [
       { kind: 'deliver', text: '累计送出 {n} 个苹果' },
       { kind: 'build', text: '选一个分支,走到底' },
       { kind: 'collect', text: '图鉴里集齐 {n} 种苹果' },
     ],
+    reward: '奖励:一条红围巾(老徐),和 10 秒收入',
+  },
+  {
+    era: 2, title: '第三章 巨树', sub: '巨树 · 卡车',
+    letter: '树大了,风也大。有人会来查证件,别慌。',
+    goals: [
+      { kind: 'deliver', text: '累计送出 {n} 个苹果' },
+      { kind: 'build', text: '让 {n} 辆车同时在路上' },
+      { kind: 'collect', text: '图鉴里集齐 {n} 种苹果' },
+    ],
     reward: '奖励:一枚督察章(图鉴),和 15 秒收入',
   },
   {
-    era: 3, title: '第四章 果城', sub: '果城 · 货船',
-    letter: '城里很大,货船很慢。我在北极,给你鼓掌。',
+    era: 3, title: '第四章 云树', sub: '云树 · 货船',
+    letter: '树冠进云里了。货船很慢。我在北极,给你鼓掌。',
     goals: [
       { kind: 'deliver', text: '累计送出 {n} 个苹果' },
-      { kind: 'build', text: '同时开着 {n} 个道具' },
+      { kind: 'build', text: '树和车队各升一次档' },
       { kind: 'collect', text: '图鉴里集齐 {n} 种苹果' },
     ],
-    reward: '奖励:一个霓虹苹果外观,和 15 秒收入',
+    reward: '奖励:一个云朵苹果外观,和 15 秒收入',
   },
   {
-    era: 4, title: '第五章 果星', sub: '果星 · 飞机',
-    letter: '外面的邻居,好像也喜欢苹果。他们爱吃,别客气。',
+    era: 4, title: '第五章 星树', sub: '星树 · 飞机',
+    letter: '树上挂灯了。外面的邻居,好像也喜欢苹果。',
     goals: [
       { kind: 'deliver', text: '累计送出 {n} 个苹果' },
-      { kind: 'build', text: '打通全部道具槽' },
+      { kind: 'build', text: '把运输线升到飞机' },
       { kind: 'collect', text: '图鉴里集齐 {n} 种苹果' },
     ],
     reward: '奖励:一颗星星挂饰,和 20 秒收入',
   },
   {
-    era: 5, title: '终章 苹果之门', sub: '苹果之门 · 传送门',
+    era: 5, title: '终章 收货站', sub: '圣诞老人收货站 · 传送门',
     letter: '快了。雪橇在院子里热着,铃声你听得见吗?',
     goals: [
       { kind: 'deliver', text: '累计送出 82 亿个苹果' },
@@ -214,7 +213,7 @@ export const BTN = {
 } as const;
 
 export const TABS = {
-  orchard: '果园',
+  orchard: '树下',
   shop: '商店',
   orders: '订单',
   library: '图鉴',
@@ -243,7 +242,6 @@ export const LIBRARY = {
 // ───────────────────────── 6 空状态与加载 ─────────────────────────
 
 export const EMPTY = {
-  slot: '空槽。放个道具进去,什么都不做就是浪费。',
   stock: '库存是空的。摇一下。',
   pile: '果堆里没有苹果。',
   orders: '暂时没有订单。有人要货了会通知你。',
@@ -329,7 +327,6 @@ export const TOAST = {
   saveFail: '存档失败。浏览器说空间不够。',
   newDay: '新的一天。树换了片叶子。',
   tierUp: '升档了:{name}。',
-  gateUnlock: '新道具:{name}。',
   orderDone: '订单完成。',
   orderMiss: '订单过期了。没关系。',
   rottenCleared: '清掉了一个烂苹果。',
