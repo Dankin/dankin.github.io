@@ -2,7 +2,9 @@
 export * from './types.ts';
 export { bake, blit, cached, qOf, clearBake, bakeCount } from './bake.ts';
 export { drawApple, appleHeap } from './apple.ts';
-export * from './transport.ts';
+export { drawBasket, drawCart, drawTruck, drawShip, drawPlane, drawPortal } from './transport.ts';
+export * from './transport-extra.ts';
+export * from './transports.ts';
 export * from './docks.ts';
 export * from './characters.ts';
 export * from './ui.ts';

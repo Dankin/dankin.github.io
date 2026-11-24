@@ -1,5 +1,5 @@
 // preview-art-things.html 的入口:分区展示全部 things。URL 参数:?t=秒(冻结时间) &sec=transport,docks,...
-import { drawTransport, TRANSPORT_W } from './transport.ts';
+import { drawTransport, TRANSPORT_W, TRANSPORT_NAMES } from './transports.ts';
 import { drawDock } from './docks.ts';
 import { CHAR_KINDS, CHAR_NAMES, drawCharacter } from './characters.ts';
 import { drawPanel, drawButton, drawPin, drawIcon, PANEL_KINDS, PANEL_NAMES, ICON_IDS, ICON_NAMES } from './ui.ts';
@@ -23,17 +23,21 @@ export function addSection(s: Sec): void {
 
 addSection({
   id: 'transport',
-  title: '运输 6 档(上排空载,下排载苹果;宽 18/34/70/80/84/44)',
-  w: 640,
+  title: '运输 9 档(上排空载,下排载苹果;宽 18/36/34/50/70/80/76/84/44)',
+  w: 800,
   h: 200,
   draw(c, t, o) {
-    const xs = [40, 100, 190, 310, 430, 560];
+    const xs = [32, 90, 144, 210, 310, 430, 545, 655, 755];
     for (let row = 0; row < 2; row++) {
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 9; i++) {
         const y = 94 + row * 96;
         c.fillStyle = 'rgba(0,0,0,0.04)';
         c.fillRect(xs[i] - TRANSPORT_W[i] / 2, y - 1, TRANSPORT_W[i], 1);
         drawTransport(c, i, xs[i], y, 1, { ...o, t, load: row ? o.load : 0 });
+        c.fillStyle = '#888';
+        c.font = '8px sans-serif';
+        c.textAlign = 'center';
+        if (row === 0) c.fillText(TRANSPORT_NAMES[i], xs[i], 8);
       }
     }
   },

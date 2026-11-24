@@ -1,4 +1,4 @@
-// 运输 6 档:篮子 / 小推车 / 卡车 / 货船 / 飞机 / 传送门。
+// 运输(经典 6 档):篮子 / 小推车 / 卡车 / 货船 / 飞机 / 传送门。新增三档见 transport-extra.ts,统一入口见 transports.ts。
 // 签名统一 (ctx, x, y, s, o):(x,y)=底部中心,s=缩放(1 = 约定宽度),默认朝右,o.dir=-1 朝左。
 // 静态件走 bake 缓存,轮子/烟/浪/螺旋桨/苹果每帧现画(确定性,不闪)。
 import { appleHeap, drawApple } from './apple.ts';
@@ -8,12 +8,8 @@ import { F, INK, Ink, TAU, clamp, lerp, sparkle } from './ink.ts';
 import type { C } from './ink.ts';
 import type { ThingFn, ThingOpt } from './types.ts';
 
-/** 各档约定宽度(世界单位,s=1) */
-export const TRANSPORT_W = [18, 34, 70, 80, 84, 44] as const;
-export const TRANSPORT_NAMES = ['篮子', '小推车', '卡车', '货船', '飞机', '传送门'] as const;
-
 /** 摆放:平移 + 缩放 + 左右翻转(natRight=该档原稿是否朝右) */
-function place(ctx: C, x: number, y: number, s: number, o: ThingOpt, natRight: boolean, fn: (g: C) => void): void {
+export function place(ctx: C, x: number, y: number, s: number, o: ThingOpt, natRight: boolean, fn: (g: C) => void): void {
   ctx.save();
   ctx.translate(x, y);
   const f = (o.dir ?? 1) > 0 === natRight ? 1 : -1;
@@ -23,7 +19,7 @@ function place(ctx: C, x: number, y: number, s: number, o: ThingOpt, natRight: b
   ctx.restore();
 }
 
-function wheel(g: C, seed: number, cx: number, cy: number, r: number, rot: number, lw = 1.9): void {
+export function wheel(g: C, seed: number, cx: number, cy: number, r: number, rot: number, lw = 1.9): void {
   const k = new Ink(g, seed, lw, 0.22);
   k.ell(cx, cy, r, r, { fill: F.gray2 });
   k.ell(cx, cy, r * 0.56, r * 0.56, { fill: F.white, lw: lw * 0.7 });
@@ -35,7 +31,7 @@ function wheel(g: C, seed: number, cx: number, cy: number, r: number, rot: numbe
 }
 
 /** 烟:向 (vx,vy) 漂散并变大变淡 */
-function puffs(g: C, x0: number, y0: number, vx: number, vy: number, t: number, n: number, str: number, size = 1): void {
+export function puffs(g: C, x0: number, y0: number, vx: number, vy: number, t: number, n: number, str: number, size = 1): void {
   for (let i = 0; i < n; i++) {
     const u = (t * 0.75 + i / n) % 1;
     const px = x0 + vx * u + Math.sin(u * 7 + i * 2) * 1.2 * size;
@@ -55,7 +51,7 @@ function puffs(g: C, x0: number, y0: number, vx: number, vy: number, t: number, 
 }
 
 /** 装卸:n 个苹果从 (x0,y0) 沿弧飞向 (x0+dx, y0+dy) */
-function flyOut(g: C, x0: number, y0: number, dx: number, dy: number, u: number, n: number, r: number): void {
+export function flyOut(g: C, x0: number, y0: number, dx: number, dy: number, u: number, n: number, r: number): void {
   if (u <= 0 || u >= 1) return;
   for (let i = 0; i < n; i++) {
     const ui = clamp((u - i * 0.07) / 0.62, 0, 1);
@@ -67,10 +63,30 @@ function flyOut(g: C, x0: number, y0: number, dx: number, dy: number, u: number,
 }
 
 /** 载量 → 苹果个数(0 = 空) */
-const loadN = (o: ThingOpt, max: number): number => {
+export const loadN = (o: ThingOpt, max: number): number => {
   const l = clamp(o.load ?? 0, 0, 1) * (1 - clamp(o.unload ?? 0, 0, 1));
   return l <= 0.02 ? 0 : Math.max(1, Math.round(l * max));
 };
+
+/** 装货弹跳:o.pulse 0..1 一次性进度(0/≥1 无效)。dip=车身下沉,hop=苹果堆被颠起 */
+export function bounce(o: ThingOpt): { dip: number; hop: number } {
+  const p = o.pulse ?? 0;
+  if (p <= 0 || p >= 1) return { dip: 0, hop: 0 };
+  const e = 1 - p;
+  return { dip: Math.sin(p * Math.PI * 2.4) * e * 1.9, hop: -Math.abs(Math.sin(p * Math.PI * 3)) * e * 3 };
+}
+/** 行驶中苹果堆随颠簸轻跳(与车身错相位) */
+export const heapJig = (t: number, mv: number, f = 15, a = 0.8, ph = 1.3): number => -Math.max(0, Math.sin(t * f + ph)) * a * mv;
+
+/** 苹果从 (x0,y0) 垂直掉落到 y0+dy(吊装/空投) */
+export function dropOut(g: C, x0: number, y0: number, dy: number, u: number, n: number, r: number): void {
+  if (u <= 0 || u >= 1) return;
+  for (let i = 0; i < n; i++) {
+    const ui = clamp((u - i * 0.06) / 0.6, 0, 1);
+    if (ui <= 0 || ui >= 1) continue;
+    drawApple(g, x0 + (i % 3 - 1) * 3.4 * ui, y0 + ui * ui * dy, r, { leaf: i % 2 === 0, alpha: 1 - Math.max(0, ui - 0.85) / 0.15 });
+  }
+}
 
 /* ───────────────────────── 0 篮子 (18) ───────────────────────── */
 export const drawBasket: ThingFn = (ctx, x, y, s, o = {}) => {
@@ -84,15 +100,16 @@ export const drawBasket: ThingFn = (ctx, x, y, s, o = {}) => {
     k.shadow(0, 0.3, 8, 1.6);
     k.limb(-2.4, -4.2 - bob, -2.4 + sw, -0.8, 1.2, F.cream, 1.7);
     k.limb(2.4, -4.2 - bob, 2.4 - sw, -0.8, 1.2, F.cream, 1.7);
+    const bn = bounce(o);
     g.save();
-    g.translate(0, -bob);
+    g.translate(0, -bob + bn.dip * 0.5);
     g.rotate(Math.sin(ph * 0.5) * 0.03 * mv);
     cached(g, `basket-back|${seed}`, [-9, -24, 9, 1], 0, 0, 1, (b) => {
       const kk = new Ink(b, seed, 1.9, 0.25);
       kk.stroke([[-6.3, -11], [-6, -18], [-3, -22.2], [3, -22.2], [6, -18], [6.3, -11]], { smooth: true, lw: 2 });
     });
     const n = loadN(o, 5);
-    appleHeap(g, 0, -10.6, n, 2.5, 13, seed);
+    appleHeap(g, 0, -10.6 + bn.hop * 0.6 + heapJig(t, mv, 9, 0.6), n, 2.5, 13, seed);
     cached(g, `basket|${seed}`, [-9.5, -13, 9.5, -2], 0, 0, 1, (b) => {
       const kk = new Ink(b, seed + 1, 1.9, 0.3);
       kk.poly([[-8.6, -12], [8.6, -12], [6.2, -4.2], [-6.2, -4.2]], { fill: F.wood, shade: F.shade2, j: 0.3 });
@@ -109,7 +126,8 @@ export const drawCart: ThingFn = (ctx, x, y, s, o = {}) => {
   const seed = o.seed ?? 1, t = o.t ?? 0, mv = o.move ?? 0;
   const rot = t * 8 * mv;
   place(ctx, x, y, s, o, true, (g) => {
-    const bump = Math.abs(Math.sin(t * 11)) * 0.6 * mv;
+    const bn = bounce(o);
+    const bump = Math.abs(Math.sin(t * 11)) * 0.7 * mv - bn.dip * 0.6;
     const k = new Ink(g, seed + 5, 2, 0.25);
     k.shadow(-1, 0.3, 17, 1.8);
     g.save();
@@ -122,7 +140,7 @@ export const drawCart: ThingFn = (ctx, x, y, s, o = {}) => {
       kk.line(-8, -6.5, -9.5, 0, { lw: 2 });
     });
     const n = loadN(o, 8);
-    appleHeap(g, 2, -14.4, n, 2.6, 17, seed);
+    appleHeap(g, 2, -14.4 + bn.hop * 0.7 + heapJig(t, mv, 11, 0.9), n, 2.6, 17, seed);
     cached(g, `cart|${seed}`, [-23, -22, 18, 1], 0, 0, 1, (b) => {
       const kk = new Ink(b, seed + 1, 2, 0.3);
       kk.line(-19.6, -15.4, -21.4, -14.2, { lw: 2.6, ext: 0 }); // 握把
@@ -148,13 +166,17 @@ export const drawTruck: ThingFn = (ctx, x, y, s, o = {}) => {
   const seed = o.seed ?? 1, t = o.t ?? 0, mv = o.move ?? 0;
   const rot = -t * 10 * mv;
   place(ctx, x, y, s, o, false, (g) => {
-    const bob = Math.sin(t * 17) * 0.22 * mv;
+    const bn = bounce(o);
+    // 路面颠簸:两个频率叠加 + 车头前后点头
+    const bob = (Math.sin(t * 17) * 0.3 + Math.max(0, Math.sin(t * 6.1)) * 0.5) * mv + bn.dip;
+    const pitch = Math.sin(t * 6.1 + 0.8) * 0.006 * mv - bn.dip * 0.004;
     new Ink(g, seed, 2, 0.2).shadow(0, 0.4, 37, 2);
     g.save();
     g.translate(0, bob);
+    g.rotate(pitch);
     // 货(在货厢后面,露出上沿)
     const n = loadN(o, 12);
-    appleHeap(g, TX(830), TY(120), n, 3.1, 42, seed);
+    appleHeap(g, TX(830), TY(120) + bn.hop + heapJig(t, mv, 17, 1.1, 0.6), n, 3.1, 42, seed);
     cached(g, `truck|${seed}`, [-37, -36.5, 37, 1], 0, 0, 1, (b) => {
       const k = new Ink(b, seed, 2.1, 0.28);
       const lwI = 1.6;
@@ -209,14 +231,15 @@ export const drawTruck: ThingFn = (ctx, x, y, s, o = {}) => {
 export const drawShip: ThingFn = (ctx, x, y, s, o = {}) => {
   const seed = o.seed ?? 1, t = o.t ?? 0, mv = o.move ?? 0;
   place(ctx, x, y, s, o, true, (g) => {
-    const bob = Math.sin(t * 1.7) * 1.0;
-    const roll = Math.sin(t * 1.25) * 0.022;
+    const bn = bounce(o);
+    const bob = Math.sin(t * 1.7) * (1.0 + 0.5 * mv) + bn.dip * 0.7;
+    const roll = Math.sin(t * 1.25) * (0.022 + 0.014 * mv) - mv * 0.012;
     g.save();
     g.translate(0, bob);
     g.rotate(roll);
     // 货舱里的苹果(舱口在船体前面,先画)
     const n = loadN(o, 14);
-    appleHeap(g, 9, -20.5, n, 2.8, 36, seed);
+    appleHeap(g, 9, -20.5 + bn.hop * 0.6, n, 2.8, 36, seed);
     cached(g, `ship|${seed}`, [-48, -50, 48, 2], 0, 0, 1, (b) => {
       const k = new Ink(b, seed, 2.1, 0.3);
       // 烟囱 + 驾驶台 + 舱室(在船体后面)
@@ -264,6 +287,26 @@ export const drawShip: ThingFn = (ctx, x, y, s, o = {}) => {
       xx === -50 ? g.moveTo(xx, yy) : g.lineTo(xx, yy);
     }
     g.stroke();
+    // 前景浪:船身前一排卷边浪头,随行驶向船尾滚动
+    {
+      const sc = ((t * (4 + 10 * mv)) % 12 + 12) % 12;
+      g.lineJoin = 'round';
+      for (let i = -5; i <= 5; i++) {
+        const cx = i * 12 - sc;
+        if (Math.abs(cx) > 44) continue;
+        const wy2 = -1.3 + Math.sin(cx * 0.22 + t * 3.2) * 0.5;
+        g.beginPath();
+        g.moveTo(cx - 4.2, wy2 + 1.2);
+        g.quadraticCurveTo(cx - 3, wy2 - 2.6, cx + 0.8, wy2 - 2.6);
+        g.quadraticCurveTo(cx + 3.6, wy2 - 2.4, cx + 4.4, wy2 + 1.2);
+        g.closePath();
+        g.fillStyle = F.white;
+        g.fill();
+        g.lineWidth = 1.3;
+        g.strokeStyle = INK;
+        g.stroke();
+      }
+    }
     // 水纹
     const kw = new Ink(g, seed + 21, 1.2, 0.2);
     for (let i = 0; i < 3; i++) {
@@ -305,12 +348,14 @@ export const drawShip: ThingFn = (ctx, x, y, s, o = {}) => {
 export const drawPlane: ThingFn = (ctx, x, y, s, o = {}) => {
   const seed = o.seed ?? 1, t = o.t ?? 0, mv = o.move ?? 0;
   place(ctx, x, y, s, o, true, (g) => {
-    const bob = Math.sin(t * 2.2) * 0.8 * (0.4 + mv);
+    const bn = bounce(o);
+    const bob = Math.sin(t * 2.2) * 0.8 * (0.4 + mv) + bn.dip * 0.7;
     const k0 = new Ink(g, seed + 2, 1.9, 0.2);
-    k0.shadow(0, 0.3, 36, 1.6, 0.14);
+    k0.shadow(0, 0.3, 36 - 4 * mv, 1.6, 0.14 - 0.06 * mv);
     g.save();
-    g.translate(0, bob);
-    g.rotate(-0.02 * mv + Math.sin(t * 1.4) * 0.008);
+    // 行驶:离地抬头爬升,机身颠簸
+    g.translate(0, bob - 3.2 * mv - Math.max(0, Math.sin(t * 9)) * 0.35 * mv);
+    g.rotate(-0.05 * mv + Math.sin(t * 1.4) * 0.008);
     // 机翼(远侧,在机身后面)
     cached(g, `plane-back|${seed}`, [-48, -46, 50, 2], 0, 0, 1, (b) => {
       const k = new Ink(b, seed, 2, 0.28);
@@ -353,7 +398,7 @@ export const drawPlane: ThingFn = (ctx, x, y, s, o = {}) => {
       g.beginPath();
       g.rect(-27, -25, 14, 9.4);
       g.clip();
-      appleHeap(g, -20, -16.4, n, 2.6, 12, seed);
+      appleHeap(g, -20, -16.4 + bn.hop * 0.5, n, 2.6, 12, seed);
       g.restore();
       // 洞口前沿线
       new Ink(g, seed + 4, 1.9, 0.1).line(-28, -15.6, -12, -15.6, { lw: 1.9, ext: 0.2 });
@@ -366,6 +411,14 @@ export const drawPlane: ThingFn = (ctx, x, y, s, o = {}) => {
     k2.ell(45.2, -16, 2.2, 2.6, { fill: F.gray2, lw: 1.6 });
     const sp = t * 22 * Math.max(0.15, mv);
     const bl = Math.abs(Math.cos(sp)) * 10 + 1;
+    // 旋转模糊盘
+    g.save();
+    g.globalAlpha *= 0.12 + 0.2 * mv;
+    g.beginPath();
+    g.ellipse(46.6, -16, 2.6, 11.2, 0, 0, TAU);
+    g.fillStyle = F.gray3;
+    g.fill();
+    g.restore();
     g.save();
     g.globalAlpha *= 0.28 + 0.3 * mv;
     g.beginPath();
@@ -466,6 +519,23 @@ export const drawPortal: ThingFn = (ctx, x, y, s, o = {}) => {
       const px = Math.cos(a) * (rx + 1.2), py = cy + Math.sin(a) * (ry + 1.2);
       new Ink(g, seed + i, 1, 0).dot(px, py, 0.9 + lit * 0.8, lit > 0.5 ? '#ffffff' : F.gray3);
     }
+    // 收货脉冲:门环外扩一圈白光
+    const pp = o.pulse ?? 0;
+    if (pp > 0 && pp < 1) {
+      g.save();
+      g.globalAlpha *= (1 - pp) * 0.9;
+      g.strokeStyle = '#ffffff';
+      g.lineWidth = 3.4 * (1 - pp) + 0.6;
+      g.beginPath();
+      g.ellipse(0, cy, (rx + 5) * (1 + pp * 0.32), (ry + 5) * (1 + pp * 0.22), 0, 0, TAU);
+      g.stroke();
+      g.strokeStyle = INK;
+      g.lineWidth = 1;
+      g.beginPath();
+      g.ellipse(0, cy, (rx + 7) * (1 + pp * 0.32), (ry + 7) * (1 + pp * 0.22), 0, 0, TAU);
+      g.stroke();
+      g.restore();
+    }
     // 闪光
     for (let i = 0; i < 3; i++) {
       const a = t * (1.1 + mv) + i * 2.1;
@@ -474,10 +544,3 @@ export const drawPortal: ThingFn = (ctx, x, y, s, o = {}) => {
     flyOut(g, 0, cy, 24, 26, o.unload ?? 0, 6, 2.6);
   });
 };
-
-export const TRANSPORTS: ThingFn[] = [drawBasket, drawCart, drawTruck, drawShip, drawPlane, drawPortal];
-
-/** 按档 0..5 画运输 */
-export function drawTransport(ctx: C, tier: number, x: number, y: number, s: number, o: ThingOpt = {}): void {
-  TRANSPORTS[clamp(Math.round(tier), 0, 5)](ctx, x, y, s, o);
-}
