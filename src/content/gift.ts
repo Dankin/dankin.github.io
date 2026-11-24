@@ -3,22 +3,22 @@
 // ┌─────────────────────────────────────────────────────────────────────────┐
 // │ 重要:祝福文字由用户本人亲自书写,不入仓库。                               │
 // │ 祝福正文与落款走加密 #g= 链接(密文放在 URL 片段里,运行时用口令/密钥解密), │
-// │ 本文件只提供"固定句 + 占位符 + 页面框架文案",不含、也不代写任何祝福内容。   │
+// │ 本文件只提供"占位符 + 页面框架文案",不含、也不代写任何祝福内容。   │
 // └─────────────────────────────────────────────────────────────────────────┘
 //
-// 页面渲染顺序(GIFT_RENDER_ORDER):固定句 → {{GIFT_TEXT}} → {{GIFT_SIGN}} → 收尾句。
+// 页面渲染顺序(GIFT_RENDER_ORDER):{{GIFT_TEXT}} → {{GIFT_SIGN}} → 收尾句。
 //   {{GIFT_TEXT}}  = 解密出来的祝福正文(用户自写)。
 //   {{GIFT_SIGN}}  = 解密出来的称呼/落款(用户自写,例如"—— xxx")。
 // 解锁时间:本地时间 2026-12-24 00:00(src/core/gift.ts 的 GIFT_DATE / giftOpen)。
 //   plan/70 的决策是 UTC+8;若收礼人在别的时区,请 lead 确认(见 PRIVATE_NOTES)。
 // ?date= 仅在 ?debug=1 下生效,#g= 密文不受它影响。
 
-import { GIFT_FIXED_LINE, GIFT_PLACEHOLDER, GIFT_SIGN_PLACEHOLDER } from './story.ts';
+import { GIFT_PLACEHOLDER, GIFT_SIGN_PLACEHOLDER } from './story.ts';
 
-export { GIFT_FIXED_LINE, GIFT_PLACEHOLDER, GIFT_SIGN_PLACEHOLDER };
+export { GIFT_PLACEHOLDER, GIFT_SIGN_PLACEHOLDER };
 
 /** 礼物页的渲染顺序(程序按此顺序逐段淡入) */
-export const GIFT_RENDER_ORDER = ['fixedLine', 'giftText', 'giftSign', 'closing'] as const;
+export const GIFT_RENDER_ORDER: readonly ('fixedLine' | 'giftText' | 'giftSign' | 'closing')[] = ['giftText', 'giftSign', 'closing'];
 
 export const GIFT_FRAME = {
   /** 盒子上的小字(封印态,12/24 之前) */
@@ -29,8 +29,8 @@ export const GIFT_FRAME = {
   openButton: '拆开',
   /** 拆之前的一句铺垫(盒子晃一晃) */
   openingLine: '盒子轻轻晃了一下。',
-  /** 固定句:所有人都一样,出在祝福之前(用户自写正文之前的一句) */
-  fixedLine: GIFT_FIXED_LINE,
+  /** 已取消固定句(用户决定):保留空串键只为兼容旧面板引用,GIFT_RENDER_ORDER 里不再出现 */
+  fixedLine: '',
   /** 祝福正文占位:渲染时替换为解密后的用户文字 */
   giftText: GIFT_PLACEHOLDER,
   /** 落款占位:渲染时替换为解密后的落款 */
@@ -86,7 +86,6 @@ export const GIFT_AUTHOR_PROMPTS: readonly string[] = [
 
 /** 待 lead/用户确认的事项(给人看,不给程序用) */
 export const PRIVATE_NOTES: readonly string[] = [
-  '固定句"这一个,不在 82 亿里。"是否保留,或换成你自己的话。',
   '解锁时区:plan/70 为 UTC+8 2026-12-24 00:00;收礼人若不在该时区需确认。',
   '祝福正文与落款由你自己写,走加密 #g= 链接,不进仓库、不进 git 历史。',
 ];

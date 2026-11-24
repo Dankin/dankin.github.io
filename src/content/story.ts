@@ -7,7 +7,7 @@
 // 约束:
 //   - 旁白每句 ≤24 字,每条 ≤2 句;
 //   - 旁白节流(NARRATION_LIMITS):两条间隔 ≥45 秒,每小时 ≤40 条,连摇中/弹窗中不出;设置可选 全/少/关;
-//   - 礼物祝福由用户亲自写,不在此处代写。结局只放固定句 + {{GIFT_TEXT}} 占位 + 落款占位。
+//   - 礼物祝福由用户亲自写,不在此处代写。结局只放 {{GIFT_TEXT}} 占位 + 落款占位。
 //
 // id 稳定不改;新增追加到末尾。
 
@@ -171,8 +171,6 @@ export const TAGLINE = '摇一摇,平安到家。';
 export const GIFT_PLACEHOLDER = '{{GIFT_TEXT}}';
 /** 落款占位:同上,用户自己写 */
 export const GIFT_SIGN_PLACEHOLDER = '{{GIFT_SIGN}}';
-/** 固定句:盒子打开后先出这一行(plan/11 推荐句;用户可改成自己的语气) */
-export const GIFT_FIXED_LINE = '这一个,不在 82 亿里。';
 
 export const ENDING = {
   /** 82 亿送达:电话与收尾(任意日期都显示) */
@@ -186,9 +184,8 @@ export const ENDING = {
     { text: '树下多了一个盒子。' },
     { text: '盒子上写着:圣诞节再拆。' },
   ] as OpeningLine[],
-  /** 12/24 打开盒子:先出固定句,再出用户祝福(占位),最后落款(占位) */
+  /** 12/24 打开盒子:直接出用户祝福(占位),最后落款(占位) */
   boxOpen: {
-    fixedLine: GIFT_FIXED_LINE,
     giftText: GIFT_PLACEHOLDER,
     giftSign: GIFT_SIGN_PLACEHOLDER,
   },

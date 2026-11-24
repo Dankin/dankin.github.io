@@ -198,7 +198,7 @@ export const EGGS: Egg[] = [
     name: '车库里的剪影',
     layer: 'discover',
     trigger: '进入巨树阶段(卡车)后,点击树脚车库门口的黑色剪影。',
-    text: '咬一口才完整。(与苹果公司无关)',
+    text: '这是革命性的苹果。你拿反了。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-garage' },
     silhouette: 'garage-bite',
     minEra: 2,
@@ -209,11 +209,11 @@ export const EGGS: Egg[] = [
     name: '高领先生',
     layer: 'discover',
     trigger: '进入云树阶段后,点击远景窗口里穿高领衫的黑色剪影。',
-    text: '保持饥饿,保持愚蠢。(与苹果公司无关)',
+    text: '视网膜屏,前后双摄。别这样握。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-turtleneck' },
     silhouette: 'turtleneck',
     minEra: 3,
-    note: '指向某位已故科技创始人,只用文字和黑色剪影,不出现姓名与商标;点击后附 DISCLAIMER。',
+    note: '发布会式推销口吻(一句一个梗),只用文字和黑色剪影,不出现姓名与商标,不涉及真人事实;点击后附 DISCLAIMER。',
   },
   {
     id: 'einstein',
@@ -376,21 +376,11 @@ export const EGGS: Egg[] = [
     minEra: 4,
   },
   {
-    id: 'sitting-under-tree',
-    name: '树下静坐者',
-    layer: 'discover',
-    trigger: '夜晚随机出现一个树下静坐的人影,点击他。',
-    text: '树下坐久了,总会想通点什么。',
-    reward: { kind: 'badge', id: 'badge-sitting' },
-    silhouette: 'sitting',
-    note: '指向"菩提树下悟道"的典故,语气保持温和,不开宗教玩笑。',
-  },
-  {
     id: 'phone-pun',
     name: '不是手机',
     layer: 'discover',
     trigger: '在设置页连点版本号 5 次。',
-    text: '不是手机,没有刘海,只有叶子。(与苹果公司无关)',
+    text: '这部新手机,前后双摄,都是叶子。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-not-a-phone' },
     silhouette: 'phone',
     note: '苹果手机梗,仅文字;点击后附 DISCLAIMER。',
@@ -438,7 +428,7 @@ export const EGGS: Egg[] = [
     name: '开发者留言',
     layer: 'rare',
     trigger: '在标题画面连点标题 7 次。',
-    text: '谢谢你玩。与苹果公司无关,只和你有关。',
+    text: '还有一件事:谢谢你玩。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-title' },
     silhouette: 'envelope',
     note: '点击后附 DISCLAIMER。',
@@ -628,7 +618,6 @@ export const EGG_TRIGGER_HINTS: Record<string, string> = {
   'duoduo-refuse': '奸商出价多次,你要说不。',
   atalanta: '金色的东西,别让它飘走。',
   idunn: '星空里,有只发光的篮子。',
-  'sitting-under-tree': '夜里,树下有时有人。',
   'phone-pun': '设置页的角落,有串数字。',
   'triple-event': '一天里最热闹的时刻。',
   'money-tree': '手速,再快点。',
@@ -680,8 +669,8 @@ export interface EggText { title: string; text: string; hint: string }
 export const EGG_TEXT: Record<string, EggText> = Object.fromEntries(
   Object.entries(SYS_EGG_ID_MAP).map(([sysId, myId]) => {
     const e = EGG_BY_ID[myId];
-    // jobs = 车库 + 高领剪影合并:一句话带两层梗,声明保留
-    const text = sysId === 'jobs' ? '咬一口才完整。保持饥饿,保持愚蠢。(与苹果公司无关)' : e.text;
+    // jobs = 车库 + 高领剪影合并:发布会式推销口吻,声明保留
+    const text = sysId === 'jobs' ? '革命性的苹果。你拿反了,视网膜屏也救不了。(与苹果公司无关)' : e.text;
     const title = sysId === 'jobs' ? '高领先生' : e.name;
     return [sysId, { title, text, hint: EGG_TRIGGER_HINTS[myId] ?? '' }];
   }),
@@ -714,6 +703,6 @@ export const EGG_CHAR_FLOATS: Record<string, EggFloat> = {
   johnny: { name: '苹果籽约翰', reaction: '种子,撒一路。', floats: ['+{n} 种子雨', '+{n} 一路播种', '+{n} 到处是树'] },
   einstein: { name: '爱因斯坦', reaction: '质量不算。', floats: ['+{n} 相对论', '+{n} 光速的零头', '+{n} 月亮上掉的'] },
   kimura: { name: '木村', reaction: '一万颗,活这一颗。', floats: ['+{n} 奇迹苹果', '+{n} 不打药', '+{n} 十年一颗'] },
-  jobs: { name: '高领先生', reaction: '保持饥饿。(与苹果公司无关)', floats: ['+{n} 咬了一口', '+{n} 再来一个', '+{n} 无关,真的'] },
+  jobs: { name: '高领先生', reaction: '革命性的!你拿反了。', floats: ['+{n} 视网膜屏', '+{n} 前后双摄', '+{n} 别这样握'] },
   orange: { name: '果多多', reaction: '三个橘子,换不换?', floats: ['+{n} 还价成功', '+{n} 奸商让利', '+{n} 这次五个'] },
 };
