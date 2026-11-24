@@ -169,3 +169,12 @@ export function laoxuLines(
   const on = legacyOn[state];
   return CHAR_BY_ID.laoxu.lines.filter((l) => l.on === on).map((l) => l.text);
 }
+
+/** 偷懒中点老徐,30% 得"气泡水"(奖励 8 秒收入)时的台词/toast,随机取一条。每句 ≤24 字。 */
+export const LAOXU_SODA_LINES: readonly string[] = [
+  '拿去,气泡水。别告诉小满。',
+  '滋——送你一口,算封口费。',
+  '摇出来的,不算偷懒。',
+  '多出一瓶,你喝吧。',
+];
+export const LAOXU_SODA_TOAST = '老徐塞给你一瓶气泡水。收入 +8 秒。';
