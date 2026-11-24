@@ -40,7 +40,7 @@ export function codexUnseen(ctx: PanelCtx, prefs: PanelPrefs): number {
   return n;
 }
 
-export function openCodex(ctx: PanelCtx, prefs: PanelPrefs, onChange: () => void, tab0: CodexTab = 'varieties'): void {
+export function openCodex(ctx: PanelCtx, prefs: PanelPrefs, onChange: () => void, tab0: CodexTab = 'varieties', deps?: { openStageCards(): void }): void {
   let tab: CodexTab = tab0;
   let sel = '';
   const cap = h('div', 'panel-cap');

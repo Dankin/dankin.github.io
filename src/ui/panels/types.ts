@@ -46,8 +46,12 @@ export interface PanelsApi {
   say(text: string, speaker?: string, opts?: { force?: boolean }): void;
   /** 离线回来(分钟);触发 idle-return 旁白 */
   onAway(minutes: number): void;
-  /** 进入某时代(= bus 'era'):弹明信片 + 排旁白。已看过的明信片不会重复弹 */
-  enterEra(era: number, opts?: { force?: boolean }): void;
+  /** 进入某时代(= bus 'era'):排时代旁白 */
+  enterEra(era: number): void;
+  /** 弹阶段说明卡(src-0..4 / rt-0..7 / station)。bus 'tier' 自动弹;src-0、rt-0、station 由 app 调。已看过不重复;force=重看 */
+  showStageCard(id: string, force?: boolean): void;
+  /** 重看说明卡列表 */
+  openStageCards(): void;
   openCodex(tab?: 'varieties' | 'eggs' | 'achievements'): void;
   openOrders(): void;
   openOffer(): void;
@@ -59,7 +63,7 @@ export interface PanelsApi {
   /** 当前是否有全屏面板挡着(eng-app 可据此暂停手势) */
   isModalOpen(): boolean;
   closeAll(): void;
-  /** 小红点:图鉴/信箱/订单有新东西 */
+  /** 小红点:图鉴/订单有新东西 */
   badges(): { codex: number; orders: number };
   destroy(): void;
 }

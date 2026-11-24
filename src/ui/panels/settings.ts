@@ -1,4 +1,5 @@
 // 设置面板:音乐/音效/旁白打字音开关 + 音量滑条、静音拨片提示、减少动效、存档导出导入、声明/版本。
+import { STAGE_CARD_UI } from '../../content/stages.ts';
 import { GIFT_FRAME } from '../../content/gift.ts';
 import { CONFIRM, SETTINGS, BTN } from '../../content/ui.ts';
 import { btn, h, openSheet, reducedMotion, sfx } from './dom.ts';
@@ -45,7 +46,7 @@ function slider(label: string, v: number, on: (v: number) => void): HTMLElement 
 export function openSettings(
   ctx: PanelCtx,
   prefs: PanelPrefs,
-  deps: { openGift(): void; onChange(): void },
+  deps: { openGift(): void; openStageCards(): void; onChange(): void },
 ): void {
   const au = ctx.audio;
   const act = ctx.actions ?? {};
@@ -157,6 +158,7 @@ export function openSettings(
   // ── 关于 ──
   const about = h('section', 'panel-set-sec', h('h3', null, SETTINGS.about));
   about.append(
+    btn(STAGE_CARD_UI.replay, 'ghost', () => deps.openStageCards()),
     btn(GIFT_FRAME.settingsEntry, 'gold', () => deps.openGift()),
     h('p', 'panel-note', SETTINGS.aboutBody),
     h('p', 'panel-note', SETTINGS.credits),

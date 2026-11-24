@@ -4,6 +4,7 @@ import { offerOpen } from '../../core/sys/offer.ts';
 import { codexUnseen, openCodex, type CodexTab } from './codex.ts';
 import { anySheetOpen, closeAllSheets, h, onSheetChange } from './dom.ts';
 import { createGift } from './gift.ts';
+import { createStageCards } from './stagecards.ts';
 import { createNarration } from './narration.ts';
 import { createOrders } from './orders.ts';
 import { openSettings } from './settings.ts';
@@ -38,20 +39,24 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
   };
   const orders = createOrders(ctx, prefs, root, refreshDock, (t) => narr.say(t, undefined, false));
   const gift = createGift(ctx, refreshDock);
+  const cards = createStageCards(ctx, prefs, refreshDock);
 
   const api: PanelsApi = {
     say: (text, speaker, opts) => narr.say(text, speaker, opts?.force),
     onAway: (m) => narr.onAway(m),
+    showStageCard: (id, force) => cards.show(id, force),
+    openStageCards: () => cards.openList(),
     enterEra(era) {
       narr.enterEra(era);
     },
-    openCodex: (tab?: CodexTab) => openCodex(ctx, prefs, refreshDock, tab),
+    openCodex: (tab?: CodexTab) => openCodex(ctx, prefs, refreshDock, tab, { openStageCards: () => cards.openList() }),
     openOrders: () => orders.openOrders(),
     openOffer: () => orders.openOffer(),
-    openSettings: () => openSettings(ctx, prefs, { openGift: () => gift.open(), onChange: refreshDock }),
+    openSettings: () => openSettings(ctx, prefs, { openGift: () => gift.open(), openStageCards: () => cards.openList(), onChange: refreshDock }),
     openGift: (o) => gift.open(o?.force),
     tick() {
       orders.tick();
+      cards.tick();
       refreshDock();
     },
     isModalOpen: () => anySheetOpen(),
@@ -61,6 +66,7 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
       clearInterval(timer);
       narr.destroy();
       orders.destroy();
+      cards.destroy();
       dock?.remove();
       onSheetChange(null);
       closeAllSheets();

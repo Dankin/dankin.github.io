@@ -67,6 +67,11 @@ const go = async (): Promise<void> => {
     case 'codex-eggs': api.openCodex('eggs'); break;
     case 'codex-ach': api.openCodex('achievements'); break;
     case 'orders': api.openOrders(); break;
+    case 'stage-src': api.showStageCard('src-3'); break;
+    case 'stage-src0': api.showStageCard('src-0'); break;
+    case 'stage-rt': api.showStageCard('rt-3'); break;
+    case 'stage-station': api.showStageCard('station'); break;
+    case 'stage-list': for (const id of ['src-0', 'rt-0', 'rt-1', 'station']) api.showStageCard(id, true); setTimeout(() => api.openStageCards(), 50); break;
     case 'offer': api.openOffer(); break;
     case 'settings': api.openSettings(); break;
     case 'gift-sealed': api.openGift(); break;
