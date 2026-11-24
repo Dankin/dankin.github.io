@@ -121,7 +121,7 @@ export function initFtue(awayMs = 0): void {
       glow(document.getElementById('gate0'), 7000);
       toast(step('ftue-wash')!.text, 3600);
     }
-    if (s.helpers > 0 || document.getElementById('btnHelper')?.hidden === false) if (s.playSec >= 120) say('ftue-laoxu');
+    if (s.helperLevel > 0 || document.getElementById('btnHelper')?.hidden === false) if (s.playSec >= 120) say('ftue-laoxu');
     if (s.playSec >= 300 && !done.has('ftue-pin')) {
       const pin = document.querySelector<HTMLElement>('#bar .act:not([hidden]) .pin:not([hidden])');
       if (pin) {

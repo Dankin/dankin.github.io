@@ -21,7 +21,7 @@ function renderExact(th: Throughput): void {
   setText(exactRows[0], `已送出 ${n(s.delivered)} / ${n(GOAL)}`);
   setText(exactRows[1], `手上苹果(果钱) ${n(s.coins)} · 累计花掉 ${n(s.spent)}`);
   setText(exactRows[2], `每秒送达 ${fmt(th.flow)} · 每秒收入 ${fmt(th.income)}`);
-  setText(exactRows[3], `摇了 ${n(s.shakes)} 下 · 老徐 ${s.helpers} 位`);
+  setText(exactRows[3], `摇了 ${n(s.shakes)} 下 · 老徐 ${s.helperLevel} 位`);
 }
 
 let lastApples = '';

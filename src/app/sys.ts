@@ -55,7 +55,7 @@ function hostSnap(): ReturnType<typeof snapshotOf> {
     routeTier: s.route.tier,
     units: s.source.units.reduce((a, b) => a + b, 0) + s.route.units.reduce((a, b) => a + b, 0),
     shakes: s.shakes,
-    helpers: s.helpers,
+    helperLevel: s.helperLevel,
     combo: s.combo,
     coins: s.coins,
     income: t.income,

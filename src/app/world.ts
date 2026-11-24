@@ -33,7 +33,7 @@ export function buildWorld(th: Throughput): WorldView {
     season: w.season,
     weather: w.weather,
     srcVariant: s.source.branch[s.source.tier] ?? 0,
-    helpers: s.helpers,
+    helpers: s.helperLevel,
     pests: s.sys.pests.list.filter((p) => s.playSec >= p.at).map((p) => ({ id: p.id, kind: p.kind, side: p.side, pos: p.pos })),
     orders: s.sys.orders.list.slice(0, 3).map((o) => ({ id: o.id, customer: o.customer, want: o.want, qty: o.qty, expiresIn: Math.max(0, o.expiresAt - s.playSec) })),
     rot: s.sys.rot.visual,

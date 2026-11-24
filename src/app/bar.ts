@@ -161,7 +161,7 @@ export function goalDelaySec(coins: number, income: number, cost: number, target
 export function renderFocus(th: Throughput): void {
   const acts = [btn.sb, btn.su, btn.rb, btn.ru];
   const s = app.state;
-  const bought = s.source.units.reduce((a, b) => a + b, 0) + s.route.units.reduce((a, b) => a + b, 0) > INITIAL_UNITS || s.source.tier > 0 || s.route.tier > 0 || s.helpers > 0;
+  const bought = s.source.units.reduce((a, b) => a + b, 0) + s.route.units.reduce((a, b) => a + b, 0) > INITIAL_UNITS || s.source.tier > 0 || s.route.tier > 0 || s.helperLevel > 0;
   const live = acts.filter((a) => isFinite(a.cost));
   let cheapest: Act | null = null;
   for (const a of live) if (a.afford && (!cheapest || a.cost < cheapest.cost)) cheapest = a;
@@ -245,7 +245,7 @@ export function mkHelperBtn(): void {
 }
 export function renderHelper(hints: ReturnType<typeof nextHints>): void {
   const h = hints.helper;
-  const have = app.state.helpers;
+  const have = app.state.helperLevel;
   if (!h && have === 0) {
     helperBtn.hidden = true;
     return;
