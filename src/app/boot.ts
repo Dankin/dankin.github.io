@@ -18,7 +18,9 @@ import { armAudioUnlock, armXuHold, doShake, routeStageTap, setupMotion } from '
 import { setupDebug } from './debug.ts';
 import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
-import { initSys, sysAway } from './sys.ts';
+import { initSys, sysAway, tapTargetAct } from './sys.ts';
+import { charTap } from './chars.ts';
+import { forceEvent } from './events.ts';
 import { initAudioBridge } from './audiobridge.ts';
 import { mountPanels, panels } from './panels.ts';
 import { initFtue } from './ftue.ts';
@@ -156,6 +158,8 @@ if (app.DEBUG) {
       return app.speed;
     },
     orchard: app.orchard,
+    forceEvent: (k: 'bird' | 'newton' | 'meteor') => forceEvent(k), // QA:立刻出事件
+    tap: (id: string) => { tapTargetAct(id); charTap(id); }, // QA:模拟点击场景热点
     panels: () => panels(), // QA:面板接口(openSettings/openGift/openCodex…)
     bus,
     GOAL,

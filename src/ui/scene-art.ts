@@ -2,8 +2,8 @@
 // 与旧 orchard.ts 绘制并行:?art=0 回到旧路径。本文件自带布局(CSS 像素)与动画状态,Orchard 只做手势与公开 API 转发。
 import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
 import type { FallItem, LeafP } from '../art/nature/index.ts';
-import { Fireworks, Flights, drawCharacter, drawFleet, drawLaoXuAt, drawGoldHalo, drawSantaDepot, runPhase, TRANSPORT8_FLIES, TRANSPORT8_W } from '../art/things/index.ts';
-import type { CharKind } from '../art/things/index.ts';
+import { EGG_DURATION, Fireworks, Flights, birdFlight, drawBird, drawCharacter, drawCharacterEgg, drawFleet, drawLaoXuAt, drawGoldHalo, drawSantaDepot, runPhase, TRANSPORT8_FLIES, TRANSPORT8_W } from '../art/things/index.ts';
+import type { BirdKind, CharKind } from '../art/things/index.ts';
 import { fmt } from './format.ts';
 import { APPLE, P, TAU, apple as penApple, circ, clamp, ease, lerp, setUnit, sparkle, text } from './pen.ts';
 import type { EventKind, Hit, WorldView } from './orchard.ts';
@@ -18,7 +18,17 @@ const VEH_TARGET: (string | null)[] = ['gold-basket', 'porter', null, 'truck', n
 
 interface Part { on: boolean; x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; kind: 0 | 1 | 2; gold: boolean }
 interface Float { on: boolean; s: string; x: number; y: number; t: number; col: string }
-interface Ev { kind: EventKind; t: number; dur: number; x: number; y: number; cb: (hit: boolean) => void; caught: number }
+interface Ev {
+  kind: EventKind; t: number; dur: number; x: number; y: number; cb: (hit: boolean) => void;
+  /** 命中后剩余动画秒数;cdur=命中动画总长 */
+  caught: number; cdur: number;
+  /** 小鸟:种类 / 来去方向(-1 从左来往右走 / 1 反之) / 当前姿态与相位 / 是否已离场判定 */
+  bk: BirdKind; side: 1 | -1; bs: 'perch' | 'fly' | 'takeoff' | 'land' | 'hit'; bp: number; bdir: 1 | -1; left: boolean;
+}
+/** 彩蛋角色动作(点击后原地演一段 drawCharacterEgg,或只冒粒子) */
+interface CharAct { kind: CharKind | null; x: number; y: number; t: number; dur: number; seed: number; dir: 1 | -1 }
+/** 小鸟停树时间轴(秒):来 → 停 → 走 */
+const BIRD_IN = 3.2, BIRD_STAY = 3.4, BIRD_OUT = 3.2;
 interface Drop { kind: string; state: string; golden: boolean; x: number; y: number; vy: number; ph: 0 | 1 | 2 | 3; t: number; gy: number; x0: number; rot: number }
 interface Visitor { id: string; t: number; ttl: number; x: number; y: number; fromX: number; slot: number; dir: 1 | -1 }
 
@@ -54,6 +64,7 @@ export class ArtScene {
   private floats: Float[] = [];
   private drops: Drop[] = [];
   private visitors: Visitor[] = [];
+  private charActs: CharAct[] = [];
   private ev: Ev | null = null;
   private fwV = 0; private pileV = 0; private progT = 0; private progV = 0; private progFull = false;
   private giftPop = 0; private srcPop = 0; private rtPop = 0; private dockPop = 0; private emitAcc = 0;
@@ -95,7 +106,7 @@ export class ArtScene {
       g.boxX = Math.max(insL + 26 * U, g.treeX - g.treeS * 112);
       g.boxY = g.gyA + 12 * U;
       g.dockS = 1.15 * U;
-      g.dockX = insL + aw - 56 * g.dockS;
+      g.dockX = insL + aw - 92 * g.dockS; // 收货站(含雪橇驯鹿)右侧延伸约 86*dockS,不能出画
       g.vs = 1.15 * U;
       g.kc = 1.15 * U;
       g.gs = clamp(3.4 * U, 2.8, 5);
@@ -218,8 +229,38 @@ export class ArtScene {
 
   spawnEvent(kind: EventKind, cb: (hit: boolean) => void): void {
     if (this.ev) return;
-    this.ev = { kind, t: 0, dur: kind === 'meteor' ? 5 : kind === 'bird' ? 9 : 12, x: -99, y: -99, cb, caught: 0 };
+    const bk: BirdKind = (['sparrow', 'magpie', 'dove'] as const)[Math.floor(Math.random() * 3)]!;
+    this.ev = {
+      kind, t: 0, dur: kind === 'meteor' ? 5 : kind === 'bird' ? BIRD_IN + BIRD_STAY + BIRD_OUT : 12, x: -99, y: -99, cb, caught: 0, cdur: 0,
+      bk, side: Math.random() < 0.5 ? -1 : 1, bs: 'fly', bp: 0, bdir: 1, left: false,
+    };
     this.evPos(this.ev);
+  }
+  /** 小鸟啄走苹果:从堆场飞一颗到鸟嘴(扣库存在 app 层) */
+  peckFx(): void {
+    const e = this.ev, g = this.g;
+    if (!e || e.kind !== 'bird') return;
+    this.fl.spawn(g.pileX, g.pileY - 14 * g.U, e.x, e.y - 10 * g.U, 0.8, 26 * g.U, 0);
+  }
+  /** 彩蛋角色动作:原地演一段(kind=null 只冒粒子) */
+  charAct(kind: CharKind | null, x: number, y: number, particle: string, dir: 1 | -1 = -1): void {
+    const g = this.g;
+    this.charActs.push({ kind, x, y, t: 0, dur: kind ? EGG_DURATION[kind] : 1, seed: Math.floor(Math.random() * 99), dir });
+    if (this.charActs.length > 3) this.charActs.shift();
+    this.ring(x, y - 10 * g.U, false);
+    const gold = particle === 'gold' || particle === 'sparkle' || particle === 'star';
+    for (let i = 0; i < 10; i++) this.part(x, y - 12 * g.U, (Math.random() - 0.5) * 140, -40 - Math.random() * 70, 0.9, 3, particle === 'leaf' ? 0 : particle === 'snow' ? 2 : 1, gold);
+  }
+  giftLevel(): number { return this.progV; }
+  /** 取画面上某个彩蛋锚点(场景 CSS 像素) */
+  spot(id: string): { x: number; y: number } | null {
+    const g = this.g;
+    if (id === 'crown') { const c = this.crown(); return { x: c.x, y: c.y }; }
+    if (id === 'tree') return { x: g.treeX, y: g.gyA - 30 * g.U };
+    if (id === 'pile') return { x: g.pileX, y: g.pileY };
+    if (id === 'xu') { const p = this.xuPos(); return p ? { x: p.x, y: p.y } : null; }
+    const d = this.depotSpot(id);
+    return d;
   }
   eventActive(): boolean { return this.ev !== null; }
 
@@ -263,14 +304,16 @@ export class ArtScene {
   private evR(): number { return Math.max(30 * this.g.U, 24); }
   evHit(x: number, y: number): boolean {
     const e = this.ev;
-    if (!e || e.caught) return false;
-    const cy = e.kind === 'newton' ? e.y - 18 * this.g.U : e.y;
-    return Math.hypot(x - e.x, y - cy) < this.evR();
+    if (!e || e.caught || e.left) return false;
+    const cy = e.kind === 'newton' ? e.y - 18 * this.g.U : e.kind === 'bird' ? e.y - 8 * this.g.U : e.y;
+    return Math.hypot(x - e.x, y - cy) < this.evR() * (e.kind === 'bird' ? 1.25 : 1);
   }
   catchEv(): void {
     const e = this.ev;
     if (!e) return;
-    e.caught = 0.8;
+    e.cdur = e.kind === 'newton' ? EGG_DURATION.newton : e.kind === 'bird' ? 1.1 : 0.8;
+    e.caught = e.cdur;
+    if (e.kind === 'bird') { e.bs = 'hit'; e.bp = 0; }
     this.ring(e.x, e.y, true);
     for (let i = 0; i < 8; i++) this.part(e.x, e.y, (Math.random() - 0.5) * 120, -50 - Math.random() * 50, 0.7, 3, 1, true);
     e.cb(true);
@@ -322,6 +365,8 @@ export class ArtScene {
         if (v.id === 'xu') return 'xu';
       }
     }
+    const hs = this.hotspotAt(x, y);
+    if (hs) return hs;
     const xp = this.xuPos();
     if (xp && Math.abs(x - xp.x) < 24 * g.kc && y > xp.y - 52 * g.kc && y < xp.y + 8) return 'xu';
     // 车辆
@@ -351,6 +396,49 @@ export class ArtScene {
     const c = this.crown();
     if (Math.abs(x - c.x) < c.rx * 0.5 && y < c.y - c.ry * 0.45 && y > c.y - c.ry * 1.1) return 'treetop-fruit';
     if (Math.abs(x - g.treeX) < 46 * g.U && y > g.gyA && y < g.gyA + 22 * g.U) return 'leaf-under';
+    return null;
+  }
+
+  /** 收货站内的点(depot 局部坐标 → 场景像素);等级 lv 决定礼物堆顶 */
+  private depotSpot(id: string): { x: number; y: number } | null {
+    const g = this.g;
+    const s = g.dockS * 0.55;
+    const P2 = (lx: number, ly: number) => ({ x: g.dockX + lx * s, y: g.gyR + ly * s });
+    if (id === 'elf') return P2(48, -14);
+    if (id === 'sleigh-bell') return P2(90, -26);
+    if (id === 'reindeer-nose') return P2(148, -19);
+    if (id === 'gift-top') {
+      const n = Math.round(clamp(this.progV, 0, 1) * 10);
+      const rows = n <= 0 ? 0 : n <= 4 ? 1 : n <= 7 ? 2 : n <= 9 ? 3 : 4;
+      return P2(-60, -(rows * 9.6) - 5);
+    }
+    if (id === 'depot') return P2(0, -26);
+    return null;
+  }
+  /** 新彩蛋热区(优先级高于老徐/车辆):elf / sleigh-bell / reindeer-nose / gift-top / cloud-basket / star-lantern-N */
+  private hotspotAt(x: number, y: number): string | null {
+    const g = this.g;
+    const rt = clamp(Math.round(this.wv?.rtTier ?? 0), 0, 7);
+    const d = (p: { x: number; y: number } | null, r: number): boolean => !!p && Math.hypot(x - p.x, y - p.y) < r;
+    const rr = 15 * g.dockS * 0.55 * 1.4 + 6;
+    if (d(this.depotSpot('reindeer-nose'), rr)) return 'reindeer-nose';
+    if (d(this.depotSpot('sleigh-bell'), rr)) return 'sleigh-bell';
+    if (d(this.depotSpot('elf'), rr)) return 'elf';
+    if (this.progV > 0.05 && d(this.depotSpot('gift-top'), rr)) return 'gift-top';
+    const idx = clamp(Math.round(this.wv?.srcTier ?? 0), 0, 4);
+    if (idx >= 4) {
+      const c = this.crown();
+      for (let i = 0; i < 7; i++) {
+        const u = i / 6;
+        const px = c.x + (u - 0.5) * 2 * c.rx * 0.78, py = c.y + c.ry * (0.28 - Math.sin(u * Math.PI) * 0.4);
+        if (Math.hypot(x - px, y - py) < Math.max(10 * g.U, 12)) return `star-lantern-${i + 1}`;
+      }
+    }
+    if (idx >= 3) {
+      const a = treeAnchorsIdx(idx, g.treeS, (this.wv?.srcVariant ?? 0) as 0 | 1).basket;
+      if (a && Math.hypot(x - (g.treeX + a.x), y - (g.gyA + a.y + 10 * g.U)) < 14 * g.U + 4) return 'cloud-basket';
+    }
+    void rt;
     return null;
   }
 
@@ -531,17 +619,44 @@ export class ArtScene {
     if (e) {
       e.t += dt;
       this.evPos(e);
-      if (e.caught > 0) { e.caught -= dt; if (e.caught <= 0) this.ev = null; }
+      if (e.caught > 0) { e.caught -= dt; e.bp = 1 - Math.max(0, e.caught) / (e.cdur || 1); if (e.caught <= 0) this.ev = null; }
+      else if (e.kind === 'bird') {
+        // 没点中:停够了起飞时叼走一个苹果(cb(false) 只触发一次),飞走后结束
+        if (!e.left && e.t >= BIRD_IN + BIRD_STAY) { e.left = true; e.cb(false); }
+        if (e.t >= e.dur) this.ev = null;
+      }
       else if (e.t >= e.dur) { this.ev = null; e.cb(false); }
     }
+    for (const a of this.charActs) a.t += dt;
+    this.charActs = this.charActs.filter((a) => a.t < a.dur + 0.4);
+  }
+
+  /** 小鸟停的位置:树冠上沿偏一侧 */
+  private birdPerch(e: Ev): { x: number; y: number } {
+    const c = this.crown();
+    return { x: c.x + e.side * c.rx * 0.38, y: c.y - c.ry * 0.82 };
   }
 
   private evPos(e: Ev): void {
     const g = this.g;
     const f = e.t / e.dur;
     if (e.kind === 'bird') {
-      e.x = lerp(-24, this.w + 24, f);
-      e.y = g.gyA * 0.3 + Math.sin(f * 9) * 8 * g.U;
+      if (e.caught > 0) return; // 命中后停在原位演 hit
+      const pv = this.birdPerch(e);
+      const inX = e.side > 0 ? this.w + 40 : -40;          // 从 side 一侧飞来
+      const outX = e.side > 0 ? -40 : this.w + 40;         // 从另一侧飞走
+      const yHi = Math.max(18, g.gyA * 0.2);
+      const k = 1.3 * g.kc;
+      void k;
+      if (e.t < BIRD_IN) {
+        const r = birdFlight(e.t / BIRD_IN, inX, yHi, pv.x, pv.y, 38 * g.U);
+        e.bs = r.state; e.bp = r.p; e.x = r.x; e.y = r.y; e.bdir = r.dir;
+      } else if (e.t < BIRD_IN + BIRD_STAY) {
+        e.bs = 'perch'; e.bp = 0; e.x = pv.x; e.y = pv.y; e.bdir = (e.side > 0 ? -1 : 1);
+      } else {
+        const r = birdFlight((e.t - BIRD_IN - BIRD_STAY) / BIRD_OUT, pv.x, pv.y, outX, yHi, 38 * g.U);
+        e.bs = r.state === 'land' ? 'fly' : r.state; e.bp = r.p; e.x = r.x; e.y = r.y; e.bdir = r.dir;
+      }
     } else if (e.kind === 'meteor') {
       e.x = lerp(this.w * 0.88, this.w * 0.3, f);
       e.y = lerp(-10, g.gyA - 24 * g.U, f);
@@ -606,6 +721,7 @@ export class ArtScene {
     const m = spr.meta!;
     this.fl.draw(c, { sprite: (cc, x, y, r) => drawAppleAt(cc, spr, x, y, r / m.r), r0: 6 * g.U, r1: 6.5 * g.U, reduceMotion: rm });
     this.fw.draw(c);
+    this.drawCharActs(c);
     this.drawEvent(c);
     this.drawParts(c);
     if (wv.weather === 'rain' || wv.weather === 'snow') this.drawWeather(c, wv.weather);
@@ -817,17 +933,29 @@ export class ArtScene {
     }
   }
 
+  private drawCharActs(c: C): void {
+    const g = this.g;
+    for (const a of this.charActs) {
+      if (!a.kind || a.t >= a.dur) continue;
+      const fade = Math.min(1, (a.dur - a.t) / 0.25, a.t / 0.12 + 0.15);
+      c.globalAlpha = Math.max(0, fade);
+      drawCharacterEgg(c, a.kind, a.x, a.y, g.kc, { p: clamp(a.t / a.dur, 0, 1), t: this.t, seed: a.seed, dir: a.dir });
+      c.globalAlpha = 1;
+    }
+  }
+
   private drawEvent(c: C): void {
     const e = this.ev;
     if (!e) return;
     const g = this.g;
     const t = this.t;
-    const a = e.caught > 0 ? e.caught / 0.8 : 1;
+    const a = e.caught > 0 ? Math.min(1, e.caught / 0.3) : 1;
     c.globalAlpha = a;
     if (e.kind === 'bird') {
-      drawCharacter(c, 'crow', e.x, e.y, 1.1 * g.kc, { t, dir: 1, seed: 4, pose: e.caught > 0 ? 'hit' : 'idle' });
+      drawBird(c, e.x, e.y, 1.8 * g.kc, { state: e.bs, kind: e.bk, p: e.bp, t, dir: e.bdir, seed: 4 });
     } else if (e.kind === 'newton') {
-      drawCharacter(c, 'newton', e.x, e.y, g.kc, { t, dir: -1, pose: e.caught > 0 ? 'catch' : 'idle', p: e.caught > 0 ? 1 - e.caught / 0.8 : undefined, seed: 6 });
+      if (e.caught > 0) drawCharacterEgg(c, 'newton', e.x, e.y, g.kc, { p: e.bp, t, seed: 6, dir: -1 });
+      else drawCharacter(c, 'newton', e.x, e.y, g.kc, { t, dir: -1, pose: 'idle', seed: 6 });
     } else {
       // 流星:带金色拖尾的苹果
       const f = e.t / e.dur;

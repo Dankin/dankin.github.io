@@ -7,6 +7,7 @@ import { $, $o } from './dom.ts';
 import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast } from './toasts.ts';
+import { charTap, noteTap } from './chars.ts';
 import { bp } from './dialogs.ts';
 import { claimOrderAct, cleanRotAct, holdXuAct, rollShake, tapPestAct, tapTargetAct } from './sys.ts';
 
@@ -53,12 +54,16 @@ export function routeStageTap(clientX: number, clientY: number): boolean {
   const r = $('stage').getBoundingClientRect();
   const id = o.tapTarget(clientX - r.left, clientY - r.top);
   if (!id) return false;
+  noteTap(clientX - r.left, clientY - r.top);
   if (id.startsWith('pest:')) tapPestAct(Number(id.slice(5)));
   else if (id.startsWith('order:')) {
     const r2 = claimOrderAct(Number(id.slice(6)));
     if (!r2.ok) toast('货还没备齐。');
   } else if (id === 'rot') cleanRotAct();
-  else tapTargetAct(id);
+  else {
+    tapTargetAct(id);
+    charTap(id);
+  }
   return true;
 }
 

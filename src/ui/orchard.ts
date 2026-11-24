@@ -403,6 +403,23 @@ export class Orchard {
   clearVisitors(): void {
     this.art?.clearVisitors();
   }
+  /** 小鸟啄走苹果的特效(堆场→鸟嘴飞一颗) */
+  peckFx(): void {
+    this.art?.peckFx();
+  }
+  /** 彩蛋角色原地动作(kind=CharKind 演 drawCharacterEgg;null 只冒粒子) */
+  charAct(kind: string | null, wx: number, wy: number, particle: string, dir: 1 | -1 = -1): void {
+    this.art?.charAct(kind as never, wx, wy, particle, dir);
+    this.lastInput = this.t;
+  }
+  /** 收货站礼物堆高度 0..1 */
+  giftLevel(): number {
+    return this.art?.giftLevel() ?? 0;
+  }
+  /** 场景锚点(crown/tree/pile/xu/elf/sleigh-bell/reindeer-nose/gift-top/depot) → 像素坐标;无则 null */
+  spot(id: string): { x: number; y: number } | null {
+    return this.art ? this.art.spot(id) : null;
+  }
   /** 画布 CSS 像素 → 热点 id:sys 的 TAP_TARGETS / 'pest:<id>' / 'order:<id>' / 'rot';没有则 null */
   tapTarget(px: number, py: number): string | null {
     return this.art ? this.art.tapTarget(px, py) : null;

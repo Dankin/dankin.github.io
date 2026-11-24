@@ -8,7 +8,9 @@ import { fmt } from '../ui/format.ts';
 import { app, hooks } from './ctx.ts';
 import { toast, toastIdle } from './toasts.ts';
 import { bp } from './dialogs.ts';
+import { EGG_CHAR_FLOATS } from '../content/eggs.ts';
 import { persist } from './session.ts';
+import { birdAppearText, onBirdHit, onBirdMiss } from './chars.ts';
 
 /** 换档/重开后重置计时 */
 export function resetTips(playSec: number, gap: number): void {
@@ -56,7 +58,22 @@ export function maybeEvent(): void {
   nextEventAt = app.state.playSec + nextEventGap();
   const kind: EventKind = pickEvent(worldAt(app.state.playSec).isNight, Math.random, lastEventKind);
   lastEventKind = kind;
+  startEvent(kind);
+}
+
+/** 立刻开一个事件(调试/QA 用 forceEvent;正常由 maybeEvent 排期) */
+export function forceEvent(kind: EventKind): void {
+  if (!app.orchard.eventActive()) startEvent(kind);
+}
+
+function startEvent(kind: EventKind): void {
   app.orchard.spawnEvent(kind, (hit) => {
+    if (kind === 'bird') {
+      // 小鸟奖励只此一处:birdHit(6 秒产量)。点中 → onBirdHit;飞走时没点 → onBirdMiss(啄走少量库存)
+      if (hit) onBirdHit();
+      else onBirdMiss();
+      return;
+    }
     if (!hit) {
       bus.emit({ t: 'event', kind, phase: 'miss' });
       return;
@@ -68,11 +85,12 @@ export function maybeEvent(): void {
     app.orchard.floatText(r.apples > 0 ? `+${fmt(r.apples)}` : '灵感!');
     if (kind === 'newton') {
       // 牛顿停留的三段台词,按进入后的秒数排开
+      app.orchard.floatText(EGG_CHAR_FLOATS.newton?.reaction ?? '灵感!', undefined, undefined);
       for (const st of NEWTON_STAGES) setTimeout(() => toast(st.text, 3200), st.at * 1000);
     } else toast(EVENT_TEXT[kind].claim, 3600);
     persist();
     hooks.render();
   });
   bus.emit({ t: 'event', kind, phase: 'appear' });
-  toast(EVENT_TEXT[kind].appear, 2800);
+  toast(kind === 'bird' ? birdAppearText() : EVENT_TEXT[kind].appear, 2800);
 }
