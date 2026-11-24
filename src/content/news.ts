@@ -31,6 +31,9 @@ export const NEWS_TAGS = {
   xmas: '12/20 之后(或圣诞主题日)',
   gold: '金苹果刚出现过/图鉴已有金苹果',
   combo: '连摇 ≥20 击',
+  'tier-porter': '刚升到挑扁担工(与 new-tier 同时满足,60 秒内)',
+  'tier-trampoline': '刚升到蹦床(与 new-tier 同时满足,60 秒内)',
+  'tier-helicopter': '刚升到直升机(与 new-tier 同时满足,60 秒内)',
   // ── 以下标签由 systems 额外支持(见 src/core/sys) ──
   spring: '春(季节系统)',
   summer: '夏',
@@ -319,6 +322,15 @@ const SYS = build('n-s-', undefined, [
   ['四分之三!老徐头一次没有嘴硬。', ['milestone-75'], 4],
   ['九成了。雪橇的铃声隐约可闻。', ['milestone-90'], 4],
   ['百分之九十九。最后一步,最长。', ['milestone-99'], 4],
+  ['新员工报到:挑扁担,工钱按苹果算。', ['new-tier', 'tier-porter'], 4],
+  ['扁担吱呀一响,苹果跟着颤了三颤。', ['new-tier', 'tier-porter'], 4],
+  ['篮子:我退休了。扁担:我接班。', ['new-tier', 'tier-porter'], 4],
+  ['蹦床开张,苹果排队,有人插队。', ['new-tier', 'tier-trampoline'], 4],
+  ['一蹦老远。落地时,少了一两个。', ['new-tier', 'tier-trampoline'], 4],
+  ['老徐路过蹦床:"我只看,不蹦。"', ['new-tier', 'tier-trampoline'], 4],
+  ['头顶有嗡嗡声,直升机来吊苹果了。', ['new-tier', 'tier-helicopter'], 4],
+  ['直升机悬停,堵在路上的人抬头看。', ['new-tier', 'tier-helicopter'], 4],
+  ['风太大,老徐的帽子飞走了。', ['new-tier', 'tier-helicopter'], 4],
 ] as Row[]);
 
 export const NEWS_ITEMS: NewsItem[] = [...E0, ...E1, ...E2, ...E3, ...E4, ...E5, ...COND, ...GENERIC, ...SYS];

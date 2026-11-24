@@ -461,6 +461,25 @@ export const EGGS: Egg[] = [
     reward: { kind: 'cosmetic', id: 'skin-tree-scar' },
     silhouette: 'tree-talk',
   },
+  {
+    id: 'trampoline-leak',
+    name: '蹦床小费',
+    layer: 'discover',
+    trigger: '拥有蹦床时,在 5 秒内点击蹦床图标 5 次。',
+    text: '蹦床吐出一个苹果:这是小费。',
+    reward: { kind: 'apples', amount: 10 },
+    silhouette: 'trampoline',
+    minEra: 1,
+  },
+  {
+    id: 'pole-snap',
+    name: '扁担断了',
+    layer: 'discover',
+    trigger: '拥有挑扁担工时,点击挑担工图标累计 10 次。',
+    text: '咔嚓。扁担:我也是有极限的。',
+    reward: { kind: 'apples', amount: 10 },
+    silhouette: 'pole',
+  },
 ];
 
 /** 图鉴里"未发现"时显示的灰色提示(key = egg id;不剧透具体操作,只给方向) */
@@ -507,6 +526,8 @@ export const EGG_TRIGGER_HINTS: Record<string, string> = {
   'title-7': '标题,是不是可以点?',
   'core-82': '到终点时,会剩点什么。',
   'shake-5000': '树的忍耐,也有限度。',
+  'trampoline-leak': '蹦床,好像在偷偷弹。',
+  'pole-snap': '扁担,也有承受极限。',
 };
 
 /** 各层级总数(图鉴进度 n/N 用) */
