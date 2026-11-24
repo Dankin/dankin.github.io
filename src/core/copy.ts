@@ -86,7 +86,6 @@ export const DAILY_NEWS: readonly string[] = [
 export const SHAKE_TEXT = ['哗啦!', '掉了掉了!', '树:别摇了别摇了', '再来!', '叶子也掉了'];
 /** 连摇到一定数时的小字 */
 export const COMBO_TEXT = ['连摇!', '手速!', '树晕了!', '这手速,树要报警了'];
-export const HELPER_TEXT = { hired: '老徐来了,他说他只摇一会儿。', none: '还没人帮你摇。' };
 
 /** 离线回来的明信片:按离开时长换一句 */
 export const awayLine = (minutes: number): string =>

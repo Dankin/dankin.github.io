@@ -15,7 +15,8 @@ import type { EventKind } from '../core/events.ts';
 import { getGoal } from './bar.ts';
 import { app } from './ctx.ts';
 import { pushNews, setNewsSource } from './ticker.ts';
-import { toast } from './toasts.ts';
+import { toast, toastIdle } from './toasts.ts';
+import { laoxuLines, type LaoxuLevel, type LaoxuState } from '../content/laoxu.ts';
 import { fmt } from '../ui/format.ts';
 
 const rnd = Math.random;
@@ -159,6 +160,17 @@ export function sysFrame(dt: number): void {
   );
   s.helperAct = tk.helperAct; // 老徐此刻在不在干活(偷懒=0),throughput 用
   if (tk.coinsLoss > 0) s.coins = Math.max(0, s.coins - tk.coinsLoss);
+  // 老徐状态机事件 → 一句台词(toast 空闲时才说,不抢别的提示)
+  if (tk.laoxu.length && s.helperLevel > 0 && toastIdle()) {
+    for (const e of tk.laoxu) {
+      const st: LaoxuState | null = e.t === 'mode' ? (e.to === 'work' ? null : e.to) : e.t === 'crit-ready' ? 'crit' : null;
+      if (!st) continue;
+      const lines = laoxuLines(Math.min(8, s.helperLevel) as LaoxuLevel, st);
+      if (lines.length) toast(lines[Math.floor(rnd() * lines.length)], 2800);
+      if (e.t === 'crit-ready') app.audio.sfx.play('modal');
+      break;
+    }
+  }
   for (const e of tk.events) {
     switch (e.t) {
       case 'order-new':

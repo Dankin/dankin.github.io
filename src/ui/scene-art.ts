@@ -649,7 +649,7 @@ export class ArtScene {
     const g = this.g;
     const lv = clamp(this.pileV / 22, 0, 1);
     if (lv <= 0.01) return;
-    drawStockPile(c, g.pileX, g.pileY, g.treeS * 0.62, lv, { seed: 5 });
+    drawStockPile(c, g.pileX, g.pileY, g.treeS * 0.5, lv, { seed: 5 });
   }
 
   private drawDockAndVehicles(c: C): void {

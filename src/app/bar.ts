@@ -2,7 +2,6 @@
 import { buyExpand, buyHelper, buyUnit, canUpgradeTier, helperCost, nextHints, preview, tierCost, tiersOf, unitCost, type LineId, type Throughput } from '../core/game.ts';
 import { HELPER, UNIT_MAX } from '../core/content.ts';
 import { LAOXU_LEVELS } from '../content/laoxu.ts';
-import { HELPER_TEXT } from '../core/copy.ts';
 import { newState, type PinSlot } from '../core/state.ts';
 import { bus } from '../core/bus.ts';
 import { fmt } from '../ui/format.ts';
@@ -235,7 +234,7 @@ export function mkHelperBtn(): void {
     if (buyHelper(app.state)) {
       bus.emit({ t: 'buy', line: null, what: 'helper', cost: c0 - app.state.coins });
       app.audio.sfx.buy();
-      toast(LAOXU_LEVELS[app.state.helperLevel - 1]?.joke ?? HELPER_TEXT.hired, 2600);
+      toast(LAOXU_LEVELS[app.state.helperLevel - 1]?.joke ?? '', 2600);
       persist();
       hooks.render();
     } else {
