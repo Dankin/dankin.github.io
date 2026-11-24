@@ -19,6 +19,8 @@ import { armAudioUnlock, doShake, setupMotion } from './input.ts';
 import { setupDebug } from './debug.ts';
 import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
+import { initSys, sysAway } from './sys.ts';
+import { initAudioBridge } from './audiobridge.ts';
 
 function wire(): void {
   app.orchard.onShake = (st) => doShake(st ?? 1);
@@ -107,6 +109,8 @@ initBar();
 initHud();
 trackNewsSignals();
 installContentNews();
+initSys();
+initAudioBridge();
 app.orchard = new Orchard($<HTMLCanvasElement>('stage'));
 if (loaded.kind === 'readonly') toast('存档来自更新的版本,本页只读,不会覆盖存档。', 6000);
 else if (loaded.kind === 'ok') {
@@ -114,6 +118,7 @@ else if (loaded.kind === 'ok') {
   catchUp(true);
   if (awayAtBoot >= 3 * 86400_000) toast('隔了好几天。存档可以在设置里导出一份,也可以「添加到主屏幕」,下次点一下就回来。', 6000);
 }
+if (loaded.kind === 'new') sysAway(0);
 $('saveWarn').textContent = app.canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
 setupMotion();

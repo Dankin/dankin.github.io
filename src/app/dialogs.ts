@@ -1,5 +1,5 @@
 // 弹层:关卡槽选择、升档分支选择。
-import { canUpgradeTier, nextBranches, preview, setGate, tierCost, tiersOf, upgradeTier, type LineId } from '../core/game.ts';
+import { canUpgradeTier, era, nextBranches, preview, setGate, tierCost, tiersOf, upgradeTier, type LineId } from '../core/game.ts';
 import { GATES, GATE_SLOTS, describeEffect, describeGate, gateDef, type GateId } from '../core/content.ts';
 import { ERA_TOAST, GATE_UNLOCK_TOAST } from '../core/copy.ts';
 import { bus } from '../core/bus.ts';
@@ -59,7 +59,7 @@ export function openGate(slot: number): void {
       const g = gateDef(id);
       t.textContent = g.name;
       b.title = g.joke;
-      const sum = app.state.source.tier + app.state.route.tier;
+      const sum = era(app.state);
       if (!app.state.gatesUnlocked.includes(id)) {
         d.textContent = `两条线档位合计 ${g.unlockAt} 解锁`;
         b.classList.add('no');

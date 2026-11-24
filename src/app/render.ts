@@ -12,6 +12,7 @@ import { buildWorld } from './world.ts';
 import { ambient, bottleneckTip, maybeEvent } from './events.ts';
 import { renderDebugInfo } from './debug.ts';
 import { win } from './session.ts';
+import { feedSys } from './sys.ts';
 
 let lastEra = -1;
 let lastDelivered = -1;
@@ -37,6 +38,7 @@ export function renderAll(): void {
   renderFocus(th);
   renderHud(th, getGoal());
   feedTicker(th);
+  feedSys(th);
   renderGates();
   renderHelper(hints);
   if (!bp.hidden) fillBranch();

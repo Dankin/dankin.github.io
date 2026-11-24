@@ -11,6 +11,7 @@ import { bus } from '../core/bus.ts';
 import { fmt } from '../ui/format.ts';
 import { $ } from './dom.ts';
 import { app, hooks, kv, nowMs } from './ctx.ts';
+import { sysAway } from './sys.ts';
 import { toast } from './toasts.ts';
 import { resetGateSeen } from './dialogs.ts';
 import { resetTips } from './events.ts';
@@ -27,10 +28,12 @@ export function catchUp(showToast: boolean): void {
   const away = Date.now() - app.state.lastSeen;
   if (away < 3000) {
     app.state.lastSeen = Date.now();
+    sysAway(0);
     return;
   }
   const r = settle(app.state, away);
   app.state.lastSeen = Date.now();
+  sysAway(away);
   if (showToast && r.seconds >= 30 && r.delivered > 0) toast(`${awayLine(away / 60000)} 送达了 ${fmt(Math.floor(r.delivered))} 个。`, 4200);
 }
 

@@ -1,6 +1,7 @@
 import { SAVE_VERSION } from './constants.ts';
 import type { GateId } from './content.ts';
 import { GATE_SLOTS, TIER_COUNTS } from './content.ts';
+import { newSys, type SysState } from './sys/state.ts';
 
 /** 一个"车"。n > 24 时多辆车合并成一个车队,w 是它代表几辆。 */
 export interface Vehicle {
@@ -49,6 +50,8 @@ export interface State {
   delivered: number;
   /** 钉住的目标卡(底栏 4 张卡之一);没有钉住为 null。只影响提示,不影响数值。v4 新增 */
   pin: PinSlot | null;
+  /** 玩法系统状态(品种/订单/害虫/腐烂/图鉴/彩蛋/成就…),由 core/sys 读写;v5 新增 */
+  sys: SysState;
   /** 累计点按/摇树次数(含没算上的) */
   shakes: number;
   /** 本局已玩秒数(游戏内时钟,所有计时器用它) */
@@ -98,6 +101,7 @@ export function newState(now: number): State {
     spent: 0,
     delivered: 0,
     pin: null,
+    sys: newSys(),
     shakes: 0,
     playSec: 0,
     source: newLine(),

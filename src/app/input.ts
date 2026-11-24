@@ -7,6 +7,7 @@ import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast } from './toasts.ts';
 import { bp, gp } from './dialogs.ts';
+import { rollShake } from './sys.ts';
 
 // ───────────── 手感:摇树 / 苹果噼里啪啦掉下来 ─────────────
 let lastShakeText = 0;
@@ -37,6 +38,7 @@ export function doShake(strength = 1): void {
   if (r.ok) {
     app.orchard.poke(Math.max(1, Math.round(1 + strength)));
     bus.emit({ t: 'shake', combo: r.combo, strength });
+    rollShake(r);
   }
   onShakeResult(r);
 }

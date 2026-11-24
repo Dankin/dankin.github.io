@@ -17,7 +17,25 @@ export type Ev =
   /** 事件奖励到账("金苹果"时刻)。apples=直接送达的数量(牛顿为 0) */
   | { t: 'gold'; kind: EventKind; apples: number }
   /** 彩蛋被发现(由彩蛋系统 emit,新闻/成就/图鉴订阅)。id 对应 content/eggs 的条目 */
-  | { t: 'egg'; id: string }
+  | { t: 'egg'; id: string; first?: boolean }
+  /** 成就解锁(id 见 src/content/achievements.ts) */
+  | { t: 'ach'; id: string }
+  /** 摇树抽到的苹果(品种/状态;value 为价值乘数,期望 1) */
+  | { t: 'apple'; kind: string; state: string; value: number }
+  /** 订单:new=新订单,expire=过期,done=交付(reward=手上苹果) */
+  | { t: 'order'; phase: 'new' | 'expire' | 'done'; id: number; reward?: number }
+  /** 害虫:wave=来了一批,bite=咬掉 lost,kill=被拍死 */
+  | { t: 'pest'; phase: 'wave' | 'bite' | 'kill'; id?: number; n?: number; lost?: number; reward?: number }
+  /** 烂果:spawn=新烂了 n 个,clean=玩家清理 n 个 */
+  | { t: 'rot'; phase: 'spawn' | 'clean'; n: number }
+  /** 点了场景热点(tap target id,见 core/sys/types.ts TAP_TARGETS) */
+  | { t: 'tap'; target: string }
+  /** 献果成交 */
+  | { t: 'offer'; spent: number; apples: number }
+  /** 新闻条换了一条文字 */
+  | { t: 'news'; text: string; id?: string }
+  /** 回到游戏(启动/回前台);away>0 表示离线结算了多少毫秒 */
+  | { t: 'login'; away: number }
   /** 进入新的时代档(eraMin 变大) */
   | { t: 'era'; era: number }
   /** 通关(累计送出达到目标) */

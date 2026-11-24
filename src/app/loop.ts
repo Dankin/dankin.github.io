@@ -2,6 +2,7 @@
 import { tick } from '../core/game.ts';
 import { app, hooks } from './ctx.ts';
 import { catchUp, persist } from './session.ts';
+import { sysFrame } from './sys.ts';
 
 // ───────────── 主循环 ─────────────
 let lastTs = performance.now();
@@ -27,6 +28,7 @@ export function loop(ts: number): void {
       left -= step;
     }
   }
+  if (!app.readOnly) sysFrame(dt * app.speed);
   app.orchard.frame(dt);
   slowAcc += dt;
   saveAcc += dt;
