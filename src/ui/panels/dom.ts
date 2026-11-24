@@ -93,15 +93,15 @@ export function closeAllSheets(): void {
 /** 通用弹层:veil + 纸张卡片。点遮罩/✕/Esc 关闭。同时只允许一个(新开会关旧的) */
 export function openSheet(
   ctx: PanelCtx,
-  o: { id: string; title: string; cls?: string; onClose?: () => void; footer?: HTMLElement | null; noHeader?: boolean },
+  o: { id: string; title: string; cls?: string; onClose?: () => void; footer?: HTMLElement | null; noHeader?: boolean; passthrough?: boolean },
 ): Sheet {
   closeAllSheets();
   const root = ctx.root ?? document.body;
-  const veil = h('div', 'panel-veil');
+  const veil = h('div', 'panel-veil' + (o.passthrough ? ' thru' : ''));
   const card = h('section', `panel-sheet ${o.cls ?? ''}`.trim());
   card.id = o.id;
   card.setAttribute('role', 'dialog');
-  card.setAttribute('aria-modal', 'true');
+  card.setAttribute('aria-modal', o.passthrough ? 'false' : 'true');
   card.setAttribute('aria-label', o.title);
   const body = h('div', 'panel-body');
   if (!o.noHeader) {

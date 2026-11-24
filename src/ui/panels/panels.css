@@ -344,3 +344,8 @@
 .panel-cap-fl i { font-style: normal; padding: 1px 7px; border: 1.5px solid var(--pn-ink); border-radius: 9px; background: var(--pn-paper); }
 .panel-tab-stage { margin-left: auto; border-style: dashed; }
 @media (max-width: 480px) { .panel-cap-prev { width: 84px; height: 60px; } }
+
+/* 阶段卡:遮罩点穿,只有卡片/按钮拦截点击 */
+.panel-veil.thru { background: transparent; pointer-events: none; }
+.panel-veil.thru .panel-stage-sheet { pointer-events: none; }
+.panel-veil.thru .panel-stage-cv, .panel-veil.thru .panel-stage-acts { pointer-events: auto; }

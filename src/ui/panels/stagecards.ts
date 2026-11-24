@@ -108,11 +108,15 @@ export function createStageCards(ctx: PanelCtx, prefs: PanelPrefs, onChange: () 
       title: c.title,
       cls: 'panel-stage-sheet',
       noHeader: true,
+      passthrough: true,
       onClose: () => {
         alive = false;
+        window.clearTimeout(auto);
         cancelAnimationFrame(raf);
       },
     });
+    // 首次弹出 8 秒后自动收起(点穿遮罩,场景可继续玩)
+    const auto = window.setTimeout(() => sheet.close(), STAGE_CARD_UI.autoCloseMs ?? 8000);
     sheet.body.append(cv, h('div', 'panel-stage-acts', ok, hint));
     sfx(ctx, replay ? 'modal' : 'narrOpen');
     if (!replay && !prefs.cardsSeen.includes(c.id)) {
