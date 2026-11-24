@@ -3,6 +3,7 @@ import { mods, stockFill, chargeLevel, type Throughput } from '../core/game.ts';
 import { ROUTE_TIERS } from '../core/content.ts';
 import { EMPTY_WORLD, type WorldView } from '../ui/orchard.ts';
 import { worldAt } from '../core/world.ts';
+import { laoxuView } from '../core/sys/laoxu.ts';
 import { app } from './ctx.ts';
 
 // ───────────── 画面所需数据 ─────────────
@@ -31,6 +32,8 @@ export function buildWorld(th: Throughput): WorldView {
     weather: w.weather,
     srcVariant: s.source.branch[s.source.tier] ?? 0,
     helpers: s.helperLevel,
+    xuMode: laoxuView(s.sys.laoxu).state,
+    xuCrit: laoxuView(s.sys.laoxu).crit,
     pests: s.sys.pests.list.filter((p) => s.playSec >= p.at).map((p) => ({ id: p.id, kind: p.kind, side: p.side, pos: p.pos })),
     orders: s.sys.orders.list.slice(0, 3).map((o) => ({ id: o.id, customer: o.customer, want: o.want, qty: o.qty, expiresIn: Math.max(0, o.expiresAt - s.playSec) })),
     rot: s.sys.rot.visual,

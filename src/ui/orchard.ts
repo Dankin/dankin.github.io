@@ -42,6 +42,10 @@ export interface WorldView {
   srcVariant?: number;
   /** 帮手(老徐)数量,>0 时堆场旁显示老徐 */
   helpers?: number;
+  /** 老徐当前行为(sys/laoxu):work 干活/slack 偷懒/nap 打盹/watch 看热闹 */
+  xuMode?: 'work' | 'slack' | 'nap' | 'watch';
+  /** 老徐暴击就绪 */
+  xuCrit?: boolean;
   /** 害虫(只含已出场的):pos 0..1 = 从屏幕边缘(0)爬向树(1) */
   pests?: Array<{ id: number; kind: string; side: -1 | 1; pos: number }>;
   /** 顾客订单(码头旁排队,最多画 3 个) */
@@ -330,7 +334,7 @@ export class Orchard {
         this.ring(q.x, q.y - 4, false);
       }
     }
-    this.wv = { ...EMPTY_WORLD, ...wv, rtTier: Math.min(5, wv.rtTier ?? 0), srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
+    this.wv = { ...EMPTY_WORLD, ...wv, rtTier: Math.min(7, wv.rtTier ?? 0), srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
     this.syncVehs();
     this.syncSS();
     this.lastInput = this.t;

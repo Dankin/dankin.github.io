@@ -1,8 +1,8 @@
 // 果园新美术场景(v5):用 src/art 的 backdrop/tree/building/transport/dock/character/fx 画整个场景。
 // 与旧 orchard.ts 绘制并行:?art=0 回到旧路径。本文件自带布局(CSS 像素)与动画状态,Orchard 只做手势与公开 API 转发。
-import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, drawTree, spawnLeaves, stepLeaves, treeCrown } from '../art/nature/index.ts';
-import type { LeafP } from '../art/nature/index.ts';
-import { Fireworks, Flights, appleHeap, drawCharacter, drawDock, drawGiftBox, drawGoldHalo, drawTransport, TRANSPORT_W } from '../art/things/index.ts';
+import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
+import type { FallItem, LeafP } from '../art/nature/index.ts';
+import { Fireworks, Flights, drawCharacter, drawFleet, drawLaoXuAt, drawGoldHalo, drawSantaDepot, runPhase, TRANSPORT8_FLIES, TRANSPORT8_W } from '../art/things/index.ts';
 import type { CharKind } from '../art/things/index.ts';
 import { fmt } from './format.ts';
 import { APPLE, P, TAU, apple as penApple, circ, clamp, ease, lerp, setUnit, sparkle, text } from './pen.ts';
@@ -10,20 +10,16 @@ import type { EventKind, Hit, WorldView } from './orchard.ts';
 
 type C = CanvasRenderingContext2D;
 
-/** 运输档(0..8)→ 码头档(0..5):篮/挑夫=摊位,车=小屋,蹦床/卡车=仓库站台,船=码头,直升机/飞机=机场,传送门=传送站 */
-export const DOCK_OF = [0, 0, 1, 2, 2, 3, 4, 4, 5];
-/** 每趟秒数(9 档;沿用旧 TRIP_SEC 的节奏,新增三档) */
-export const TRIP9 = [9, 10, 8, 8, 9, 12, 7, 5, 3];
-/** 原地不动的运输(篮子/蹦床/传送门):苹果抛物线飞向码头 */
-const STILL = new Set([0, 3, 8]);
-const AIR = new Set([6, 7]);
-const DOCK_W = [60, 72, 92, 98, 100, 84];
+/** 一趟(装→行驶→卸→返回)总秒数,8 档(匀速四段;飞行档更快) */
+export const TRIP8 = [12, 12, 11, 9, 11, 8, 7, 6];
+const DEPOT_W = 150;
+/** 运输档 → 点击目标 id(sys 的 TAP_TARGETS) */
+const VEH_TARGET: (string | null)[] = ['gold-basket', 'porter', null, 'truck', null, null, null, null];
 
-interface Veh { ph: number; full: boolean; pulse: number; sent: boolean }
 interface Part { on: boolean; x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; kind: 0 | 1 | 2; gold: boolean }
 interface Float { on: boolean; s: string; x: number; y: number; t: number; col: string }
 interface Ev { kind: EventKind; t: number; dur: number; x: number; y: number; cb: (hit: boolean) => void; caught: number }
-interface Drop { kind: string; state: string; golden: boolean; x: number; y: number; vy: number; ph: 0 | 1 | 2; t: number; gy: number; x0: number; rot: number }
+interface Drop { kind: string; state: string; golden: boolean; x: number; y: number; vy: number; ph: 0 | 1 | 2 | 3; t: number; gy: number; x0: number; rot: number }
 interface Visitor { id: string; t: number; ttl: number; x: number; y: number; fromX: number; slot: number; dir: 1 | -1 }
 
 interface Geo {
@@ -44,7 +40,13 @@ export class ArtScene {
   t = 0;
   wv!: WorldView;
   private g: Geo = EMPTY_GEO;
-  private vehs: Veh[] = [];
+  private fall: FallItem[] = [];
+  private fallCd = 0;
+  private landFx: { kind: string; x: number; y: number; t: number }[] = [];
+  private fleetT = 0;
+  private fleetU: number[] = [];
+  private takeoff = 0;
+  private recvT = 0;
   private fl = new Flights(14);
   private fw = new Fireworks(8);
   private leaves: LeafP[] = [];
@@ -188,9 +190,19 @@ export class ArtScene {
     this.xuPose = 0.7;
     const e = this.emit();
     const g = this.g;
-    for (let i = 0; i < n; i++) this.fl.spawn(e.x + (Math.random() - 0.5) * 12, e.y, g.pileX + (Math.random() - 0.5) * 16 * g.U, g.pileY - 6 * g.U, 0.62, 12 * g.U, 0);
+    if (!this.shakeFall()) for (let i = 0; i < n; i++) this.fl.spawn(e.x + (Math.random() - 0.5) * 12, e.y, g.pileX + (Math.random() - 0.5) * 16 * g.U, g.pileY - 6 * g.U, 0.62, 12 * g.U, 0);
     for (let i = 0; i < 3; i++) this.part(e.x, e.y, (Math.random() - 0.5) * 60, -30 - Math.random() * 30, 0.5, 2, 0, false);
     if (!this.reduced) spawnLeaves(this.leaves, e.x, e.y, 3, 30 * g.U);
+  }
+
+  /** 摇树:按源头档 dropPattern 生成落果/小枝/落叶粒子;返回是否生成 */
+  private shakeFall(): boolean {
+    if (this.reduced || this.fallCd > 0 || this.fall.length > 70) return false;
+    this.fallCd = 0.4;
+    const variant = (this.wv.srcVariant ?? 0) > 0 ? 1 : 0;
+    const a = treeAnchors(this.tierOf(), variant, 7, 1);
+    this.fall.push(...spawnShakeFall(this.tierOf(), a, Math.random));
+    return true;
   }
 
   burst(n = 3): void {
@@ -272,7 +284,7 @@ export class ArtScene {
     if (this.ev && this.evHit(x, y)) return 'event';
     if (this.inTree(x, y)) return 'source';
     const g = this.g;
-    const dw = DOCK_W[DOCK_OF[this.wv.rtTier] ?? 0] * g.dockS;
+    const dw = DEPOT_W * 0.55 * g.dockS;
     if (Math.abs(x - g.dockX) < dw / 2 && y < g.gyR + 6 && y > g.gyR - 70 * g.dockS) return 'dock';
     return 'none';
   }
@@ -310,14 +322,16 @@ export class ArtScene {
         if (v.id === 'xu') return 'xu';
       }
     }
-    if (wv.helpers && wv.helpers > 0 && Math.abs(x - (g.pileX + 26 * g.U)) < 22 * g.kc && y > g.pileY + 6 * g.U - 48 * g.kc && y < g.pileY + 10 * g.U) return 'xu';
+    const xp = this.xuPos();
+    if (xp && Math.abs(x - xp.x) < 24 * g.kc && y > xp.y - 52 * g.kc && y < xp.y + 8) return 'xu';
     // 车辆
-    const kind = clamp(Math.round(wv.rtTier), 0, 8);
-    const target = kind === 1 ? 'porter' : kind === 3 ? 'trampoline' : kind === 0 ? 'gold-basket' : null;
+    const kind = clamp(Math.round(wv.rtTier), 0, 7);
+    const target = VEH_TARGET[kind];
     if (target) {
-      for (let i = 0; i < this.vehs.length; i++) {
-        const p = this.vehPos(i);
-        const hw = (TRANSPORT_W[kind] ?? 40) * g.vs * 0.6;
+      const n = Math.min(4, Math.max(1, wv.rtVehicles));
+      for (let i = 0; i < n; i++) {
+        const p = this.vehPos(i, n);
+        const hw = (TRANSPORT8_W[kind]?.[wv.rtBranch > 0 ? 1 : 0] ?? 40) * g.vs * 0.6;
         if (Math.abs(x - p.x) < hw && y > p.y - 50 * g.vs && y < p.y + 6) return target;
       }
     }
@@ -346,14 +360,31 @@ export class ArtScene {
   }
 
   /* ───────── 状态同步 ───────── */
-  private visMax(): number { return 3; }
   private syncVehs(): void {
-    const want = Math.min(this.wv.rtVehicles, this.visMax());
-    while (this.vehs.length < want) this.vehs.push({ ph: 0, full: true, pulse: 0, sent: true });
-    while (this.vehs.length > want) this.vehs.pop();
-    const n = this.vehs.length;
-    if (this.t < 0.01) this.vehs.forEach((v, i) => { v.ph = (i + 0.5) / n * 0.4; v.full = true; v.sent = false; });
-    else this.vehs.forEach((v, i) => { if (i >= 1 && Math.abs(v.ph - this.vehs[0].ph) < 0.02) v.ph = (v.ph + i / n) % 1; });
+    const n = Math.min(4, Math.max(1, this.wv.rtVehicles));
+    while (this.fleetU.length < n) this.fleetU.push(-1);
+    this.fleetU.length = n;
+  }
+  private fleetCycle(): number { return TRIP8[clamp(Math.round(this.wv.rtTier), 0, 7)] / Math.max(0.6, 0.6 + Math.log10(1 + this.wv.carry) * 0.12); }
+  private vehPos(i: number, n: number): { x: number; y: number; phase: number } {
+    const g = this.g;
+    const kind = clamp(Math.round(this.wv.rtTier), 0, 7);
+    const r = runPhase(this.fleetT / this.fleetCycle() + i / n, TRANSPORT8_FLIES[kind]);
+    return { x: lerp(g.r0, g.r1, r.pos), y: g.gyR - (Number(r.o.fly) || 0) * 26 * g.vs, phase: r.phase };
+  }
+  /** 老徐站位(null=未雇) */
+  private xuPos(): { x: number; y: number; spot: 'ground' | 'treehouse' | 'basket' | 'top' } | null {
+    const lv = this.wv.helpers ?? 0;
+    if (lv <= 0) return null;
+    const g = this.g;
+    const idx = clamp(Math.round(this.wv.srcTier ?? 0), 0, 4);
+    if (idx >= 2) {
+      const a = treeAnchorsIdx(idx, g.treeS, (this.wv.srcVariant ?? 0) as 0 | 1);
+      const spot = idx === 2 ? 'treehouse' : idx === 3 ? 'basket' : 'top';
+      const q = a[spot];
+      if (q) return { x: g.treeX + q.x, y: g.gyA + q.y, spot };
+    }
+    return { x: g.pileX + 26 * g.U, y: g.pileY + 8 * g.U, spot: 'ground' };
   }
 
   private isNight(): boolean {
@@ -378,27 +409,6 @@ export class ArtScene {
     let f = this.floats.find((q) => !q.on);
     if (!f) f = this.floats.reduce((a, b) => (a.t > b.t ? a : b));
     Object.assign(f, { on: true, s, x, y, t: 0, col });
-  }
-
-  private vehPos(i: number): { x: number; y: number; u: number; going: boolean; moving: boolean } {
-    const g = this.g;
-    const v = this.vehs[i];
-    const kind = clamp(Math.round(this.wv.rtTier), 0, 8);
-    const dir = g.r1 >= g.r0 ? 1 : -1;
-    if (STILL.has(kind)) {
-      const back = (TRANSPORT_W[kind] ?? 40) * g.vs * 0.92;
-      return { x: g.r0 - dir * i * back, y: g.gyR, u: 0, going: true, moving: false };
-    }
-    const ph = v.ph;
-    let u = 0;
-    let going = true;
-    let moving = true;
-    if (ph < 0.44) u = ease(ph / 0.44);
-    else if (ph < 0.52) { u = 1; moving = false; }
-    else if (ph < 0.96) { u = 1 - (ph - 0.52) / 0.44; going = false; }
-    else { u = 0; moving = false; }
-    const lift = AIR.has(kind) ? (kind === 7 ? 30 : 22) * g.vs * ease(clamp(Math.min(u * 4, (1 - u) * 4 + (moving ? 0 : 0)), 0, 1)) : 0;
-    return { x: lerp(g.r0, g.r1, u), y: g.gyR - lift, u, going, moving };
   }
 
   /* ───────── 更新 ───────── */
@@ -426,39 +436,31 @@ export class ArtScene {
       }
     } else this.emitAcc = 0;
 
-    // 车辆:周期 ph 0..1 = 去(0-.44) 卸(.44-.52) 回(.52-.96) 装(.96-1)
-    const kind = clamp(Math.round(wv.rtTier), 0, 8);
-    const trip = (TRIP9[kind] ?? 10) / Math.max(0.6, 0.6 + Math.log10(1 + wv.carry) * 0.12);
-    for (let i = 0; i < this.vehs.length; i++) {
-      const v = this.vehs[i];
-      const p0 = v.ph;
-      v.ph = (v.ph + dt / trip) % 1;
-      v.pulse = Math.max(0, v.pulse - dt * 3);
-      if (p0 > 0.9 && v.ph < p0) {
-        // 回到装货处:库存够就满载
-        v.full = wv.stock01 >= 0.03;
-        v.pulse = 1;
-        v.sent = false;
-      }
-      if (!v.sent && p0 < 0.44 && v.ph >= 0.44 || (!v.sent && v.ph >= 0.44 && v.ph < 0.6)) {
-        v.sent = true;
-        if (v.full) {
+    // 车队:统一时钟;头车到达卸货段 → 收货
+    {
+      const kind = clamp(Math.round(wv.rtTier), 0, 7);
+      const cyc = this.fleetCycle();
+      this.fleetT += dt;
+      const n = Math.min(4, Math.max(1, wv.rtVehicles));
+      this.syncVehs();
+      for (let i = 0; i < n; i++) {
+        const u = (this.fleetT / cyc + i / n) % 1;
+        const prev = this.fleetU[i];
+        this.fleetU[i] = u;
+        if (prev >= 0 && prev < 0.5 && u >= 0.5 && wv.stock01 >= 0.02) {
           this.dockPop = 1;
+          this.recvT = 1;
           this.crates = Math.min(10, this.crates + 1);
           this.crateT = 1.1;
           if (wv.perTrip) this.say(`+${fmt(wv.perTrip)}`, g.dockX, g.gyR - 78 * g.dockS, APPLE);
           this.part(g.dockX, g.gyR - 36 * g.dockS, 0, -10, 0.6, 4, 1, true);
-          if (STILL.has(kind) && kind !== 3) {
-            const q = this.vehPos(i);
-            for (let k = 0; k < 3; k++) this.fl.spawn(q.x, q.y - 22 * g.vs, g.dockX + (k - 1) * 14 * g.U, g.gyR - 32 * g.dockS, 0.9 + k * 0.1, (46 + k * 8) * g.U, 1);
-          }
         }
       }
-      // 过关卡闪一下
-      if (v.full && kind >= 0 && !STILL.has(kind) && v.ph < 0.44) {
-        const u0 = ease(p0 / 0.44);
-        const u1 = ease(v.ph / 0.44);
-      }
+      void kind;
+      this.recvT = Math.max(0, this.recvT - dt * 1.2);
+      // 终点满了(礼物送齐):雪橇升空远去,约 5 秒后循环
+      if (this.progFull && this.progV >= 0.999) this.takeoff = this.takeoff >= 1 ? 1 : Math.min(1, this.takeoff + dt / 5);
+      else this.takeoff = Math.max(0, this.takeoff - dt);
     }
 
     this.fl.update(dt, (f) => {
@@ -470,15 +472,34 @@ export class ArtScene {
     this.fw.update(dt);
     if (this.leaves.length) stepLeaves(this.leaves, dt);
 
+    // 摇树落果:落地的苹果按品种 landFx,然后飞进库存堆
+    this.fallCd = Math.max(0, this.fallCd - dt);
+    if (this.fall.length) {
+      const landed = stepFall(this.fall, dt);
+      for (const f of landed) {
+        const x = g.treeX + f.x * g.treeS, y = g.gyA + f.y * g.treeS;
+        this.landFx.push({ kind: f.kind, x, y, t: 0 });
+        this.fl.spawn(x, y - 4 * g.U, g.pileX + (Math.random() - 0.5) * 16 * g.U, g.pileY - 6 * g.U, 0.5 + Math.random() * 0.2, 14 * g.U, 0);
+        f.type = 'leaf'; f.scale = 0; // 苹果已转为飞行体,本体不再画
+      }
+      for (let i = this.fall.length - 1; i >= 0; i--) { const f = this.fall[i]; if (f.landed && f.landT > (f.type === 'leaf' ? 1.4 : 0.7)) this.fall.splice(i, 1); }
+      if (fallDone(this.fall)) this.fall.length = 0;
+    }
+    for (let i = this.landFx.length - 1; i >= 0; i--) { this.landFx[i].t += dt; if (this.landFx[i].t > 1.2) this.landFx.splice(i, 1); }
+
     // 掉落苹果
     for (let i = this.drops.length - 1; i >= 0; i--) {
       const d = this.drops[i];
       d.t += dt;
       if (d.ph === 0) {
-        d.vy += 900 * g.U * dt;
+        d.vy += 900 * g.U * dt * (appleFxFor(d.kind).fastFall ?? 1);
         d.y += d.vy * dt;
         d.rot += dt * 4;
-        if (d.y >= d.gy) { d.y = d.gy; d.vy = -d.vy * 0.35; d.ph = d.vy > -30 ? 1 : 0; if (d.ph === 0) d.t = 0; else d.t = 0; this.part(d.x, d.y, 0, -8, 0.3, 2, 0, false); d.x0 = d.x; }
+        if (d.y >= d.gy) { d.y = d.gy; d.vy = -d.vy * 0.35; d.ph = d.vy > -30 ? 3 : 0; d.t = 0; this.part(d.x, d.y, 0, -8, 0.3, 2, 0, false); d.x0 = d.x; }
+      } else if (d.ph === 3) {
+        // 落地展示品种效果,再滚进堆
+        const hold = appleFxFor(d.kind).bounce || appleFxFor(d.kind).quake || appleFxFor(d.kind).roll ? 0.6 : 0.18;
+        if (d.t > hold) { d.ph = 1; d.t = 0; d.x0 = d.x; }
       } else if (d.ph === 1) {
         const k = clamp(d.t / 0.7, 0, 1);
         d.x = lerp(d.x0, g.pileX, ease(k));
@@ -555,11 +576,13 @@ export class ArtScene {
     // 树
     const shake = rm ? 0 : clamp(this.sway * 1.1 + this.fwV * 0.45, 0, 1);
     const tpop = 1 + 0.08 * Math.sin(this.srcPop * Math.PI) * (this.srcPop > 0 ? 1 : 0);
-    drawTree(c, g.treeX, g.gyA, g.treeS * tpop, { tier: this.tierOf() as 1, seed: 7, shake, t, fruit: 0.8 });
+    drawTree(c, g.treeX, g.gyA, g.treeS * tpop, { tier: this.tierOf() as 1, variant: ((wv.srcVariant ?? 0) > 0 ? 1 : 0) as 0 | 1, seed: 7, shake, t, fruit: 0.8 });
+    if (this.fall.length) drawFall(c, this.fall, g.treeX, g.gyA, g.treeS);
+    for (const f of this.landFx) drawLandFx(c, f.kind, f.t, f.x, f.y, g.treeS * 0.5);
     if (this.leaves.length) drawLeaves(c, this.leaves, 1);
 
     // 礼物盒
-    drawGiftBox(c, g.boxX, g.boxY, 1.35 * g.U * (1 + 0.1 * Math.sin(this.giftPop * Math.PI)), { open: this.progFull ? 1 : 0, progress: clamp(this.progV, 0, 1), t, pulse: this.giftPop });
+    // 终点礼物堆已并入圣诞老人收货站(drawSantaDepot level=送达进度)
 
     // 堆场
     this.drawPile(c);
@@ -624,44 +647,32 @@ export class ArtScene {
 
   private drawPile(c: C): void {
     const g = this.g;
-    const n = Math.round(this.pileV);
-    if (n <= 0) return;
-    const r = 5.4 * g.U;
-    appleHeap(c, g.pileX, g.pileY, n, r, 78 * g.U, 3);
+    const lv = clamp(this.pileV / 22, 0, 1);
+    if (lv <= 0.01) return;
+    drawStockPile(c, g.pileX, g.pileY, g.treeS * 0.62, lv, { seed: 5 });
   }
 
   private drawDockAndVehicles(c: C): void {
     const g = this.g;
     const wv = this.wv;
-    const kind = clamp(Math.round(wv.rtTier), 0, 8);
-    const dt = DOCK_OF[kind] ?? 0;
+    const kind = clamp(Math.round(wv.rtTier), 0, 7);
     const pop = 1 + 0.06 * Math.sin(this.dockPop * Math.PI);
-    // 路线:码头与装车处之间画一条淡淡的土路(船道/空路不画)
-    if (kind === 5) this.drawWater(c);
-    drawDock(c, dt as 0, g.dockX, g.gyR, g.dockS * pop, { crates: Math.min(8, this.crates), pulse: this.dockPop, t: this.t });
-    const dir = g.r1 >= g.r0 ? 1 : -1;
-    const W = (TRANSPORT_W[kind] ?? 40) * g.vs;
-    const order = this.vehs.map((_, i) => i).sort((a, b) => this.vehPos(a).y - this.vehPos(b).y);
-    for (const i of order) {
-      const v = this.vehs[i];
-      const p = this.vehPos(i);
-      const ph = v.ph;
-      const still = STILL.has(kind);
-      const unloading = ph >= 0.44 && ph < 0.52;
-      const pulse = v.pulse;
-      const vpop = 1 + 0.08 * Math.sin(this.rtPop * Math.PI);
-      drawTransport(c, kind, p.x, p.y, g.vs * vpop, {
-        t: this.t + i * 0.7,
-        move: still ? 0 : p.moving ? 1 : 0,
-        load: p.going ? (v.full ? 1 : 0) : 0,
-        unload: unloading && v.full ? (ph - 0.44) / 0.08 : 0,
-        pulse,
-        dir: (p.going || still ? dir : -dir) as 1 | -1,
-        seed: 3 + i,
-      });
+    if (kind === 4) this.drawWater(c);
+    // 终点:圣诞老人收货站(礼物堆=送达进度;最终档雪橇升空)
+    drawSantaDepot(c, g.dockX, g.gyR, g.dockS * 0.55 * pop, { level: clamp(this.progV, 0, 1), receive: this.recvT, takeoff: this.takeoff, t: this.t });
+    // 车队:四段匀速;竖屏 r0>r1 时镜像
+    const n = Math.min(4, Math.max(1, wv.rtVehicles));
+    const vpop = 1 + 0.08 * Math.sin(this.rtPop * Math.PI);
+    c.save();
+    const flip = g.r1 < g.r0;
+    if (flip) c.scale(-1, 1);
+    drawFleet(c, kind, g.gyR, g.vs * vpop, { n, cycle: this.fleetCycle(), x0: flip ? -g.r0 : g.r0, x1: flip ? -g.r1 : g.r1, branch: (wv.rtBranch > 0 ? 1 : 0), t: this.fleetT, seed: 3 });
+    c.restore();
+    if (wv.rtVehicles > 4) {
+      const W = (TRANSPORT8_W[kind]?.[wv.rtBranch > 0 ? 1 : 0] ?? 40) * g.vs;
+      const dir = flip ? 1 : -1;
+      text(c, `×${wv.rtVehicles}`, g.r0 + dir * (W / 2 + 14 * g.U), g.gyR - 6, 12 * Math.max(1, g.U), P.ink);
     }
-    const extra = wv.rtVehicles - this.vehs.length;
-    if (extra > 0) text(c, `×${wv.rtVehicles}`, g.r0 - dir * W * 0.1, g.gyR - 54 * g.vs, 12 * Math.max(1, g.U), P.ink);
   }
 
   private drawRot(c: C): void {
@@ -769,9 +780,15 @@ export class ArtScene {
     const g = this.g;
     const wv = this.wv;
     const t = this.t;
-    // 老徐(帮手):按 helpers>0 常驻在堆场旁
-    const hasXu = (wv.helpers ?? 0) > 0 && !this.visitors.some((v) => v.id === 'xu');
-    if (hasXu) drawCharacter(c, 'xu', g.pileX + 26 * g.U, g.pileY + 6 * g.U, g.kc, { t, pose: this.xuPose > 0 ? 'shake' : 'idle', dir: -1, seed: 5 });
+    // 老徐:按等级(helpers=1..8)+状态(xuMode);巨树起住树屋/吊篮/树顶
+    const xp = this.xuPos();
+    if (xp && !this.visitors.some((v) => v.id === 'xu')) {
+      const mode = wv.xuMode ?? 'work';
+      const ground = xp.spot === 'ground';
+      const woke = this.xuPose > 0 && mode !== 'work';
+      const state = woke ? 'wake' : mode === 'nap' ? 'nap' : mode === 'watch' ? 'watch' : mode === 'slack' ? (ground ? 'sit' : 'idle') : ground ? (this.xuPose > 0 ? 'shake' : 'help') : this.xuPose > 0 ? 'cheer' : 'clap';
+      drawLaoXuAt(c, xp.spot, xp.x, xp.y, ground ? g.kc * 0.62 : Math.max(0.7, g.kc * 0.8), { lv: clamp(Math.round(wv.helpers ?? 1), 1, 8), t, dir: -1, seed: 5, state } as never);
+    }
     for (const v of this.visitors) {
       const kind = this.charKind(v.id);
       if (!kind) continue;
