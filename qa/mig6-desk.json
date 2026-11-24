@@ -1,0 +1,294 @@
+{
+ "title": "mig6-desk",
+ "at": "2026-11-24T13:29:04.878Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":4,\"rt\":7,\"su\":5,\"ru\":8,\"sb\":[-1,0,1,0,1],\"rb\":[-1,-1,0,-1,0,1,0,1],\"coins\":1231691.4271630477,\"hl\":0,\"veh\":[7],\"delivered\":123456,\"shakes\":555,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): vehicles tier in range",
+   "ok": true,
+   "extra": "[7]"
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): no NaN",
+   "ok": true,
+   "extra": "1231691.4271630477"
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v6.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v6 满档(果星→? src5/rt8) detail",
+   "extra": "hl=0 coins=1231691 sb=[-1,0,1,0,1] rb=[-1,-1,0,-1,0,1,0,1] deliv=123456"
+  },
+  {
+   "k": "check",
+   "name": "v6 满档(果星→? src5/rt8): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":2,\"rt\":2,\"su\":5,\"ru\":8,\"sb\":[-1,0,1,-1,-1],\"rb\":[-1,-1,1,-1,-1,-1,-1,-1],\"coins\":10912132.25728964,\"hl\":0,\"veh\":[2],\"delivered\":123456,\"shakes\":558,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): vehicles tier in range",
+   "ok": true,
+   "extra": "[2]"
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): no NaN",
+   "ok": true,
+   "extra": "10912132.25728964"
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v6.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v6 蹦床档(src2/rt3 蹦床) detail",
+   "extra": "hl=0 coins=10912132 sb=[-1,0,1,-1,-1] rb=[-1,-1,1,-1,-1,-1,-1,-1] deliv=123456"
+  },
+  {
+   "k": "check",
+   "name": "v6 蹦床档(src2/rt3 蹦床): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":3,\"rt\":5,\"su\":5,\"ru\":8,\"sb\":[-1,0,1,1,-1],\"rb\":[-1,-1,0,-1,0,1,-1,-1],\"coins\":975005109.1919881,\"hl\":0,\"veh\":[5],\"delivered\":123888,\"shakes\":561,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): vehicles tier in range",
+   "ok": true,
+   "extra": "[5]"
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): no NaN",
+   "ok": true,
+   "extra": "975005109.1919881"
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v6.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v6 苹果之果星 (src4/rt6 直升机) detail",
+   "extra": "hl=0 coins=975005109 sb=[-1,0,1,1,-1] rb=[-1,-1,0,-1,0,1,-1,-1] deliv=123888"
+  },
+  {
+   "k": "check",
+   "name": "v6 苹果之果星 (src4/rt6 直升机): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":0,\"rt\":0,\"su\":5,\"ru\":8,\"sb\":[-1,-1,-1,-1,-1],\"rb\":[-1,-1,-1,-1,-1,-1,-1,-1],\"coins\":785104296.7382191,\"hl\":0,\"veh\":[0],\"delivered\":123888,\"shakes\":564,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): vehicles tier in range",
+   "ok": true,
+   "extra": "[0]"
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): no NaN",
+   "ok": true,
+   "extra": "785104296.7382191"
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v6.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v6 新档(src0/rt0) detail",
+   "extra": "hl=0 coins=785104297 sb=[-1,-1,-1,-1,-1] rb=[-1,-1,-1,-1,-1,-1,-1,-1] deliv=123888"
+  },
+  {
+   "k": "check",
+   "name": "v6 新档(src0/rt0): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":3,\"rt\":4,\"su\":5,\"ru\":8,\"sb\":[-1,0,1,0,-1],\"rb\":[-1,-1,0,-1,0,-1,-1,-1],\"coins\":978367438.662728,\"hl\":5,\"veh\":[4],\"delivered\":123894,\"shakes\":567,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): vehicles tier in range",
+   "ok": true,
+   "extra": "[4]"
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): no NaN",
+   "ok": true,
+   "extra": "978367438.662728"
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v5.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v5 helpers=7 (src3/rt5) detail",
+   "extra": "hl=5 coins=978367439 sb=[-1,0,1,0,-1] rb=[-1,-1,0,-1,0,-1,-1,-1] deliv=123894"
+  },
+  {
+   "k": "check",
+   "name": "v5 helpers=7 (src3/rt5): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): loads as v7, tiers mapped",
+   "ok": true,
+   "extra": "{\"v\":7,\"st\":2,\"rt\":3,\"su\":5,\"ru\":8,\"sb\":[-1,0,1,-1,-1],\"rb\":[-1,-1,-1,-1,-1,-1,-1,-1],\"coins\":841060904.4169412,\"hl\":3,\"veh\":[3],\"delivered\":123894,\"shakes\":570,\"nan\":false}"
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): slots (gates) removed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): vehicles tier in range",
+   "ok": true,
+   "extra": "[3]"
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): no NaN",
+   "ok": true,
+   "extra": "841060904.4169412"
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): .bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v4.bak\"]"
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): no console errors",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "v4 全链(旧 6 档 route, src2, rt4) detail",
+   "extra": "hl=3 coins=841060904 sb=[-1,0,1,-1,-1] rb=[-1,-1,-1,-1,-1,-1,-1,-1] deliv=123894"
+  },
+  {
+   "k": "check",
+   "name": "v4 全链(旧 6 档 route, src2, rt4): playable after migrate (no errors)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "no console errors total",
+   "ok": true,
+   "extra": "[]"
+  }
+ ]
+}

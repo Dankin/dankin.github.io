@@ -3,7 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import * as L from './lib.mjs';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const ERA_TIERS = [[0, 0], [1, 2], [2, 4], [3, 5], [4, 7], [5, 8]];
+const ERA_TIERS = [[0, 0], [1, 2], [2, 3], [3, 4], [4, 6], [4, 7]];
 const { srv, base } = await L.serve();
 const b = await L.launchBrowser({ base });
 const out = {};

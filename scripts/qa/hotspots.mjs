@@ -8,7 +8,7 @@ const b = await L.launchBrowser({ base });
 await b.view(W, H);
 await b.open('?debug=1', { wait: 1200 });
 await b.G('(()=>g.panels().closeAll())()');
-const ERA_TIERS = [[0, 0], [1, 2], [2, 4], [3, 5], [4, 7], [5, 8]];
+const ERA_TIERS = [[0, 0], [1, 2], [2, 3], [3, 4], [4, 6], [4, 7]];
 const setEra = (e) => b.G(`(()=>{const [a,r]=${JSON.stringify(ERA_TIERS[e])};const s=g.state;s.source.tier=a;s.route.tier=r;for(let i=0;i<=a;i++)s.source.units[i]=Math.max(s.source.units[i]||0,3);for(let i=0;i<=r;i++)s.route.units[i]=Math.max(s.route.units[i]||0,3);s.coins=1e6;s.playSec=Math.max(s.playSec,400)})()`);
 const scan = () => b.J(`(()=>{const r=document.getElementById('stage').getBoundingClientRect();const out={};for(let y=0;y<r.height;y+=5)for(let x=0;x<r.width;x+=5){const t=__game.orchard.tapTarget(x,y);if(t){(out[t]=out[t]||[]).push([x,y])}}return {r:{x:r.left,y:r.top,w:r.width,h:r.height},out}})()`);
 const centroid = (pts) => [pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length];

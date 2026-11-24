@@ -8,7 +8,7 @@ const { srv, base } = await L.serve();
 const b = await L.launchBrowser({ base });
 await b.view(W, H);
 const KEY = 'shake-the-apple.save';
-const ERA_TIERS = [[0, 0], [1, 2], [2, 4], [3, 5], [4, 7], [5, 8]];
+const ERA_TIERS = [[0, 0], [1, 2], [2, 3], [3, 4], [4, 6], [4, 7]];
 const sleep = L.sleep;
 const jget = (k) => b.J(`localStorage.getItem(${JSON.stringify(k)})`);
 const jset = (k, v) => b.ev(`localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)})`);
@@ -42,7 +42,7 @@ await b.G('(()=>{g.state.coins=1;g.state.shakes=5})()');
 R.check('import: confirm row appears', await clickBtnText('导入存档') && (await sleep(200), await clickBtnText('确|覆盖|导入', '.panel-confirm')), '');
 await sleep(600);
 const after = await state('({c:s.coins,sh:s.shakes,st:s.source.tier,rt:s.route.tier})');
-R.check('import: state restored (shakes=777, tiers kept)', after.sh === 777 && after.st === 2 && after.rt === 4 && after.c > 4000, JSON.stringify(after));
+R.check('import: state restored (shakes=777, tiers kept)', after.sh === 777 && after.st === 2 && after.rt === 3 && after.c > 4000, JSON.stringify(after));
 R.info('import message', await b.J(`document.querySelector('.panel-set-msg').textContent`));
 // 无效导入
 await b.J(`(()=>{const a=document.querySelector('.panel-area');a.value=${JSON.stringify(exported.slice(0, 60))};})()`);
@@ -80,8 +80,8 @@ await leaveEditReturn(async () => {
   await b.ev(`localStorage.removeItem(${JSON.stringify(KEY + '.bak')})`);
 }, 2200);
 const mig = await state('({v:s.version,st:s.source.tier,rt:s.route.tier,ru:s.route.units.length,ru4:s.route.units[4],sys:!!s.sys&&typeof s.sys.codex,shakes:s.shakes,b1:s.source.branch[1],rb4:s.route.branch[4]})');
-R.check('v4→v5: state loads as v5 w/ tiers mapped (st2, rt4, 9 route slots, sys present)', mig.v === 5 && mig.st === 2 && mig.rt === 4 && mig.ru === 9 && mig.ru4 === 3 && mig.sys === 'object', JSON.stringify(mig));
-R.check('v4→v5: branches preserved', mig.b1 === 1 && mig.rb4 === 1, JSON.stringify(mig));
+R.check('v4→v7: state loads as v7 (st2, 8 route slots, sys present; 路线细节见 mig6.mjs)', mig.v === 7 && mig.st === 2 && mig.ru === 8 && mig.sys === 'object', JSON.stringify(mig));
+R.check('v4→v5: branches preserved', mig.b1 === 1, JSON.stringify(mig));
 const ks = await keys();
 R.check('v4→v5: .v4.bak written', ks.includes(KEY + '.v4.bak'), JSON.stringify(ks));
 const saved = await readSave();

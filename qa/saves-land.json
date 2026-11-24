@@ -1,6 +1,6 @@
 {
  "title": "saves-land",
- "at": "2026-11-24T07:53:59.872Z",
+ "at": "2026-11-24T13:50:18.124Z",
  "rows": [
   {
    "k": "check",
@@ -12,7 +12,7 @@
    "k": "check",
    "name": "export: textarea filled with base64",
    "ok": true,
-   "extra": "len=2216"
+   "extra": "len=2316"
   },
   {
    "k": "info",
@@ -29,7 +29,7 @@
    "k": "check",
    "name": "import: state restored (shakes=777, tiers kept)",
    "ok": true,
-   "extra": "{\"c\":4317.314433090691,\"sh\":777,\"st\":2,\"rt\":4}"
+   "extra": "{\"c\":4316.645605918989,\"sh\":777,\"st\":2,\"rt\":3}"
   },
   {
    "k": "info",
@@ -62,19 +62,19 @@
   {
    "k": "info",
    "name": "v4 fixture",
-   "extra": "route.tier(old)=2 units=[3,3,3,0,0,0] coins=4318.987993046741"
+   "extra": "route.tier(old)=-1 units=[3,3,0,0,0,0] coins=4319.325602217545"
   },
   {
    "k": "check",
-   "name": "v4→v5: state loads as v5 w/ tiers mapped (st2, rt4, 9 route slots, sys present)",
+   "name": "v4→v7: state loads as v7 (st2, 8 route slots, sys present; 路线细节见 mig6.mjs)",
    "ok": true,
-   "extra": "{\"v\":5,\"st\":2,\"rt\":4,\"ru\":9,\"ru4\":3,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":1}"
+   "extra": "{\"v\":7,\"st\":2,\"rt\":0,\"ru\":8,\"ru4\":0,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":-1}"
   },
   {
    "k": "check",
    "name": "v4→v5: branches preserved",
    "ok": true,
-   "extra": "{\"v\":5,\"st\":2,\"rt\":4,\"ru\":9,\"ru4\":3,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":1}"
+   "extra": "{\"v\":7,\"st\":2,\"rt\":0,\"ru\":8,\"ru4\":0,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":-1}"
   },
   {
    "k": "check",
@@ -130,30 +130,30 @@
   {
    "k": "info",
    "name": "offline 1h",
-   "extra": "{\"before\":{\"coins\":499.9167173448169,\"delivered\":123456,\"last\":1795506825653,\"play\":1.6832999999999982,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":1976340.3421341707,\"delivered\":2121908.3983,\"play\":3604.4796000000065,\"pests\":2,\"orders\":1,\"rot\":6,\"lastSeenDelta\":3},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+   "extra": "{\"before\":{\"coins\":499.90012494587137,\"delivered\":123456,\"last\":1795528203456,\"play\":1.6997999999999989,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":5318883.753041663,\"delivered\":5503103.046499999,\"play\":3604.5337000000063,\"pests\":2,\"orders\":1,\"rot\":6,\"lastSeenDelta\":4},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
   },
   {
    "k": "info",
    "name": "offline 1h texts",
-   "extra": "[\"12 DIV: 每秒送达 555 · 每秒收入 555\",\"12 #text: 每秒送达 555 · 每秒收入 555\",\"1012 panel-bub: 任×10\"]"
+   "extra": "[\"24 DIV: 每秒送达 1494 · 每秒收入 1494\",\"24 #text: 每秒送达 1494 · 每秒收入 1494\",\"1025 panel-bub: 一小篮\"]"
   },
   {
    "k": "check",
    "name": "offline 1h: delivered grew",
    "ok": true,
-   "extra": "Δ=1998452"
+   "extra": "Δ=5379647"
   },
   {
    "k": "check",
    "name": "offline 1h: coins not NaN and finite",
    "ok": true,
-   "extra": "1976340.3421341707"
+   "extra": "5318883.753041663"
   },
   {
    "k": "check",
    "name": "offline 1h: lastSeen refreshed",
    "ok": true,
-   "extra": "3"
+   "extra": "4"
   },
   {
    "k": "check",
@@ -170,30 +170,30 @@
   {
    "k": "info",
    "name": "offline 1d",
-   "extra": "{\"before\":{\"coins\":499.8999250458463,\"delivered\":123456,\"last\":1795506831029,\"play\":1.6832999999999985,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":15790906.776659403,\"delivered\":16107743.9351,\"play\":28804.149799999966,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":15},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+   "extra": "{\"before\":{\"coins\":499.9167173448169,\"delivered\":123456,\"last\":1795528209012,\"play\":1.699899999999998,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":42503064.71569424,\"delivered\":43151428.9837,\"play\":28804.183099999962,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":2},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
   },
   {
    "k": "info",
    "name": "offline 1d texts",
-   "extra": "[\"12 DIV: 每秒送达 555 · 每秒收入 555\",\"12 #text: 每秒送达 555 · 每秒收入 555\",\"1012 panel-bub: ×3\"]"
+   "extra": "[\"40 DIV: 每秒送达 1494 · 每秒收入 1494\",\"40 #text: 每秒送达 1494 · 每秒收入 1494\",\"1042 panel-bub: 任一小篮\"]"
   },
   {
    "k": "check",
    "name": "offline 1d: delivered grew",
    "ok": true,
-   "extra": "Δ=15984288"
+   "extra": "Δ=43027973"
   },
   {
    "k": "check",
    "name": "offline 1d: coins not NaN and finite",
    "ok": true,
-   "extra": "15790906.776659403"
+   "extra": "42503064.71569424"
   },
   {
    "k": "check",
    "name": "offline 1d: lastSeen refreshed",
    "ok": true,
-   "extra": "15"
+   "extra": "2"
   },
   {
    "k": "check",
@@ -210,30 +210,30 @@
   {
    "k": "info",
    "name": "offline 3d",
-   "extra": "{\"before\":{\"coins\":499.9500062494792,\"delivered\":123456,\"last\":1795506836416,\"play\":1.6999999999999984,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":15790889.892022328,\"delivered\":16107734.7,\"play\":28804.166599999968,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":16},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+   "extra": "{\"before\":{\"coins\":499.8832340989617,\"delivered\":123456,\"last\":1795528214569,\"play\":1.6831999999999985,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":42499553.23153501,\"delivered\":43151428.967,\"play\":28804.183099999962,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":10},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
   },
   {
    "k": "info",
    "name": "offline 3d texts",
-   "extra": "[\"13 DIV: 每秒送达 555 · 每秒收入 555\",\"13 #text: 每秒送达 555 · 每秒收入 555\",\"1012 panel-bub: ×5\"]"
+   "extra": "[\"22 DIV: 每秒送达 1494 · 每秒收入 1494\",\"22 #text: 每秒送达 1494 · 每秒收入 1494\",\"1022 panel-bub rush: 几个急\"]"
   },
   {
    "k": "check",
    "name": "offline 3d: delivered grew",
    "ok": true,
-   "extra": "Δ=15984279"
+   "extra": "Δ=43027973"
   },
   {
    "k": "check",
    "name": "offline 3d: coins not NaN and finite",
    "ok": true,
-   "extra": "15790889.892022328"
+   "extra": "42499553.23153501"
   },
   {
    "k": "check",
    "name": "offline 3d: lastSeen refreshed",
    "ok": true,
-   "extra": "16"
+   "extra": "10"
   },
   {
    "k": "check",

@@ -1,0 +1,117 @@
+{
+ "title": "v6misc-port",
+ "at": "2026-11-24T13:41:37.355Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "stage card src-0: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":390,\"ih\":844,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "check",
+   "name": "stage card rt-0: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":390,\"ih\":844,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "check",
+   "name": "stage card station: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":390,\"ih\":844,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "info",
+   "name": "bird hit",
+   "extra": "{\"res\":{\"found\":true,\"pos\":[380,40],\"active\":true},\"before\":{\"c\":960721506.4044511,\"stock\":169184.76960145973,\"sh\":0},\"after\":{\"c\":952267876.0979362,\"stock\":206513.23109344565,\"sh\":0},\"ft\":\"\",\"toast\":\"成就「两线三档」车和树,都长高了。\"}"
+  },
+  {
+   "k": "check",
+   "name": "bird hit: bird found on stage",
+   "ok": true,
+   "extra": "{\"found\":true,\"pos\":[380,40],\"active\":true}"
+  },
+  {
+   "k": "check",
+   "name": "bird hit: coins or stock increased",
+   "ok": true,
+   "extra": "{\"before\":{\"c\":960721506.4044511,\"stock\":169184.76960145973,\"sh\":0},\"after\":{\"c\":952267876.0979362,\"stock\":206513.23109344565,\"sh\":0},\"res\":{\"found\":true,\"pos\":[380,40],\"active\":true}}"
+  },
+  {
+   "k": "info",
+   "name": "bird miss",
+   "extra": "{\"res\":{\"found\":true,\"pos\":[170,0],\"active\":true},\"before\":{\"c\":941242796.9064522,\"stock\":255695.89910220358,\"sh\":0},\"after\":{\"c\":909759976.3675089,\"stock\":399379.0237523271,\"sh\":0},\"ft\":\"\",\"toast\":\"有只小鸟飞过来了。点它。\"}"
+  },
+  {
+   "k": "check",
+   "name": "bird miss: bird found on stage",
+   "ok": true,
+   "extra": "{\"found\":true,\"pos\":[170,0],\"active\":true}"
+  },
+  {
+   "k": "info",
+   "name": "bird miss: stock before/after",
+   "extra": "255695.89910220358 → 399379.0237523271"
+  },
+  {
+   "k": "info",
+   "name": "event newton active",
+   "extra": "true"
+  },
+  {
+   "k": "info",
+   "name": "event meteor active",
+   "extra": "true"
+  },
+  {
+   "k": "info",
+   "name": "egg taps",
+   "extra": "[{\"id\":\"newton\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":0,\"ft\":\"\"},{\"id\":\"treetop-fruit\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1711907,\"ft\":\"\"},{\"id\":\"poison-stall\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1711907,\"ft\":\"\"},{\"id\":\"summit-gold\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"xu-head-apple\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":5135721.707120299,\"ft\":\"\"},{\"id\":\"xu-throat\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"garage\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":2396670,\"ft\":\"\"},{\"id\":\"moon\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":6847635.060680389,\"ft\":\"\"},{\"id\":\"orange\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":2739051.35356009,\"ft\":\"\"},{\"id\":\"elf\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"sleigh-bell\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":4108576.765696287,\"ft\":\"\"},{\"id\":\"reindeer-nose\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"gift-top\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"}]"
+  },
+  {
+   "k": "check",
+   "name": "g.tap never throws",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "settings more click",
+   "extra": "更多:主题 / 摇一摇 / 精确数字"
+  },
+  {
+   "k": "info",
+   "name": "legacy settings contents",
+   "extra": "主题:自动|声音:关|摇一摇:关|导出存档|导入存档|重新开始|×1|×10|×60|×600|×3600|+10分|+1小时|+10亿果钱|关闭"
+  },
+  {
+   "k": "check",
+   "name": "codex sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":10,\"y\":142,\"r\":380,\"b\":702,\"iw\":390,\"ih\":844}"
+  },
+  {
+   "k": "check",
+   "name": "orders sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":10,\"y\":280.796875,\"r\":380,\"b\":563.1875,\"iw\":390,\"ih\":844}"
+  },
+  {
+   "k": "check",
+   "name": "offer sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":10,\"y\":270.703125,\"r\":380,\"b\":573.296875,\"iw\":390,\"ih\":844}"
+  },
+  {
+   "k": "info",
+   "name": "dock buttons / mailbox leftovers",
+   "extra": "{\"mail\":false,\"dockTxt\":[\"图\",\"单(hidden)\",\"献\"]}"
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  }
+ ]
+}

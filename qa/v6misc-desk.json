@@ -1,0 +1,117 @@
+{
+ "title": "v6misc-desk",
+ "at": "2026-11-24T13:42:45.006Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "stage card src-0: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":1280,\"ih\":800,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "check",
+   "name": "stage card rt-0: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":1280,\"ih\":800,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "check",
+   "name": "stage card station: fully inside viewport",
+   "ok": true,
+   "extra": "{\"iw\":1280,\"ih\":800,\"over\":[],\"ok\":true,\"n\":5}"
+  },
+  {
+   "k": "info",
+   "name": "bird hit",
+   "extra": "{\"res\":{\"found\":true,\"pos\":[0,60],\"active\":true},\"before\":{\"c\":956048905.0291898,\"stock\":189767.37353552566,\"sh\":0},\"after\":{\"c\":950066878.9184684,\"stock\":216272.0540040953,\"sh\":0},\"ft\":\"\",\"toast\":\"成就「两线三档」车和树,都长高了。\"}"
+  },
+  {
+   "k": "check",
+   "name": "bird hit: bird found on stage",
+   "ok": true,
+   "extra": "{\"found\":true,\"pos\":[0,60],\"active\":true}"
+  },
+  {
+   "k": "check",
+   "name": "bird hit: coins or stock increased",
+   "ok": true,
+   "extra": "{\"before\":{\"c\":956048905.0291898,\"stock\":189767.37353552566,\"sh\":0},\"after\":{\"c\":950066878.9184684,\"stock\":216272.0540040953,\"sh\":0},\"res\":{\"found\":true,\"pos\":[0,60],\"active\":true}}"
+  },
+  {
+   "k": "info",
+   "name": "bird miss",
+   "extra": "{\"res\":{\"found\":false},\"before\":{\"c\":937827296.9753551,\"stock\":271043.35010678734,\"sh\":0},\"after\":{\"c\":879991717.2799982,\"stock\":539954.1528552064,\"sh\":0},\"ft\":\"\",\"toast\":\"小鸟在树梢打量你。\"}"
+  },
+  {
+   "k": "check",
+   "name": "bird miss: bird found on stage",
+   "ok": false,
+   "extra": "{\"found\":false}"
+  },
+  {
+   "k": "info",
+   "name": "bird miss: stock before/after",
+   "extra": "271043.35010678734 → 539954.1528552064"
+  },
+  {
+   "k": "info",
+   "name": "event newton active",
+   "extra": "true"
+  },
+  {
+   "k": "info",
+   "name": "event meteor active",
+   "extra": "true"
+  },
+  {
+   "k": "info",
+   "name": "egg taps",
+   "extra": "[{\"id\":\"newton\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":0,\"ft\":\"\"},{\"id\":\"treetop-fruit\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1711907,\"ft\":\"\"},{\"id\":\"poison-stall\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1711907,\"ft\":\"\"},{\"id\":\"summit-gold\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1369531,\"ft\":\"\"},{\"id\":\"xu-head-apple\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":5135721.707120299,\"ft\":\"\"},{\"id\":\"xu-throat\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"garage\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":2396670,\"ft\":\"\"},{\"id\":\"moon\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":6847629.060680389,\"ft\":\"\"},{\"id\":\"orange\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":2739051.35356009,\"ft\":\"\"},{\"id\":\"elf\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"sleigh-bell\",\"out\":\"ok\",\"newEgg\":true,\"dCoins\":4108576.765696287,\"ft\":\"\"},{\"id\":\"reindeer-nose\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"},{\"id\":\"gift-top\",\"out\":\"ok\",\"newEgg\":false,\"dCoins\":1369525,\"ft\":\"\"}]"
+  },
+  {
+   "k": "check",
+   "name": "g.tap never throws",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "settings more click",
+   "extra": "更多:主题 / 摇一摇 / 精确数字"
+  },
+  {
+   "k": "info",
+   "name": "legacy settings contents",
+   "extra": "主题:自动|声音:关|摇一摇:关|导出存档|导入存档|重新开始|×1|×10|×60|×600|×3600|+10分|+1小时|+10亿果钱|关闭"
+  },
+  {
+   "k": "check",
+   "name": "codex sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":300,\"y\":120,\"r\":980,\"b\":680,\"iw\":1280,\"ih\":800}"
+  },
+  {
+   "k": "check",
+   "name": "orders sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":380,\"y\":275.796875,\"r\":900,\"b\":524.1875,\"iw\":1280,\"ih\":800}"
+  },
+  {
+   "k": "check",
+   "name": "offer sheet inside viewport",
+   "ok": true,
+   "extra": "{\"x\":410,\"y\":248.703125,\"r\":870,\"b\":551.296875,\"iw\":1280,\"ih\":800}"
+  },
+  {
+   "k": "info",
+   "name": "dock buttons / mailbox leftovers",
+   "extra": "{\"mail\":false,\"dockTxt\":[\"图\",\"单(hidden)\",\"献\"]}"
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  }
+ ]
+}

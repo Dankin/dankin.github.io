@@ -7,7 +7,7 @@ const { srv, base } = await L.serve();
 const b = await L.launchBrowser({ base });
 await b.view(W, H);
 await b.open('?debug=1', { wait: 1500 });
-const ERA_TIERS = [[0, 0], [1, 2], [2, 4], [3, 5], [4, 7], [5, 8]];
+const ERA_TIERS = [[0, 0], [1, 2], [2, 3], [3, 4], [4, 6], [4, 7]];
 await b.G(`(()=>{const [a,r]=${JSON.stringify(ERA_TIERS[2])};const s=g.state;s.source.tier=a;s.route.tier=r;for(let i=0;i<=a;i++)s.source.units[i]=3;for(let i=0;i<=r;i++)s.route.units[i]=3;s.coins=500;s.playSec=500;s.sys.orders.nextAt=s.playSec;for(const k of ['red','green','granny','fuji','golden'])s.sys.bag[k]=0})()`);
 await L.sleep(1500);
 await b.G('(()=>g.panels().closeAll())()');

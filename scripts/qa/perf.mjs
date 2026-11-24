@@ -12,7 +12,7 @@ const R = L.makeReporter(`perf-${vname}-x${CPU}-dpr${DPR}`);
 const { srv, base } = await L.serve();
 const b = await L.launchBrowser({ base });
 await b.view(W, H, { dpr: DPR, mobile: W < 600 || vname === 'land' });
-const ERA_TIERS = [[0, 0], [1, 2], [2, 4], [3, 5], [4, 7], [5, 8]];
+const ERA_TIERS = [[0, 0], [1, 2], [2, 3], [3, 4], [4, 6], [4, 7]];
 const result = {};
 const pct = (a, p) => a.slice().sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor((a.length * p) / 100))];
 
