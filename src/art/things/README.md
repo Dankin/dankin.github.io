@@ -44,3 +44,24 @@ drawLaoXu(ctx, x, y, s, { lv: 1..8, state, t, seed, dir, p?, item?, tree? })
 - 道具(均可独立使用,(x,y)=底部中心):`drawStool({open})` 小马扎 · `drawBench` 小板凳 · `drawBottle({tilt,fizz,grip})` 快乐水瓶(手写字+一点红)· `drawTeaCup` · `drawRadio({on})` · `drawRecliner({layer})` · `drawApprentice({pose:'shake'|'idle'|'cheer'})` 小徒弟。
 - `drawCharacter('xu', …)` 已委托给 drawLaoXu(缩放 0.62 与其他角色同高;pose idle/shake/catch/cheer/hit → idle/shake/help/cheer/wake,也可直接传 `state`)。其余 11 个角色头部整体放大到 hs=1.16(同一头身比)。
 - 预览:`preview-art-things.html?sec=laoxu`。
+
+## v6 新增(art-things)
+
+全部由 `src/art/things/index.ts` 导出;签名 `(ctx,x,y,s,o?)`,(x,y)=底部中心(UI 卡/面板除外=左上角),确定性,预览 `preview-art-things.html?sec=<id>`。
+
+### 运输 8 档 × 2 分支(transports8.ts / transport-v6.ts)
+- `drawTransport8(ctx, tier 0..7, branch 0|1, x, y, s, o)`;`TRANSPORT8_ORDER/NAMES/BRANCH_NAMES/W/FLIES/SPEED/CAP`。
+- 分支 0 = 经典造型,分支 1 = 搞笑造型(同尺寸量级,换车身/司机):篮子(背篓狗)、挑扁担(驴驮篓)、小推车(三轮小孩)、卡车(大板车壮汉)、货船(小黄鸭船)、直升机(竹蜻蜓小孩)、飞机(大纸飞机)、传送门(魔术帽)。
+- 飞行档(`TRANSPORT8_FLIES`)用 `o.fly` 0..1 控制离地高度。
+- 一趟 4 等长阶段:`runPhase(u 0..1, flies)` → `{phase 0..3,name,k,pos,dir,o}`;`o` 直接喂 drawTransport8(装货 load 0→1 / 行驶 move=1 匀速 / 卸货 unload 0→1 / 返回空车反向)。苹果数随 load/unload 可见变化。
+- 车队:`drawFleet(ctx,tier,y,s,{n,cycle,x0,x1,branch,t,backLane})`:相位等间隔,最多画 4 辆,n>4 在 x0 侧标 "×N"。返回车道下移 backLane(默认 4)。
+### 圣诞老人收货站 `drawSantaDepot(ctx,x,y,s,{level 0..1,receive,takeoff,sleigh,t})`(depot.ts)
+木屋+传送带+小精灵 `drawElf` 递包裹,level=礼物堆高度(最多 10 盒),takeoff 0..1 雪橇升空远去(末档)。
+### 鸟 `drawBird(ctx,x,y,s,{state:'perch'|'fly'|'takeoff'|'land'|'hit',kind:'sparrow'|'magpie'|'dove',p,t,dir})`(bird.ts)
+翅膀扇动周期+身体起伏;`birdPath/birdFlight(u,x0,y0,x1,y1,arc)` 给弧线轨迹+朝向;`drawFeathers(ctx,x,y,p)` 点中掉羽毛。
+### 彩蛋角色 `drawCharacterEgg(ctx,kind,x,y,s,{p 0..1,t,seed,dir})`(eggs.ts)
+被点中 1~2 秒专属动作(时长 `EGG_DURATION[kind]`,台词 `EGG_LINES[kind]`);牛顿灯泡、圣诞老人掏礼物等。
+### 老徐新站位 `drawLaoXuAt(ctx,'ground'|'treehouse'|'basket'|'top',x,y,s,o)`(laoxu-tree.ts)
+自带前景件(树屋栏杆+灯笼/吊篮前沿+摇摆/树顶彩灯串+叶台),o 同 drawLaoXu(`state` 建议 watch/cheer/clap/idle,别用 shake)。锚点由 art-nature 的 `treeAnchors(tier)`(待提供,{treehouse,basket,top}→{x,y} 相对树根)给出,s 不要缩到 <0.7。
+### 新阶段说明卡 `drawStageCard(ctx,x,y,w,h,{title,sub,lines,thumb(g,w,h),p,t,isNew,seed})`(stagecard.ts)
+(x,y)=左上角;返回缩略图槽 [x,y,w,h];p 0..1 弹入(约 0.35s,之后停留 ~1s);thumb 回调已 clip 到槽内。

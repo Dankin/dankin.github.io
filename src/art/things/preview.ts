@@ -11,6 +11,7 @@ import { drawSantaDepot } from './depot.ts';
 import { drawBird, birdFlight, BIRD_STATES, BIRD_KINDS } from './bird.ts';
 import { drawCharacterEgg } from './eggs.ts';
 import { drawLaoXuAt, LAOXU_SPOTS, LAOXU_SPOT_NAMES } from './laoxu-tree.ts';
+import { drawStageCard } from './stagecard.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -348,6 +349,26 @@ addSection({
       c.fillText(LAOXU_SPOT_NAMES[sp], 100 + i * 195, 12);
       sts.forEach((st, j) => drawLaoXuAt(c, sp, 100 + i * 195 - 0, 130 + j * 100 - (sp === 'ground' ? 0 : 0), 1, { ...o, t, state: st, lv: 4, seed: 2 }));
     });
+  },
+});
+
+addSection({
+  id: 'stagecard',
+  title: '新阶段说明卡(木框羊皮纸缎带 + 缩略图槽 + NEW);p=弹入',
+  w: 760,
+  h: 300,
+  draw(c, t, o) {
+    c.fillStyle = '#8fb892';
+    c.fillRect(0, 0, 760, 300);
+    const defs = [
+      { title: '巨树', sub: '第 3 档 · 软梯与树屋', lines: ['老徐搬进了树屋', '摇一摇,苹果更多'] },
+      { title: '双轮板车', sub: '运输 · 第 4 档', lines: ['壮汉拉着走', '一趟能拉十几个'] },
+    ];
+    defs.forEach((d, i) => {
+      const x = 20 + i * 370, y = 40;
+      drawStageCard(c, x, y, 340, 130, { ...d, t, seed: 3 + i, thumb: (g, w, h) => { i ? drawTransport8(g, 3, 1, w / 2, h - 6, 0.6, { t, load: 1 }) : drawApple(g, w / 2, h - 14, 14, { leaf: true }); } });
+    });
+    drawStageCard(c, 20, 190, 340, 100, { title: '新阶段', lines: ['弹入中 p=' + ((t * 0.6) % 1).toFixed(2)], t, p: (t * 0.6) % 1, isNew: true });
   },
 });
 

@@ -16,3 +16,4 @@ export * from './depot.ts';
 export * from './bird.ts';
 export * from './eggs.ts';
 export * from './laoxu-tree.ts';
+export * from './stagecard.ts';
