@@ -1,0 +1,78 @@
+{
+ "title": "perf-land-x4-dpr2",
+ "at": "2026-11-24T07:56:21.990Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "era0 ×4: avg frame ≤ 16.7ms",
+   "ok": false,
+   "extra": "avg=16.75 p95=16.7 p99=16.8 max=66.6 fps=59.7 longtasks=1(max 74ms)"
+  },
+  {
+   "k": "info",
+   "name": "era0 top self-time",
+   "extra": "(idle) :0 83.5% | (program) :0 8.1% | text ?debug=1&speed=1:2512 1.8% | drawImage :0 1.0% | (garbage collector) :0 0.7% | AudioContext :0 0.7% | stroke :0 0.4% | save :0 0.3% | fill :0 0.2%"
+  },
+  {
+   "k": "check",
+   "name": "era1 ×4: avg frame ≤ 16.7ms",
+   "ok": true,
+   "extra": "avg=16.67 p95=16.7 p99=16.8 max=16.8 fps=60 longtasks=0(max 0ms)"
+  },
+  {
+   "k": "info",
+   "name": "era1 top self-time",
+   "extra": "(idle) :0 81.6% | (program) :0 9.5% | text ?debug=1&speed=1:2512 2.1% | drawImage :0 0.8% | (garbage collector) :0 0.5% | stroke :0 0.4% | ell ?debug=1&speed=1:6533 0.4% | fill :0 0.3% | save :0 0.2%"
+  },
+  {
+   "k": "check",
+   "name": "era2 ×4: avg frame ≤ 16.7ms",
+   "ok": true,
+   "extra": "avg=16.67 p95=16.7 p99=16.8 max=16.8 fps=60 longtasks=0(max 0ms)"
+  },
+  {
+   "k": "info",
+   "name": "era2 top self-time",
+   "extra": "(idle) :0 82.9% | (program) :0 8.6% | text ?debug=1&speed=1:2512 1.6% | drawImage :0 0.7% | stroke :0 0.6% | ell ?debug=1&speed=1:6533 0.4% | (garbage collector) :0 0.4% | fill :0 0.4% | save :0 0.2%"
+  },
+  {
+   "k": "check",
+   "name": "era3 ×4: avg frame ≤ 16.7ms",
+   "ok": true,
+   "extra": "avg=16.67 p95=16.7 p99=16.8 max=16.8 fps=60 longtasks=0(max 0ms)"
+  },
+  {
+   "k": "info",
+   "name": "era3 top self-time",
+   "extra": "(idle) :0 81.6% | (program) :0 9.7% | text ?debug=1&speed=1:2512 1.6% | drawImage :0 0.9% | (garbage collector) :0 0.5% | stroke :0 0.4% | fill :0 0.4% | save :0 0.3% | (anon) ?debug=1&speed=1:7079 0.3%"
+  },
+  {
+   "k": "check",
+   "name": "era4 ×4: avg frame ≤ 16.7ms",
+   "ok": false,
+   "extra": "avg=16.81 p95=16.7 p99=16.8 max=100.1 fps=59.5 longtasks=0(max 0ms)"
+  },
+  {
+   "k": "info",
+   "name": "era4 top self-time",
+   "extra": "(idle) :0 81.0% | (program) :0 9.8% | text ?debug=1&speed=1:2512 1.5% | drawImage :0 1.2% | ell ?debug=1&speed=1:6533 0.6% | stroke :0 0.6% | (garbage collector) :0 0.5% | save :0 0.4% | bake$1 ?debug=1&speed=1:3679 0.3%"
+  },
+  {
+   "k": "check",
+   "name": "era5 ×4: avg frame ≤ 16.7ms",
+   "ok": true,
+   "extra": "avg=16.67 p95=16.8 p99=16.8 max=16.8 fps=60 longtasks=0(max 0ms)"
+  },
+  {
+   "k": "info",
+   "name": "era5 top self-time",
+   "extra": "(idle) :0 81.4% | (program) :0 9.5% | text ?debug=1&speed=1:2512 1.7% | drawImage :0 1.1% | (garbage collector) :0 0.5% | save :0 0.4% | stroke :0 0.4% | ell ?debug=1&speed=1:6533 0.3% | (anon) ?debug=1&speed=1:7424 0.3%"
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  }
+ ]
+}

@@ -1,0 +1,463 @@
+{
+ "title": "ftue-port",
+ "at": "2026-11-24T07:28:18.134Z",
+ "rows": [
+  {
+   "k": "info",
+   "name": "title/pages",
+   "extra": "Shake the Apple"
+  },
+  {
+   "k": "info",
+   "name": "first purchase at s",
+   "extra": 4
+  },
+  {
+   "k": "info",
+   "name": "branch picked at s",
+   "extra": 40
+  },
+  {
+   "k": "info",
+   "name": "first tier-up at s",
+   "extra": 40
+  },
+  {
+   "k": "info",
+   "name": "branch picked at s",
+   "extra": 87
+  },
+  {
+   "k": "info",
+   "name": "final",
+   "extra": "{\"coins\":391.5817686262704,\"spent\":37843,\"delivered\":14482.125,\"shakes\":872,\"st\":1,\"rt\":1,\"play\":151.32726800001922}"
+  },
+  {
+   "k": "info",
+   "name": "[0s toast]",
+   "extra": "一天一苹果:每天一个,医生失业。"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,够"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,够你"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,够你摇"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,够你摇的"
+  },
+  {
+   "k": "info",
+   "name": "[1s narr]",
+   "extra": "树不大,够你摇的。"
+  },
+  {
+   "k": "info",
+   "name": "[6s toast]",
+   "extra": "成就「第一摇」树抖了一下,像在说\"好吧\"。"
+  },
+  {
+   "k": "info",
+   "name": "[11s toast]",
+   "extra": "成就「连摇 30」树请求暂停。驳回。"
+  },
+  {
+   "k": "info",
+   "name": "[17s toast]",
+   "extra": "手上的苹果还差 10,约 4秒。"
+  },
+  {
+   "k": "info",
+   "name": "[22s toast]",
+   "extra": "手上的苹果还差 14,约 3秒。"
+  },
+  {
+   "k": "info",
+   "name": "[27s hl]",
+   "extra": "handBar"
+  },
+  {
+   "k": "info",
+   "name": "[27s narr]",
+   "extra": "送"
+  },
+  {
+   "k": "info",
+   "name": "[27s narr]",
+   "extra": "送出"
+  },
+  {
+   "k": "info",
+   "name": "[27s narr]",
+   "extra": "送出才"
+  },
+  {
+   "k": "info",
+   "name": "[27s narr]",
+   "extra": "送出才算"
+  },
+  {
+   "k": "info",
+   "name": "[28s narr]",
+   "extra": "送出才算数"
+  },
+  {
+   "k": "info",
+   "name": "[28s narr]",
+   "extra": "送出才算数。"
+  },
+  {
+   "k": "info",
+   "name": "[28s toast]",
+   "extra": "生产线一棵树可以「大扩建」了,点那张卡。"
+  },
+  {
+   "k": "info",
+   "name": "[33s toast]",
+   "extra": "运输线篮子可以「大扩建」了,点那张卡。"
+  },
+  {
+   "k": "info",
+   "name": "[39s toast]",
+   "extra": "手上的苹果还差 76,约 3秒。"
+  },
+  {
+   "k": "info",
+   "name": "[44s toast]",
+   "extra": "成就「升了第一档」一档一档,也是路。"
+  },
+  {
+   "k": "info",
+   "name": "[50s toast]",
+   "extra": "果园开张了。二选一,选哪边都行。"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出的"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出的不"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出的不会"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出的不会少"
+  },
+  {
+   "k": "info",
+   "name": "[50s narr]",
+   "extra": "花的是仓库,送出的不会少。"
+  },
+  {
+   "k": "info",
+   "name": "[55s toast]",
+   "extra": "篮子长出了两个轮子。"
+  },
+  {
+   "k": "info",
+   "name": "[61s toast]",
+   "extra": "运输线挑扁担工可以「加固」了,点那张卡。"
+  },
+  {
+   "k": "info",
+   "name": "[67s toast]",
+   "extra": "空槽。放一个道具进去,什么都不做就是浪费。"
+  },
+  {
+   "k": "info",
+   "name": "[73s toast]",
+   "extra": "伊甸园的蛇:蛇说它只是路过。"
+  },
+  {
+   "k": "info",
+   "name": "[88s toast]",
+   "extra": "又长大了一圈。树表示不太知情。"
+  },
+  {
+   "k": "info",
+   "name": "[92s toast]",
+   "extra": "手上的苹果还差 1717,约 12秒。"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一个"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一个小"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一个小秘"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一个小秘密"
+  },
+  {
+   "k": "info",
+   "name": "[95s narr]",
+   "extra": "据报:有人发现了一个小秘密。"
+  },
+  {
+   "k": "info",
+   "name": "[96s hl]",
+   "extra": "gate0"
+  },
+  {
+   "k": "info",
+   "name": "[96s toast]",
+   "extra": "有只小鸟飞过来了。点它。"
+  },
+  {
+   "k": "info",
+   "name": "[100s toast]",
+   "extra": "牛顿在树下坐下了,假发有点歪。"
+  },
+  {
+   "k": "info",
+   "name": "[104s toast]",
+   "extra": "这个槽可以放道具。"
+  },
+  {
+   "k": "info",
+   "name": "[108s toast]",
+   "extra": "运输线挑扁担工可以「扩建」了,点那张卡。"
+  },
+  {
+   "k": "info",
+   "name": "[112s toast]",
+   "extra": "苹果堆在场里了。加几辆车吧。"
+  },
+  {
+   "k": "info",
+   "name": "[120s narr]",
+   "extra": "树"
+  },
+  {
+   "k": "info",
+   "name": "[120s narr]",
+   "extra": "树下"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他只"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他只是"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他只是路"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他只是路过"
+  },
+  {
+   "k": "info",
+   "name": "[121s narr]",
+   "extra": "树下多了个人。他说他只是路过。"
+  },
+  {
+   "k": "info",
+   "name": "[128s toast]",
+   "extra": "生产线小果园可以「加固」了,点那张卡。"
+  },
+  {
+   "k": "info",
+   "name": "[150s toast]",
+   "extra": "一颗流星划过。许愿来不及了,它已经在往下掉苹果。"
+  },
+  {
+   "k": "check",
+   "name": "first purchase within 60s",
+   "ok": true,
+   "extra": "4"
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "warnings",
+   "extra": "[]"
+  }
+ ]
+}

@@ -1,0 +1,262 @@
+{
+ "title": "saves-port",
+ "at": "2026-11-24T07:54:00.012Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "settings: export button clicked",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "export: textarea filled with base64",
+   "ok": true,
+   "extra": "len=2044"
+  },
+  {
+   "k": "info",
+   "name": "export message",
+   "extra": "存档在上面,手动复制。存一份,换个设备也能接着摇。"
+  },
+  {
+   "k": "check",
+   "name": "import: confirm row appears",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "import: state restored (shakes=777, tiers kept)",
+   "ok": true,
+   "extra": "{\"c\":4317.985380623576,\"sh\":777,\"st\":2,\"rt\":4}"
+  },
+  {
+   "k": "info",
+   "name": "import message",
+   "extra": "读到了。接着摇。"
+  },
+  {
+   "k": "check",
+   "name": "import truncated text → rejected, state untouched",
+   "ok": true,
+   "extra": "这个文件看不懂。树也看不懂。"
+  },
+  {
+   "k": "check",
+   "name": "import garbage → rejected",
+   "ok": true,
+   "extra": "这个文件看不懂。树也看不懂。"
+  },
+  {
+   "k": "check",
+   "name": "import with surrounding whitespace OK",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "reset confirm row",
+   "extra": "真的要重来吗?重来算了"
+  },
+  {
+   "k": "info",
+   "name": "v4 fixture",
+   "extra": "route.tier(old)=2 units=[3,3,3,0,0,0] coins=4319.323592555245"
+  },
+  {
+   "k": "check",
+   "name": "v4→v5: state loads as v5 w/ tiers mapped (st2, rt4, 9 route slots, sys present)",
+   "ok": true,
+   "extra": "{\"v\":5,\"st\":2,\"rt\":4,\"ru\":9,\"ru4\":3,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":1}"
+  },
+  {
+   "k": "check",
+   "name": "v4→v5: branches preserved",
+   "ok": true,
+   "extra": "{\"v\":5,\"st\":2,\"rt\":4,\"ru\":9,\"ru4\":3,\"sys\":\"object\",\"shakes\":777,\"b1\":1,\"rb4\":1}"
+  },
+  {
+   "k": "check",
+   "name": "v4→v5: .v4.bak written",
+   "ok": true,
+   "extra": "[\"shake-the-apple.save.v4.bak\",\"__probe\",\"sta.audio\",\"sta.ftue\",\"shake-the-apple.save\",\"sta.panels\"]"
+  },
+  {
+   "k": "info",
+   "name": "after-migration stored version",
+   "extra": "4"
+  },
+  {
+   "k": "check",
+   "name": "corrupt main (truncated) → recovered from .bak",
+   "ok": true,
+   "extra": "{\"sh\":31337,\"st\":1}"
+  },
+  {
+   "k": "info",
+   "name": "toast after bak recovery",
+   "extra": "主存档损坏,已从备份恢复。"
+  },
+  {
+   "k": "check",
+   "name": "checksum mismatch → falls back (not 9xxx shakes)",
+   "ok": true,
+   "extra": "31337"
+  },
+  {
+   "k": "check",
+   "name": "both corrupt → new game, no crash",
+   "ok": true,
+   "extra": "{\"c\":10,\"sh\":0,\"st\":0}"
+  },
+  {
+   "k": "info",
+   "name": "newer-version toast",
+   "extra": "存档来自更新的版本,本页只读,不会覆盖存档。"
+  },
+  {
+   "k": "check",
+   "name": "newer save is not overwritten",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "newer save: game still runs (no throw)",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "offline 1h",
+   "extra": "{\"before\":{\"coins\":499.90012494587137,\"delivered\":123456,\"last\":1795506825809,\"play\":1.683199999999999,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":1976340.8190828194,\"delivered\":2121908.8978,\"play\":3604.480500000005,\"pests\":2,\"orders\":1,\"rot\":6,\"lastSeenDelta\":2},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+  },
+  {
+   "k": "info",
+   "name": "offline 1h texts",
+   "extra": "[\"12 DIV: 每秒送达 555 · 每秒收入 555\",\"12 #text: 每秒送达 555 · 每秒收入 555\",\"1012 panel-bub: 任×8\"]"
+  },
+  {
+   "k": "check",
+   "name": "offline 1h: delivered grew",
+   "ok": true,
+   "extra": "Δ=1998453"
+  },
+  {
+   "k": "check",
+   "name": "offline 1h: coins not NaN and finite",
+   "ok": true,
+   "extra": "1976340.8190828194"
+  },
+  {
+   "k": "check",
+   "name": "offline 1h: lastSeen refreshed",
+   "ok": true,
+   "extra": "2"
+  },
+  {
+   "k": "check",
+   "name": "offline 1h: pests/orders capped sanely (≤6/≤6)",
+   "ok": true,
+   "extra": "2/1"
+  },
+  {
+   "k": "check",
+   "name": "offline 1h: closeAll leaves no veil",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "offline 1d",
+   "extra": "{\"before\":{\"coins\":499.91661738648327,\"delivered\":123456,\"last\":1795506831181,\"play\":1.6832999999999982,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":15788624.47026371,\"delivered\":16107734.6833,\"play\":28804.178899999963,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":7},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+  },
+  {
+   "k": "info",
+   "name": "offline 1d texts",
+   "extra": "[\"11 DIV: 每秒送达 555 · 每秒收入 555\",\"11 #text: 每秒送达 555 · 每秒收入 555\",\"1011 panel-bub: ×3\"]"
+  },
+  {
+   "k": "check",
+   "name": "offline 1d: delivered grew",
+   "ok": true,
+   "extra": "Δ=15984279"
+  },
+  {
+   "k": "check",
+   "name": "offline 1d: coins not NaN and finite",
+   "ok": true,
+   "extra": "15788624.47026371"
+  },
+  {
+   "k": "check",
+   "name": "offline 1d: lastSeen refreshed",
+   "ok": true,
+   "extra": "7"
+  },
+  {
+   "k": "check",
+   "name": "offline 1d: pests/orders capped sanely (≤6/≤6)",
+   "ok": true,
+   "extra": "2/1"
+  },
+  {
+   "k": "check",
+   "name": "offline 1d: closeAll leaves no veil",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "offline 3d",
+   "extra": "{\"before\":{\"coins\":499.8833340406038,\"delivered\":123456,\"last\":1795506836554,\"play\":1.6831999999999985,\"pests\":0,\"orders\":0},\"aft\":{\"coins\":15789609.933512228,\"delivered\":16107743.8796,\"play\":28804.16629999996,\"pests\":2,\"orders\":1,\"rot\":12,\"lastSeenDelta\":14},\"toasts\":\"成就「第一摇」树抖了一下,像在说\\\"好吧\\\"。\",\"modal\":false,\"veil\":[]}"
+  },
+  {
+   "k": "info",
+   "name": "offline 3d texts",
+   "extra": "[\"13 DIV: 每秒送达 555 · 每秒收入 555\",\"13 #text: 每秒送达 555 · 每秒收入 555\",\"1013 panel-bub rush: 任×8急\"]"
+  },
+  {
+   "k": "check",
+   "name": "offline 3d: delivered grew",
+   "ok": true,
+   "extra": "Δ=15984288"
+  },
+  {
+   "k": "check",
+   "name": "offline 3d: coins not NaN and finite",
+   "ok": true,
+   "extra": "15789609.933512228"
+  },
+  {
+   "k": "check",
+   "name": "offline 3d: lastSeen refreshed",
+   "ok": true,
+   "extra": "14"
+  },
+  {
+   "k": "check",
+   "name": "offline 3d: pests/orders capped sanely (≤6/≤6)",
+   "ok": true,
+   "extra": "2/1"
+  },
+  {
+   "k": "check",
+   "name": "offline 3d: closeAll leaves no veil",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "warnings",
+   "extra": "[]"
+  }
+ ]
+}

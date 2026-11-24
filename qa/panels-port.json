@@ -1,0 +1,464 @@
+{
+ "title": "panels-port",
+ "at": "2026-11-24T07:47:45.427Z",
+ "rows": [
+  {
+   "k": "info",
+   "name": "dock buttons",
+   "extra": "[[\"图鉴\",\"图2\",[338,150,44,44]],[\"信箱\",\"信0\",[338,202,44,44]],[\"订单\",\"单2\",[338,254,44,44]],[\"献果\",\"献0\",[0,0,0,0]]]"
+  },
+  {
+   "k": "check",
+   "name": "codex: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-codex\",\"x\":10,\"y\":142,\"w\":370,\"h\":560,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"图鉴 / ✕ / 品种 / 0/15 / 彩蛋 / 1/44 / 成就 / 1/26 / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / 一个都没有。先摇几下。 / 已收集 0/15 / \"}"
+  },
+  {
+   "k": "info",
+   "name": "codex bbox",
+   "extra": "{\"id\":\"panel-codex\",\"x\":10,\"y\":142,\"w\":370,\"h\":560,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "codex: fully inside viewport",
+   "ok": true,
+   "extra": "10,142 370x560 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "codex text",
+   "extra": "图鉴 / ✕ / 品种 / 0/15 / 彩蛋 / 1/44 / 成就 / 1/26 / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / ??? / 一个都没有。先摇几下。 / 已收集 0/15 / "
+  },
+  {
+   "k": "check",
+   "name": "codex tab 品种0/15 in viewport",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "codex tab 彩蛋1/44 in viewport",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "codex tab 成就1/26 in viewport",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "codex: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "codex: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "codex: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "codex: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "codex: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "mailbox: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-mailbox\",\"x\":10,\"y\":238,\"w\":370,\"h\":366,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"信箱 / ✕ / 每到一个新时代,会有人给你寄一张明信片。已收到 1/6。 / 第 1 张 / ??? / 还没寄到 / 第 2 张 / ??? / 还没寄到 / 第 3 张 / 摇树许可证 / 督察小满(已盖章) / 第 4 张 / ??? / 还没寄到 / 第 5 张 / ??? / 还没寄到 / 第 6 张 / \"}"
+  },
+  {
+   "k": "info",
+   "name": "mailbox bbox",
+   "extra": "{\"id\":\"panel-mailbox\",\"x\":10,\"y\":238,\"w\":370,\"h\":366,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "mailbox: fully inside viewport",
+   "ok": true,
+   "extra": "10,238 370x366 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "mailbox text",
+   "extra": "信箱 / ✕ / 每到一个新时代,会有人给你寄一张明信片。已收到 1/6。 / 第 1 张 / ??? / 还没寄到 / 第 2 张 / ??? / 还没寄到 / 第 3 张 / 摇树许可证 / 督察小满(已盖章) / 第 4 张 / ??? / 还没寄到 / 第 5 张 / ??? / 还没寄到 / 第 6 张 / "
+  },
+  {
+   "k": "info",
+   "name": "mailbox: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "mailbox: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "mailbox: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "mailbox: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "mailbox: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "orders: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-orders\",\"x\":10,\"y\":264,\"w\":370,\"h\":314,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"订单 / ✕ / 珍藏篮 / ×2 / 富士红 ×5 / 奖励约 3 秒的收入 · 剩 2:16 / 差 3 / 富士红 ×4 / 奖励约 3 秒的收入 · 剩 2:17 / 差 2 / 已完成 0 单。没有惩罚,过期了顾客就走。\"}"
+  },
+  {
+   "k": "info",
+   "name": "orders bbox",
+   "extra": "{\"id\":\"panel-orders\",\"x\":10,\"y\":264,\"w\":370,\"h\":314,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "orders: fully inside viewport",
+   "ok": true,
+   "extra": "10,264 370x314 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "orders text",
+   "extra": "订单 / ✕ / 珍藏篮 / ×2 / 富士红 ×5 / 奖励约 3 秒的收入 · 剩 2:16 / 差 3 / 富士红 ×4 / 奖励约 3 秒的收入 · 剩 2:17 / 差 2 / 已完成 0 单。没有惩罚,过期了顾客就走。"
+  },
+  {
+   "k": "info",
+   "name": "orders: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "orders: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "orders: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "orders: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "orders: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "offer: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-offer\",\"x\":10,\"y\":239,\"w\":370,\"h\":365,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"献果 / ✕ / 献出一部分苹果,买东西打八五折。 / 现有 / 511 / 累计献出 0 / 25% / 50% / 100% / 献出 25% / 127 / ≈ 送出 19 个苹果 / 献出\"}"
+  },
+  {
+   "k": "info",
+   "name": "offer bbox",
+   "extra": "{\"id\":\"panel-offer\",\"x\":10,\"y\":239,\"w\":370,\"h\":365,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "offer: fully inside viewport",
+   "ok": true,
+   "extra": "10,239 370x365 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "offer text",
+   "extra": "献果 / ✕ / 献出一部分苹果,买东西打八五折。 / 现有 / 511 / 累计献出 0 / 25% / 50% / 100% / 献出 25% / 127 / ≈ 送出 19 个苹果 / 献出"
+  },
+  {
+   "k": "info",
+   "name": "offer: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "offer: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "offer: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "offer: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "offer: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "settings: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-settings\",\"x\":10,\"y\":8,\"w\":370,\"h\":828,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"设置 / ✕ / 声音 / 音乐 / 音量 / 80 / 音效 / 音量 / 100 / 旁白打字音 / 旁白条逐字出现时的小哔哔声 / 音量 / 100 / 显示与旁白 / 旁白打字机 / 一个字一个字出来;关掉就是整句出现 / 减少动效 / 少晃一点,少闪一点。 / 存档 / 导出存档 / 导入存档 / 重新开始 \"}"
+  },
+  {
+   "k": "info",
+   "name": "settings bbox",
+   "extra": "{\"id\":\"panel-settings\",\"x\":10,\"y\":8,\"w\":370,\"h\":828,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "settings: fully inside viewport",
+   "ok": true,
+   "extra": "10,8 370x828 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "settings text",
+   "extra": "设置 / ✕ / 声音 / 音乐 / 音量 / 80 / 音效 / 音量 / 100 / 旁白打字音 / 旁白条逐字出现时的小哔哔声 / 音量 / 100 / 显示与旁白 / 旁白打字机 / 一个字一个字出来;关掉就是整句出现 / 减少动效 / 少晃一点,少闪一点。 / 存档 / 导出存档 / 导入存档 / 重新开始 "
+  },
+  {
+   "k": "info",
+   "name": "settings controls",
+   "extra": "[\"BUTTON.panel-x|关闭\",\"BUTTON.panel-sw|音乐\",\"INPUT.panel-range|音乐音量\",\"BUTTON.panel-sw|音效\",\"INPUT.panel-range|音效音量\",\"BUTTON.panel-sw|旁白打字音\",\"INPUT.panel-range|旁白音量\",\"BUTTON.panel-sw on|旁白打字机\",\"BUTTON.panel-sw|减少动效\",\"TEXTAREA.panel-area|存档文本\",\"BUTTON.panel-btn|导出存档\",\"BUTTON.panel-btn|导入存档\",\"BUTTON.panel-btn ghost|重新开始\",\"BUTTON.panel-btn gold|树下的盒子\",\"BUTTON.panel-btn|更多:主题 / 摇一摇 / 精确数字\"]"
+  },
+  {
+   "k": "info",
+   "name": "settings: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "settings: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "settings: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "settings: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "settings: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "postcard: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-postcard\",\"x\":10,\"y\":257,\"w\":370,\"h\":329,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"邻居们来了 / 邻居看你摇得挺开心,把自家的树也带来了。乌鸦在篱笆上点人头。老徐搬了条凳子:我不是帮你,我是路过。凳子是他自带的。 / 16分 / 平安夜 · 摇苹果 · 邻里 · / 12.24 / NO.2 / —— / 老徐(路过) / 关上\"}"
+  },
+  {
+   "k": "info",
+   "name": "postcard bbox",
+   "extra": "{\"id\":\"panel-postcard\",\"x\":10,\"y\":257,\"w\":370,\"h\":329,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "postcard: fully inside viewport",
+   "ok": true,
+   "extra": "10,257 370x329 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "postcard text",
+   "extra": "邻居们来了 / 邻居看你摇得挺开心,把自家的树也带来了。乌鸦在篱笆上点人头。老徐搬了条凳子:我不是帮你,我是路过。凳子是他自带的。 / 16分 / 平安夜 · 摇苹果 · 邻里 · / 12.24 / NO.2 / —— / 老徐(路过) / 关上"
+  },
+  {
+   "k": "info",
+   "name": "postcard: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "postcard: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "postcard: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "postcard: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "postcard: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-gift\",\"x\":10,\"y\":235,\"w\":370,\"h\":372,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"树下多了一个盒子。 / 盒子上写着:圣诞节再拆。 / 圣诞节再拆 / 还要等 29 天 8 小时 / 关上\"}"
+  },
+  {
+   "k": "info",
+   "name": "gift-sealed bbox",
+   "extra": "{\"id\":\"panel-gift\",\"x\":10,\"y\":235,\"w\":370,\"h\":372,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: fully inside viewport",
+   "ok": true,
+   "extra": "10,235 370x372 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "gift-sealed text",
+   "extra": "树下多了一个盒子。 / 盒子上写着:圣诞节再拆。 / 圣诞节再拆 / 还要等 29 天 8 小时 / 关上"
+  },
+  {
+   "k": "info",
+   "name": "gift-sealed: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: ✕ closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-sealed: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-open: opens a sheet",
+   "ok": true,
+   "extra": "{\"id\":\"panel-gift\",\"x\":10,\"y\":252,\"w\":370,\"h\":340,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[],\"text\":\"拆开\"}"
+  },
+  {
+   "k": "info",
+   "name": "gift-open bbox",
+   "extra": "{\"id\":\"panel-gift\",\"x\":10,\"y\":252,\"w\":370,\"h\":340,\"inView\":true,\"scrolls\":false,\"over\":0,\"clipped\":[]}"
+  },
+  {
+   "k": "check",
+   "name": "gift-open: fully inside viewport",
+   "ok": true,
+   "extra": "10,252 370x340 vs 390x844"
+  },
+  {
+   "k": "info",
+   "name": "gift-open text",
+   "extra": "拆开"
+  },
+  {
+   "k": "info",
+   "name": "gift-open: game time advances while open",
+   "extra": "0.50s/0.5s"
+  },
+  {
+   "k": "check",
+   "name": "gift-open: ✕ closes",
+   "ok": false,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-open: Esc closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-open: veil click closes",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "gift-open: stage clickable after close (no stuck veil)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "narration bar",
+   "extra": "{\"cls\":\"panel-narr\",\"x\":12,\"y\":60,\"w\":366,\"h\":44,\"text\":\"树不大,够你摇的。\"}"
+  },
+  {
+   "k": "check",
+   "name": "narration long text stays in viewport",
+   "ok": true,
+   "extra": "[12,378,60,104,390,false]"
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "warnings",
+   "extra": "[]"
+  }
+ ]
+}

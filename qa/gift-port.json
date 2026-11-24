@@ -1,0 +1,191 @@
+{
+ "title": "gift-port",
+ "at": "2026-11-24T07:55:25.498Z",
+ "rows": [
+  {
+   "k": "info",
+   "name": "make-gift links",
+   "extra": "2 links, g length 165"
+  },
+  {
+   "k": "check",
+   "name": "make-gift prints 2 links",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "non-debug: __game exposed?",
+   "extra": "undefined"
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T15:59:59Z tz=Asia/Shanghai → SEALED",
+   "ok": true,
+   "extra": "open=false text=\"树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 1 秒 /  / 关上\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T16:00:00Z tz=Asia/Shanghai → OPEN",
+   "ok": true,
+   "extra": "open=true text=\"拆开\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T15:59:59Z tz=America/Los_Angeles → SEALED",
+   "ok": true,
+   "extra": "open=false text=\"树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 1 秒 /  / 关上\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T16:00:00Z tz=America/Los_Angeles → OPEN",
+   "ok": true,
+   "extra": "open=true text=\"拆开\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T15:59:59Z tz=Pacific/Kiritimati → SEALED",
+   "ok": true,
+   "extra": "open=false text=\"树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 1 秒 /  / 关上\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T16:00:00Z tz=Pacific/Kiritimati → OPEN",
+   "ok": true,
+   "extra": "open=true text=\"拆开\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T15:59:59Z tz=UTC → SEALED",
+   "ok": true,
+   "extra": "open=false text=\"树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 1 秒 /  / 关上\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T16:00:00Z tz=UTC → OPEN",
+   "ok": true,
+   "extra": "open=true text=\"拆开\""
+  },
+  {
+   "k": "check",
+   "name": "2026-12-23T15:59:59.999Z tz=Asia/Shanghai → SEALED",
+   "ok": true,
+   "extra": "open=false text=\"树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 0 秒 /  / 关上\""
+  },
+  {
+   "k": "info",
+   "name": "sealed text",
+   "extra": "树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 13 天 12 小时 /  / 关上"
+  },
+  {
+   "k": "check",
+   "name": "sealed shows countdown",
+   "ok": true,
+   "extra": "树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 13 天 12 小时 /  / 关上"
+  },
+  {
+   "k": "check",
+   "name": "sealed page does not contain plaintext",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "embed link: no password input",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "embed link decrypts to secret text",
+   "ok": true,
+   "extra": "这一个,不在 82 亿里。 /  / 树下的盒子QA测试祝福:今年的苹果很甜。 /  / ——QA /  / 平安夜快乐。 /  / 收好了 / 再看一遍"
+  },
+  {
+   "k": "check",
+   "name": "sign shown",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "info",
+   "name": "opened text",
+   "extra": "这一个,不在 82 亿里。 /  / 树下的盒子QA测试祝福:今年的苹果很甜。 /  / ——QA /  / 平安夜快乐。 /  / 收好了 / 再看一遍"
+  },
+  {
+   "k": "info",
+   "name": "after close sheet exists?",
+   "extra": "true"
+  },
+  {
+   "k": "check",
+   "name": "pass link shows password input",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "wrong password → error text, no plaintext",
+   "ok": true,
+   "extra": "盒子打不开。可能链接被截断了,请重新打开原始链接。 /  / 再试一次 / 关上"
+  },
+  {
+   "k": "check",
+   "name": "retry with right password decrypts",
+   "ok": true,
+   "extra": "这一个,不在 82 亿里。 /  / 树下的盒子QA测试祝福:今年的苹果很甜。 /  / ——QA /  / 平安夜快乐。 /  / 收好了 / 再看一遍"
+  },
+  {
+   "k": "check",
+   "name": "truncated link → decryptFail text",
+   "ok": true,
+   "extra": "盒子打不开。可能链接被截断了,请重新打开原始链接。 /  / 再试一次 / 关上"
+  },
+  {
+   "k": "check",
+   "name": "tampered ciphertext → decryptFail text",
+   "ok": true,
+   "extra": "盒子打不开。可能链接被截断了,请重新打开原始链接。 /  / 再试一次 / 关上"
+  },
+  {
+   "k": "check",
+   "name": "garbage hash → error not crash",
+   "ok": true,
+   "extra": "盒子打不开。可能链接被截断了,请重新打开原始链接。 /  / 再试一次 / 关上"
+  },
+  {
+   "k": "check",
+   "name": "debug + date=2026-12-24 → opens (UTC+8 noon)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "debug + date=2026-12-23 → sealed",
+   "ok": true,
+   "extra": "树下多了一个盒子。 /  / 盒子上写着:圣诞节再拆。 /  / 圣诞节再拆 /  / 还要等 11 小时 59 分 /  / 关上"
+  },
+  {
+   "k": "info",
+   "name": "non-debug ?date= ignored",
+   "extra": "undefined"
+  },
+  {
+   "k": "check",
+   "name": "non-debug real clock (2026-11 today) + #g= → sealed",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "warnings",
+   "extra": "[]"
+  }
+ ]
+}

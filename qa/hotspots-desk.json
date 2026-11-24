@@ -1,0 +1,134 @@
+{
+ "title": "hotspots-desk",
+ "at": "2026-11-24T07:39:29.235Z",
+ "rows": [
+  {
+   "k": "check",
+   "name": "pest hotspot appears after wave",
+   "ok": true,
+   "extra": "moon,treetop-fruit,order:1,rot,pest:2,leaf-under"
+  },
+  {
+   "k": "info",
+   "name": "pest occluded-by-HUD polls",
+   "extra": "0 {}"
+  },
+  {
+   "k": "check",
+   "name": "click pest kills",
+   "ok": true,
+   "extra": "{\"before\":{\"k\":0,\"n\":1,\"c\":983207.5837294369},\"after\":{\"k\":1,\"n\":0,\"c\":981210.4659507624}}"
+  },
+  {
+   "k": "check",
+   "name": "order spawns",
+   "ok": true,
+   "extra": "[{\"id\":2,\"want\":\"any\",\"qty\":6,\"rush\":false}]"
+  },
+  {
+   "k": "info",
+   "name": "order bubbles",
+   "extra": "[{\"id\":\"2\",\"cls\":\"panel-bub ok\",\"r\":{\"x\":8,\"y\":89.59855651855469,\"w\":104.25,\"h\":54}}]"
+  },
+  {
+   "k": "check",
+   "name": "stage tap on order claims (bag full)",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "rot hotspot present",
+   "ok": true,
+   "extra": "moon,treetop-fruit,rot,leaf-under"
+  },
+  {
+   "k": "check",
+   "name": "click rot cleans",
+   "ok": true,
+   "extra": "visual=0"
+  },
+  {
+   "k": "info",
+   "name": "era 0 hotspots",
+   "extra": "moon(2592) treetop-fruit(91) gold-basket(181) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "era 1 hotspots",
+   "extra": "moon(2592) treetop-fruit(190) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "era 2 hotspots",
+   "extra": "moon(2592) treetop-fruit(364) summit-gold(1078) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "era 3 hotspots",
+   "extra": "moon(2592) treetop-fruit(612) skyline(1848) garage(510) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "era 4 hotspots",
+   "extra": "moon(2592) treetop-fruit(792) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "era 5 hotspots",
+   "extra": "moon(2592) treetop-fruit(792) leaf-under(196)"
+  },
+  {
+   "k": "info",
+   "name": "hotspot moon (first seen era 0)",
+   "extra": "eggs+[] toast=\"成就「第一摇」树抖了一下,像在说\"好吧\"。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot treetop-fruit (first seen era 0)",
+   "extra": "eggs+[] toast=\"成就「第一摇」树抖了一下,像在说\"好吧\"。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot gold-basket (first seen era 0)",
+   "extra": "eggs+[\"pie\"] toast=\"成就「第一摇」树抖了一下,像在说\"好吧\"。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot leaf-under (first seen era 0)",
+   "extra": "eggs+[\"caterpillar\"] toast=\"成就「第一摇」树抖了一下,像在说\"好吧\"。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot summit-gold (first seen era 2)",
+   "extra": "eggs+[\"paris\"] toast=\"帕里斯的金苹果:献给最美的……三位女神吵起来了。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot skyline (first seen era 3)",
+   "extra": "eggs+[\"big-apple\"] toast=\"这是库存。苹果落地先进这里。\""
+  },
+  {
+   "k": "info",
+   "name": "hotspot garage (first seen era 3)",
+   "extra": "eggs+[\"garage\"] toast=\"这是库存。苹果落地先进这里。\""
+  },
+  {
+   "k": "check",
+   "name": "some eggs triggered by hotspot taps",
+   "ok": true,
+   "extra": ""
+  },
+  {
+   "k": "check",
+   "name": "no console errors/exceptions",
+   "ok": true,
+   "extra": "[]"
+  },
+  {
+   "k": "info",
+   "name": "warnings",
+   "extra": "[]"
+  }
+ ]
+}
