@@ -63,6 +63,8 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['garage', (c) => routeEra(c.snap) >= 2 && tapIs(c, 'garage')],
   ['turtleneck', (c) => c.snap.sourceTier >= 3 && tapIs(c, 'window-silhouette')],
   ['einstein', (c) => routeEra(c.snap) >= 5 && tapIs(c, 'moon')],
+  ['trampoline-leak', (c) => c.snap.routeTier >= 3 && tapRun(c, 5, 1.25, 'trampoline')],
+  ['pole-snap', (c) => c.snap.routeTier >= 1 && tapIs(c, 'porter') && bump(c, 'poleTaps') >= 10],
   ['core', (c) => tapIs(c, 'seed-core') && bump(c, 'coreTaps') >= 7],
   ['vinegar', (c) => eraMax(c.snap) >= 1 && tapIs(c, 'vinegar')],
   ['jam', (c) => tapIs(c, 'jam')],

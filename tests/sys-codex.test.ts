@@ -19,7 +19,7 @@ const tap = (target: string, at = 0): EggEvent => ({ t: 'tap', target: target as
 const rnd = mulberry32(1);
 
 test('egg ids line up 1:1 with writer content', () => {
-  assert.equal(EGG_COUNT, 42);
+  assert.equal(EGG_COUNT, 44);
   assert.deepEqual([...EGG_IDS].sort(), EGGS.map((e) => e.id).sort());
 });
 
@@ -145,8 +145,23 @@ test('achievements unlock once, codexProgress counts, normalizeCodex tolerates j
   discoverKind(c, 'fuji', 1);
   const p = codexProgress(c);
   assert.equal(p.kinds.found, 1);
-  assert.equal(p.all.total, 15 + 42);
+  assert.equal(p.all.total, 15 + 44);
   assert.deepEqual(normalizeCodex(null), newCodex());
   assert.equal(normalizeCodex({ lastLoginDay: 5, kinds: 3 }).lastLoginDay, '');
   assert.equal(normalizeCodex(JSON.parse(JSON.stringify(c))).kinds.fuji?.n, 1);
+});
+
+test('route eggs: trampoline-leak (5 fast taps, owns trampoline) and pole-snap (10 taps total, owns porter)', () => {
+  const c = newCodex();
+  const run = (s: Snapshot, target: string, n: number, dt: number): string[] => {
+    const out: string[] = [];
+    for (let i = 0; i < n; i++) out.push(...checkEggs(s, tap(target, i * dt), c, rnd).map((h) => h.id));
+    return out;
+  };
+  assert.deepEqual(run(snap({ routeTier: 2 }), 'trampoline', 5, 0.5), [], '没有蹦床不触发');
+  assert.deepEqual(run(snap({ routeTier: 3 }), 'trampoline', 5, 3), [], '点太慢不触发');
+  assert.deepEqual(run(snap({ routeTier: 3 }), 'trampoline', 5, 0.5), ['trampoline-leak']);
+  assert.deepEqual(run(snap({ routeTier: 0 }), 'porter', 10, 1), [], '没有挑担工不触发');
+  const ids = run(snap({ routeTier: 1 }), 'porter', 10, 1);
+  assert.deepEqual(ids, ['pole-snap']);
 });

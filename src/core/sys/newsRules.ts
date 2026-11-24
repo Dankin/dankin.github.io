@@ -33,6 +33,9 @@ export function trackMilestone(ns: NewsState, progress: number, playSec: number)
   }
 }
 
+/** route 档下标 → 升档新闻标签(writer: tier-porter / tier-trampoline / tier-helicopter) */
+const ROUTE_TIER_TAG: Record<number, string> = { 1: 'tier-porter', 3: 'tier-trampoline', 6: 'tier-helicopter' };
+
 /** milestone 标签窗口(秒) */
 export const MILESTONE_WINDOW_S = 60;
 const MILESTONE_TAG = (m: number) => `milestone-${Math.round(m * 100)}`;
@@ -53,7 +56,12 @@ export function activeTags(s: Snapshot): Set<string> {
   if (s.hoardRatio >= NEWS.highStock) t.add('high-stock');
   if (s.hoardRatio >= 1) t.add('rot');
   if (s.stockFill >= 0.95) t.add('wasted');
-  if (s.sinceTierSec < NEWS.newTierS) t.add('new-tier');
+  if (s.sinceTierSec < NEWS.newTierS) {
+    t.add('new-tier');
+    // 运输线新档标签:刚升的是运输线,且当前就在 挑扁担工(1)/蹦床(3)/直升机(6)
+    const id = s.lastTierLine === 'source' ? undefined : ROUTE_TIER_TAG[s.routeTier];
+    if (id) t.add(id);
+  }
   if (s.idleSec >= NEWS.idleS) t.add('idle');
   if (s.wall.m === 12 && s.wall.d >= 20) t.add('xmas');
   if (s.goldSeen) t.add('gold');

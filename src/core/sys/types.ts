@@ -33,6 +33,8 @@ export interface Snapshot {
   idleSec: number;
   /** 距离上次升档的秒数(没升过 = playSec) */
   sinceTierSec: number;
+  /** 最近一次升档的是哪条线(没传时 route 档新闻标签按当前路线档判断) */
+  lastTierLine?: 'source' | 'route';
   bottleneck: 'produce' | 'carry' | 'balanced';
   night: boolean;
   /** 0..3 */
@@ -69,7 +71,7 @@ export interface Snapshot {
 export const TAP_TARGETS = [
   'treetop-fruit', 'newton', 'poison-stall', 'summit-gold', 'skyline', 'xu-head-apple', 'xu-throat', 'xu',
   'garage', 'window-silhouette', 'moon', 'seed-core', 'vinegar', 'jam', 'green-apple', 'orange', 'news',
-  'leaf-under', 'clock', 'stocking', 'gold-basket', 'night-person', 'version', 'title',
+  'leaf-under', 'trampoline', 'porter', 'clock', 'stocking', 'gold-basket', 'night-person', 'version', 'title',
 ] as const;
 export type TapTarget = (typeof TAP_TARGETS)[number];
 

@@ -197,10 +197,10 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
   },
   {
     name: '挑扁担工', unit: '位挑担工', cap: 31, trip: 5.5, baseCost: 1400, growth: 1.12, tierCost: 1600,
-    joke: '两头挑,走得慢,但不占路。苹果在筐里跟着扁担颤。',
+    joke: '两头一挑,走得慢,但稳。苹果在筐里跟着扁担颤。',
     branches: [
       { name: '加粗扁担', joke: '扁担粗了,筐子大了,腰有意见。', effect: { cap: 1.5, time: 1.1 } },
-      { name: '小碎步', joke: '碎步走,筐不晃,苹果不撒。', effect: { time: 0.72 } },
+      { name: '小碎步', joke: '碎步小跑,筐不晃,苹果不撒。', effect: { time: 0.72 } },
     ],
   },
   {
@@ -213,10 +213,10 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
   },
   {
     name: '蹦床', unit: '张蹦床', cap: 600, trip: 6.5, baseCost: 160000, growth: 1.12, tierCost: 180000,
-    joke: '一蹦老远。落地的时候总会少一两个苹果,没人知道去哪了。',
+    joke: '一蹦老远。落地总少一两个苹果,没人问去哪了。',
     branches: [
-      { name: '高弹网', joke: '弹得远,弹得快,有的苹果直接弹进了邻居家。', effect: { time: 0.7, cap: 0.9 } },
-      { name: '兜底网', joke: '底下加张网,接得住,就是弹得没那么高。', effect: { cap: 1.4, time: 1.1 } },
+      { name: '高弹网', joke: '弹得又高又远,有的直接弹进了邻居家。', effect: { time: 0.7, cap: 0.9 } },
+      { name: '兜底网', joke: '底下兜了张网,稳了,就是没那么高。', effect: { cap: 1.4, time: 1.1 } },
     ],
   },
   {
@@ -237,10 +237,10 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
   },
   {
     name: '直升机', unit: '架直升机', cap: 65000, trip: 10, baseCost: 150000000, growth: 1.12, tierCost: 160000000,
-    joke: '吊在半空,哪里堵车都不关它的事。',
+    joke: '吊在半空,堵车跟它没关系。',
     branches: [
-      { name: '吊篮', joke: '一根粗绳吊一大篮,路上的车只能抬头看。', effect: { cap: 1.5, stock: 1.5 } },
-      { name: '双旋翼', joke: '两个螺旋桨抢着转,噪音是苹果的两倍。', effect: { time: 0.7 } },
+      { name: '吊篮', joke: '一根粗绳吊一大篮,地上的车只能抬头看。', effect: { cap: 1.5, stock: 1.5 } },
+      { name: '双旋翼', joke: '两副螺旋桨抢着转,噪音翻倍,速度也是。', effect: { time: 0.7 } },
     ],
   },
   {

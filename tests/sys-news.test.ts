@@ -73,3 +73,14 @@ test('real writer news: every era/state yields something, no crash', () => {
     }
   }
 });
+
+test('route tier tags: tier-porter/trampoline/helicopter only right after a route upgrade', async () => {
+  const { activeTags } = await import('../src/core/sys/newsRules.ts');
+  const base = { sinceTierSec: 10 };
+  assert.ok(activeTags(snap({ ...base, routeTier: 1 })).has('tier-porter'));
+  assert.ok(activeTags(snap({ ...base, routeTier: 3, lastTierLine: 'route' })).has('tier-trampoline'));
+  assert.ok(activeTags(snap({ ...base, routeTier: 6 })).has('tier-helicopter'));
+  assert.ok(!activeTags(snap({ ...base, routeTier: 3, lastTierLine: 'source' })).has('tier-trampoline'));
+  assert.ok(!activeTags(snap({ sinceTierSec: 120, routeTier: 3 })).has('tier-trampoline'));
+  assert.ok(!activeTags(snap({ ...base, routeTier: 2 })).has('tier-porter'));
+});
