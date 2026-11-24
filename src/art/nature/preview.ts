@@ -1,4 +1,4 @@
-import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats } from './index';
+import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES } from './index';
 
 const root = document.getElementById('root')!;
 const DPR = Math.min(2, devicePixelRatio || 1);
@@ -22,9 +22,35 @@ function apples() {
     });
   });
 }
-const secs: Record<string, () => void> = { apples };
+const anims: ((t: number, dt: number) => void)[] = [];
+const shakeEl = document.getElementById('shake') as HTMLInputElement, animEl = document.getElementById('anim') as HTMLInputElement;
+function trees() {
+  const d = sec('树 5 档 (256×320) — 拖动 shake / 勾选动画');
+  const [c, x] = mk(5 * 262, 330, '#bfe3f2'); d.appendChild(c);
+  const leaves: LeafP[] = [];
+  const draw = (t: number, dt: number) => {
+    x.clearRect(0, 0, c.width, c.height); x.fillStyle = '#bfe3f2'; x.fillRect(0, 0, 5 * 262, 330);
+    const sh = animEl.checked ? Math.abs(Math.sin(t * 0.8)) : +shakeEl.value;
+    for (let i = 0; i < 5; i++) drawTree(x, i * 262 + 131, 312, 1, { tier: (i + 1) as 1, shake: sh, t, seed: 1 });
+    if (sh > 0.5 && Math.random() < 0.3) spawnLeaves(leaves, 4 * 262 + 131, 150, 2, 90);
+    stepLeaves(leaves, dt); drawLeaves(x, leaves);
+    x.fillStyle = '#1b1410'; x.font = '12px sans-serif'; TREE_TIER_NAMES.forEach((n, i) => x.fillText(`${i + 1} ${n}`, i * 262 + 6, 322));
+  };
+  draw(0, 0.016); anims.push(draw);
+}
+const qs = new URLSearchParams(location.search); if (qs.get('shake')) shakeEl.value = qs.get('shake')!;
+const secs: Record<string, () => void> = { apples, trees };
 const q = new URLSearchParams(location.search).get('sec');
 for (const k of Object.keys(secs)) if (!q || q === k) secs[k]();
 document.getElementById('info')!.textContent = JSON.stringify(bakeStats());
 
 const sy = +(new URLSearchParams(location.search).get('y') || 0); if (sy) root.style.marginTop = -sy + 'px';
+
+let last = performance.now(), frames = 0, acc = 0;
+function loop(now: number) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (animEl.checked || shakeEl.value !== '0' || true) { const t0 = performance.now(); anims.forEach((f) => f(now / 1000, dt)); acc += performance.now() - t0; frames++; }
+  if (frames >= 30) { document.getElementById('fps')!.textContent = `draw ${(acc / frames).toFixed(2)}ms/frame`; frames = 0; acc = 0; }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
