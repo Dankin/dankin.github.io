@@ -246,11 +246,12 @@ export function createGift(ctx: PanelCtx, onChange: () => void): Gift {
       const payload = r.v;
       for (const k of GIFT_RENDER_ORDER) {
         if (!alive) return;
-        if (k === 'fixedLine') say('fix', GIFT_FRAME.fixedLine);
-        else if (k === 'giftText') say('text', payload.t);
-        else if (k === 'giftSign') {
+        if (k === 'giftText') {
+          if (payload.t) say('text', payload.t);
+        } else if (k === 'giftSign') {
           if (payload.s) say('sign', payload.s);
-        } else say('close', GIFT_FRAME.closing);
+        } else if (k === 'closing') say('close', GIFT_FRAME.closing);
+        else continue;
         await wait(k === 'giftText' ? 1600 : 900);
       }
       running = false;
