@@ -1,4 +1,4 @@
-import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES, drawBackdrop, BackdropMode } from './index';
+import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES, drawBackdrop, BackdropMode, drawBuilding, BUILDING_NAMES } from './index';
 
 const root = document.getElementById('root')!;
 const DPR = Math.min(2, devicePixelRatio || 1);
@@ -52,8 +52,44 @@ function backdrop() {
     });
   }
 }
+function buildings() {
+  const d = sec('生产建筑 5 档 × 2 变体 (480×320)');
+  const [c, x] = mk(980, 5 * 330 + 10, '#f3ecd6'); d.appendChild(c);
+  x.font = '14px sans-serif';
+  for (let t = 1; t <= 5; t++) for (let v = 0; v < 2; v++) {
+    const ox = 250 + v * 490, oy = (t - 1) * 330 + 316;
+    drawBuilding(x, ox, oy, 1, { tier: t as 1, variant: v as 0, seed: 1 });
+    x.fillStyle = '#1b1410'; x.fillText(`${t} ${BUILDING_NAMES[t - 1]} v${v}`, ox - 236, oy - 296);
+  }
+}
+function scene() {
+  const d = sec('场景合成:背景+建筑(横 844×390 / 竖 390×844)');
+  for (const [w, h, sc] of [[844, 390, 0.62], [390, 844, 0.6]] as const) {
+    const [c, x] = mk(w, h); d.appendChild(c);
+    anims.push((t) => {
+      drawBackdrop(x, w, h, t, { mode: 'day', layers: 'back' });
+      drawBuilding(x, w * 0.5, h * 0.93, sc, { tier: 3, variant: 0, ground: false });
+      drawBackdrop(x, w, h, t, { mode: 'day', layers: 'front' });
+    });
+  }
+}
+function bench() {
+  const w = 844, h = 390, [c, x] = mk(w, h); root.appendChild(c);
+  const frame = (t: number) => {
+    drawBackdrop(x, w, h, t, { mode: 'day', layers: 'back' });
+    for (let i = 0; i < 3; i++) drawTree(x, 150 + i * 270, 340, 0.7, { tier: 3 + i % 3 as 3, seed: i, shake: i === 1 ? 0.6 : 0, t });
+    drawBuilding(x, 420, 330, 0.5, { tier: 3 });
+    for (let i = 0; i < 20; i++) appleSprite(APPLE_DEFS[i % 12].id, 'fresh', 32).draw(x, 40 + i * 38, 300 + (i % 3) * 8);
+    drawBackdrop(x, w, h, t, { mode: 'day', layers: 'front' });
+  };
+  for (let i = 0; i < 20; i++) frame(i / 60);
+  const t0 = performance.now(), N = 300; for (let i = 0; i < N; i++) frame(i / 60);
+  const ms = (performance.now() - t0) / N; (window as any).__bench = ms;
+  document.title = 'BENCH ' + ms.toFixed(3);
+  const d = document.createElement('pre'); d.id = 'bench'; d.textContent = `bench full-frame draw: ${ms.toFixed(3)} ms/frame; ` + JSON.stringify(bakeStats()); root.appendChild(d);
+}
 const qs = new URLSearchParams(location.search); if (qs.get('shake')) shakeEl.value = qs.get('shake')!;
-const secs: Record<string, () => void> = { apples, trees, backdrop };
+const secs: Record<string, () => void> = { apples, trees, backdrop, buildings, scene, bench };
 const q = new URLSearchParams(location.search).get('sec');
 for (const k of Object.keys(secs)) if (!q || q === k) secs[k]();
 document.getElementById('info')!.textContent = JSON.stringify(bakeStats());
