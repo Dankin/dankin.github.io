@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>art-things 预览</title>
+<style>
+  html,body{margin:0;background:#f4efe2;color:#1b1410;font:13px/1.4 "PingFang SC","Kaiti SC",sans-serif}
+  h2{margin:14px 12px 4px;font-size:15px}
+  canvas{display:block;margin:0 12px 6px;background:#faf6ea;border:1px solid #d8cfb8}
+  #bar{position:sticky;top:0;z-index:2;background:#e8dcc0;padding:6px 12px;border-bottom:2px solid #1b1410}
+  #bar label{margin-right:14px}
+</style>
+</head>
+<body>
+<div id="bar">
+  <label><input type="checkbox" id="anim" checked> 动画</label>
+  <label>载量 <input type="range" id="load" min="0" max="1" step="0.05" value="1"></label>
+  <label>行驶 <input type="range" id="move" min="0" max="1" step="0.05" value="1"></label>
+  <label>装卸 <input type="range" id="unload" min="0" max="1" step="0.01" value="0"></label>
+  <label><input type="checkbox" id="auto"> 自动装卸</label>
+  <label><input type="checkbox" id="flip"> 朝左</label>
+  <label>缩放 <select id="zoom"><option>1</option><option selected>2</option><option>3</option></select></label>
+</div>
+<div id="root"></div>
+<script type="module" src="/src/art/things/preview.ts"></script>
+</body>
+</html>
