@@ -21,7 +21,7 @@ import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
 import { initSys, sysAway } from './sys.ts';
 import { initAudioBridge } from './audiobridge.ts';
-import { mountPanels } from './panels.ts';
+import { mountPanels, panels } from './panels.ts';
 import { initFtue } from './ftue.ts';
 
 function wire(): void {
@@ -137,6 +137,7 @@ if (app.DEBUG) {
       return app.speed;
     },
     orchard: app.orchard,
+    panels: () => panels(), // QA:面板接口(openSettings/openGift/openCodex…)
     bus,
     GOAL,
   };
