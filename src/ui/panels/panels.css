@@ -1,0 +1,111 @@
+/* ==========================================================================
+   面板层(ui-v5):纸张米白 + 黑色手绘粗描边 + 红点缀。全部以 .panel- / #panel- 命名。
+   横屏 844×390 优先;触控 ≥44px;安全区;prefers-reduced-motion。
+   ========================================================================== */
+:root {
+  --pn-ink: #1b1410;
+  --pn-paper: #f6efdc;
+  --pn-paper2: #e8dcc0;
+  --pn-paper3: #d9ccaa;
+  --pn-red: #d8232a;
+  --pn-gold: #f2b705;
+  --pn-dim: #8a7f69;
+  --pn-hand: "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", serif;
+  --pn-rad: 14px 10px 16px 9px / 10px 15px 9px 14px;
+  --pn-lw: 3px;
+}
+.panel-paper {
+  background-color: var(--pn-paper);
+  background-image: radial-gradient(rgba(27, 20, 16, 0.055) 1px, transparent 1.3px);
+  background-size: 7px 7px;
+  border: var(--pn-lw) solid var(--pn-ink);
+  border-radius: var(--pn-rad);
+  box-shadow: 3px 3px 0 var(--pn-ink);
+  color: var(--pn-ink);
+}
+.panel-sprite { display: block; image-rendering: auto; }
+
+/* ---------- 按钮 ---------- */
+.panel-btn {
+  min-height: 44px; min-width: 44px; padding: 6px 16px;
+  font: 600 15px/1.2 -apple-system, "PingFang SC", sans-serif; color: var(--pn-ink);
+  background: var(--pn-paper); border: var(--pn-lw) solid var(--pn-ink); border-radius: 12px 9px 13px 8px / 9px 13px 8px 12px;
+  box-shadow: 2px 3px 0 var(--pn-ink); cursor: pointer; user-select: none;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.panel-btn:active:not(:disabled) { transform: translate(2px, 3px); box-shadow: 0 0 0 var(--pn-ink); }
+.panel-btn.red { background: var(--pn-red); color: #fff7e6; }
+.panel-btn.gold { background: var(--pn-gold); }
+.panel-btn.ghost { background: transparent; box-shadow: none; border-style: dashed; }
+.panel-btn:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.panel-btn:focus-visible, .panel-x:focus-visible, .panel-tab:focus-visible { outline: 3px solid var(--pn-red); outline-offset: 2px; }
+
+/* ---------- 弹层 ---------- */
+.panel-veil {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) calc(10px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+  background: rgba(27, 20, 16, 0.5); animation: panel-fade 0.16s ease-out;
+}
+.panel-veil.out { opacity: 0; transition: opacity 0.16s; pointer-events: none; }
+.panel-sheet {
+  position: relative; display: flex; flex-direction: column; width: min(600px, 100%); max-height: 100%; overflow: hidden;
+  background-color: var(--pn-paper);
+  background-image: radial-gradient(rgba(27, 20, 16, 0.055) 1px, transparent 1.3px); background-size: 7px 7px;
+  border: 4px solid var(--pn-ink); border-radius: 16px 11px 18px 10px / 11px 17px 10px 16px; box-shadow: 4px 5px 0 var(--pn-ink);
+  color: var(--pn-ink); animation: panel-pop 0.2s cubic-bezier(0.3, 1.4, 0.5, 1);
+  font: 14px/1.45 -apple-system, "PingFang SC", sans-serif; user-select: none;
+}
+.panel-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 16px; border-bottom: 3px solid var(--pn-ink); background: var(--pn-paper2); }
+.panel-title { flex: 1; margin: 0; font: 800 18px/1.2 var(--pn-hand); letter-spacing: 0.08em; }
+.panel-title::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-left: 8px; background: var(--pn-red); border-radius: 50%; border: 2px solid var(--pn-ink); vertical-align: 2px; }
+.panel-x { width: 44px; height: 44px; font-size: 20px; font-weight: 800; color: var(--pn-ink); border-radius: 50%; }
+.panel-x:active { background: var(--pn-paper3); }
+.panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 14px 14px; -webkit-overflow-scrolling: touch; }
+.panel-foot { flex: none; display: flex; gap: 10px; justify-content: center; align-items: center; padding: 8px 12px 10px; border-top: 3px dashed var(--pn-paper3); }
+.panel-note { font-size: 12px; color: var(--pn-dim); }
+.panel-empty { padding: 28px 12px; text-align: center; color: var(--pn-dim); font: 15px/1.6 var(--pn-hand); }
+.panel-badge { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--pn-red); color: #fff; border: 2px solid var(--pn-ink); font: 800 10px/12px sans-serif; text-align: center; }
+.panel-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---------- 分页签 ---------- */
+.panel-tabs { display: flex; gap: 6px; padding: 8px 12px 0; flex: none; }
+.panel-tab {
+  flex: 1; min-height: 44px; padding: 4px 8px; font: 700 15px/1.1 -apple-system, "PingFang SC", sans-serif; color: var(--pn-dim);
+  background: transparent; border: 3px solid transparent; border-bottom: 0; border-radius: 12px 10px 0 0; cursor: pointer; position: relative; top: 3px;
+}
+.panel-tab small { display: block; font-size: 11px; font-weight: 600; opacity: 0.8; }
+.panel-tab[aria-selected="true"] { color: var(--pn-ink); background: var(--pn-paper); border-color: var(--pn-ink); z-index: 1; }
+
+@keyframes panel-fade { from { opacity: 0; } }
+@keyframes panel-pop { from { transform: translateY(14px) scale(0.96); opacity: 0; } }
+
+/* ---------- 旁白条 ---------- */
+.panel-narr {
+  position: fixed; z-index: 35; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 34px);
+  width: min(calc(100vw - 24px), 560px); min-height: 44px; padding: 6px 14px 6px 12px;
+  display: flex; align-items: center; gap: 10px;
+  background-color: var(--pn-paper); background-image: radial-gradient(rgba(27, 20, 16, 0.055) 1px, transparent 1.3px); background-size: 7px 7px;
+  border: 3px solid var(--pn-ink); border-radius: 22px 10px 20px 9px / 12px 20px 10px 18px; box-shadow: 3px 3px 0 var(--pn-ink);
+  color: var(--pn-ink); cursor: pointer; opacity: 0; transform: translate(-50%, -10px); pointer-events: none;
+  transition: opacity 0.22s, transform 0.22s;
+}
+.panel-narr::before { /* 封蜡点 */
+  content: ""; position: absolute; left: -9px; top: -9px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--pn-red); border: 3px solid var(--pn-ink); box-shadow: 1px 1px 0 var(--pn-ink);
+}
+.panel-narr.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.panel-narr-main { min-width: 0; flex: 1; }
+.panel-narr-who { display: block; font: 800 11px/1.1 -apple-system, "PingFang SC", sans-serif; color: var(--pn-red); letter-spacing: 0.1em; margin-bottom: 1px; }
+.panel-narr-txt { display: block; font: 600 15px/1.4 var(--pn-hand); overflow-wrap: anywhere; }
+.panel-narr-av { flex: none; width: 40px; height: 40px; margin: -2px 0; border-radius: 50%; background: var(--pn-paper2); border: 2px solid var(--pn-ink); }
+.panel-narr:not(.has-av) .panel-narr-av { display: none; }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .panel-narr { top: calc(env(safe-area-inset-top, 0px) + 30px); width: min(calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), 500px); padding-top: 4px; padding-bottom: 4px; }
+  .panel-narr-txt { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-veil, .panel-sheet { animation: none; }
+  .panel-narr { transition: opacity 0.01s; transform: translate(-50%, 0); }
+  .panel-btn { transition: none; }
+}
