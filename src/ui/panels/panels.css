@@ -217,7 +217,7 @@
 .panel-offer-have, .panel-offer-out { display: flex; align-items: baseline; gap: 8px; margin: 6px 0; }
 .panel-offer-have b, .panel-offer-out b { font: 800 22px/1 var(--pn-hand); color: var(--pn-red); }
 .panel-quick { display: flex; gap: 8px; margin: 8px 0; }
-.panel-quick .panel-btn { flex: 1; }
+.panel-quick .panel-btn { flex: 1; padding: 6px 4px; white-space: nowrap; }
 .panel-offer-foot { border: 0; padding: 6px 0 0; }
 .panel-offer-res { min-height: 20px; margin: 6px 0 0; text-align: center; font: 700 14px/1.4 var(--pn-hand); color: var(--pn-red); }
 .panel-range {
@@ -249,9 +249,8 @@
 .panel-sw.on { background: var(--pn-red); }
 .panel-sw.on i { transform: translateX(22px); }
 .panel-sw:focus-visible { outline: 3px solid var(--pn-red); outline-offset: 2px; }
-.panel-set-vol { display: grid; grid-template-columns: auto 1fr 28px; align-items: center; gap: 8px; margin: -6px 0 4px; }
+.panel-set-vol { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; margin: -6px 0 4px; }
 .panel-set-vol small { color: var(--pn-dim); font-size: 12px; }
-.panel-set-num { font: 700 12px/1 sans-serif; text-align: right; color: var(--pn-dim); }
 .panel-set-hint { margin: 4px 0 0; padding: 6px 8px; font-size: 12px; line-height: 1.4; background: #fff3c2; border: 2px dashed var(--pn-ink); border-radius: 8px; }
 .panel-area {
   width: 100%; box-sizing: border-box; min-height: 64px; padding: 8px; resize: vertical; user-select: text;

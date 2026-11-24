@@ -34,7 +34,6 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
       d.el.hidden = !d.show();
       const n = d.badge();
       d.dot.hidden = n <= 0;
-      d.dot.textContent = n > 9 ? '9+' : String(n);
     }
   };
   const orders = createOrders(ctx, prefs, root, refreshDock, (t) => narr.say(t, undefined, false));

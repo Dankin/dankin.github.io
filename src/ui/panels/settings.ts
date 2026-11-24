@@ -35,12 +35,10 @@ function slider(label: string, v: number, on: (v: number) => void): HTMLElement 
   r.step = '5';
   r.value = String(Math.round(v * 100));
   r.setAttribute('aria-label', label + '音量');
-  const num = h('span', 'panel-set-num', r.value);
   r.addEventListener('input', () => {
-    num.textContent = r.value;
     on(Number(r.value) / 100);
   });
-  return h('div', 'panel-set-vol', h('small', null, '音量'), r, num);
+  return h('div', 'panel-set-vol', h('small', null, '音量'), r);
 }
 
 export function openSettings(

@@ -4,8 +4,8 @@ import { EMPTY, TERMS, TOAST } from '../../content/ui.ts';
 import { VARIETY_TEXT } from '../../content/varieties.ts';
 import { offerOpen } from '../../core/sys/offer.ts';
 import { canFulfill, type Order } from '../../core/sys/orders.ts';
-import { APPLE_KINDS, bagTotal, type AppleKind } from '../../core/sys/varieties.ts';
-import { appleCanvas, btn, fmtNum, h, openSheet, reducedMotion, sfx } from './dom.ts';
+import { APPLE_KINDS, type AppleKind } from '../../core/sys/varieties.ts';
+import { appleCanvas, btn, h, openSheet, reducedMotion, sfx } from './dom.ts';
 import { savePrefs, type PanelPrefs } from './store.ts';
 import type { PanelCtx } from './types.ts';
 
@@ -48,13 +48,12 @@ const wantIcon = (o: Order, size: number): HTMLElement =>
   o.want === 'any' ? h('span', 'panel-any', '任') : appleCanvas(o.want as AppleKind, size);
 
 const left = (ctx: PanelCtx, o: Order): number => Math.max(0, o.expiresAt - ctx.getState().playSec);
-const fmtT = (s: number): string => (s >= 60 ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}` : `${Math.ceil(s)}秒`);
-const short = (ctx: PanelCtx, o: Order): number => {
-  const bag = ctx.getState().sys?.bag ?? {};
-  const have = o.want === 'any' ? bagTotal(bag) : (bag[o.want] ?? 0);
-  return Math.max(0, o.qty - have);
-};
-
+/** 剩余时间只说大意,不报秒数 */
+const fmtT = (s: number): string => (s >= 90 ? '还早' : s >= 30 ? '过一会儿' : '快到点了');
+/** 数量只说大意 */
+const qtyWord = (n: number): string => (n <= 1 ? '一个' : n <= 3 ? '几个' : n <= 8 ? '一小篮' : '一大筐');
+const stockWord = (n: number): string => (n <= 1 ? '一个' : n <= 3 ? '几个' : '不少');
+const rewardWord = (sec: number): string => (sec < 60 ? '一点小赏' : sec < 300 ? '不错的赏钱' : '丰厚的赏钱');
 export interface Orders {
   openOrders(): void;
   openOffer(): void;
@@ -82,7 +81,7 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
         void el.offsetWidth;
         el.classList.add('nope');
       }
-      say(`篮子里还差 ${short(ctx, o)} 个${wantName(o.want)}。`);
+      say(`篮子里的${wantName(o.want)}还不够。`);
       return;
     }
     const r = ctx.actions?.claimOrder?.(o.id);
@@ -120,10 +119,10 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
       const b = h('button', 'panel-bub' + (o.rush ? ' rush' : '') + (ok ? ' ok' : ''));
       b.type = 'button';
       b.dataset.id = String(o.id);
-      b.setAttribute('aria-label', `订单:${wantName(o.want)} ${o.qty} 个${o.rush ? ',加急' : ''}${ok ? ',可以交付' : ''}`);
+      b.setAttribute('aria-label', `订单:${wantName(o.want)} ${qtyWord(o.qty)}${o.rush ? ',加急' : ''}${ok ? ',可以交付' : ''}`);
       b.append(
         avatar(o.customer, 34),
-        h('span', 'panel-bub-w', wantIcon(o, 24), h('b', null, `×${o.qty}`)),
+        h('span', 'panel-bub-w', wantIcon(o, 24), h('b', null, qtyWord(o.qty))),
         ...(o.rush ? [h('i', 'panel-bub-rush', '急')] : []),
         h('span', 'panel-bub-t'),
       );
@@ -135,7 +134,7 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
       strip.append(b);
     }
     if (list.length > shown.length) {
-      const m = btn(`+${list.length - shown.length}`, 'ghost panel-bub-more', () => openOrders());
+      const m = btn('更多', 'ghost panel-bub-more', () => openOrders());
       strip.append(m);
     }
     onChange();
@@ -151,7 +150,7 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
       bag.append(h('b', null, '珍藏篮'));
       const have = APPLE_KINDS.filter((k) => (sys?.bag?.[k] ?? 0) > 0);
       if (!have.length) bag.append(h('span', 'panel-note', '空的。摇出来的苹果,会样本一样留一个。'));
-      for (const k of have) bag.append(h('span', 'panel-chip', appleCanvas(k, 22), `×${sys.bag[k]}`));
+      for (const k of have) bag.append(h('span', 'panel-chip', appleCanvas(k, 22), stockWord(sys.bag[k] ?? 0)));
       sheet.body.append(bag);
       const list = sys?.orders?.list ?? [];
       if (!list.length) sheet.body.append(h('div', 'panel-empty', EMPTY.orders));
@@ -161,16 +160,16 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
         const info = h(
           'div',
           'panel-order-i',
-          h('b', null, `${wantName(o.want)} ×${o.qty}`, o.rush ? h('i', 'panel-bub-rush', '加急') : null),
-          h('span', 'panel-note', `奖励约 ${Math.round(o.rewardSec)} 秒的收入 · 剩 `, h('span', 'panel-ot', fmtT(left(ctx, o)))),
+          h('b', null, `${wantName(o.want)} · ${qtyWord(o.qty)}`, o.rush ? h('i', 'panel-bub-rush', '加急') : null),
+          h('span', 'panel-note', `奖励:${rewardWord(o.rewardSec)} · `, h('span', 'panel-ot', fmtT(left(ctx, o)))),
         );
         row.dataset.id = String(o.id);
-        const go = btn(ok ? '交付' : `差 ${short(ctx, o)}`, ok ? 'red' : 'ghost', () => claim(o));
+        const go = btn(ok ? '交付' : '还差一些', ok ? 'red' : 'ghost', () => claim(o));
         go.disabled = !ok;
         row.append(avatar(o.customer, 44), wantIcon(o, 34), info, go);
         sheet.body.append(row);
       }
-      sheet.body.append(h('p', 'panel-note panel-order-foot', `已完成 ${sys?.orders?.done ?? 0} 单。没有惩罚,过期了顾客就走。`));
+      sheet.body.append(h('p', 'panel-note panel-order-foot', '没有惩罚,过期了顾客就走。'));
     };
     draw();
     listRefresh = draw;
@@ -192,16 +191,10 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
       return;
     }
     const coinsNow = (): number => Math.max(0, Math.floor(ctx.getState().coins));
+    const STEPS: Array<[string, number]> = [['一点点', 10], ['一小份', 25], ['一半', 50], ['全部', 100]];
     let pct = 25;
     const sub = h('p', 'panel-offer-sub', TERMS.offerHint);
     const have = h('div', 'panel-offer-have');
-    const range = h('input', 'panel-range') as HTMLInputElement;
-    range.type = 'range';
-    range.min = '5';
-    range.max = '100';
-    range.step = '5';
-    range.value = String(pct);
-    range.setAttribute('aria-label', '献出比例');
     const out = h('div', 'panel-offer-out');
     const result = h('p', 'panel-offer-res');
     result.setAttribute('aria-live', 'polite');
@@ -211,33 +204,37 @@ export function createOrders(ctx: PanelCtx, prefs: PanelPrefs, parent: HTMLEleme
       const r = ctx.actions?.offer?.(W);
       if (r) {
         sfx(ctx, 'orderDone');
-        result.textContent = `${TOAST.offered} 献出 ${fmtNum(r.spent)},折合送出 ${fmtNum(r.apples)} 个。`;
+        result.textContent = `${TOAST.offered} 一批苹果已经上路。`;
         say(TOAST.offered);
         update();
       }
     });
     const quick = h('div', 'panel-quick');
-    for (const p of [25, 50, 100]) {
-      quick.append(
-        btn(`${p}%`, 'ghost', () => {
-          pct = p;
-          range.value = String(p);
-          update();
-        }),
-      );
-    }
+    quick.setAttribute('role', 'group');
+    quick.setAttribute('aria-label', '献出多少');
+    const stepBtns = STEPS.map(([label, p]) => {
+      const b = btn(label, 'ghost', () => {
+        pct = p;
+        update();
+      });
+      quick.append(b);
+      return [b, p] as const;
+    });
     function update(): void {
       const W = Math.floor((coinsNow() * pct) / 100);
-      have.replaceChildren(h('span', null, '现有'), h('b', null, fmtNum(coinsNow())), h('span', 'panel-note', `累计献出 ${fmtNum(ctx.getState().sys?.offer?.coins ?? 0)}`));
+      const done = (ctx.getState().sys?.offer?.coins ?? 0) > 0;
+      have.replaceChildren(h('span', null, coinsNow() > 0 ? '手里有些积蓄。' : '手里还空着。'), ...(done ? [h('span', 'panel-note', '已经献过了')] : []));
+      for (const [b, p] of stepBtns) {
+        b.classList.toggle('gold', p === pct);
+        b.classList.toggle('ghost', p !== pct);
+        b.setAttribute('aria-pressed', String(p === pct));
+      }
       const est = ctx.actions?.offerPreview?.(W);
-      out.replaceChildren(h('span', null, `献出 ${pct}%`), h('b', null, fmtNum(W)), ...(est !== undefined ? [h('span', 'panel-note', `≈ 送出 ${fmtNum(est)} 个苹果`)] : []));
+      const label = STEPS.find(([, p]) => p === pct)?.[0] ?? '';
+      out.replaceChildren(h('span', null, `献出${label}`), ...(est !== undefined && est > 0 ? [h('span', 'panel-note', '能送出一批苹果')] : []));
       go.disabled = W <= 0;
     }
-    range.addEventListener('input', () => {
-      pct = Number(range.value);
-      update();
-    });
-    sheet.body.append(sub, have, range, quick, out, h('div', 'panel-foot panel-offer-foot', go), result);
+    sheet.body.append(sub, have, quick, out, h('div', 'panel-foot panel-offer-foot', go), result);
     update();
   }
 
