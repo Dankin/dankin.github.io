@@ -64,15 +64,15 @@ function paintOrchard(c: Ctx, o: BuildingOpts) {
   if (o.ground !== false) ground(c, 225, seed);
   const tierB = v ? 2 : 3, tierF = v ? 3 : 4;
   // 后排
-  for (let i = 0; i < back; i++) { const x = back === 1 ? 240 : 50 + (i / (back - 1)) * 380; drawTree(c, x, 222, 0.64, { tier: tierB, seed: seed * 3 + i, ground: false }); }
+  for (let i = 0; i < back; i++) { const x = back === 1 ? 240 : 50 + (i / (back - 1)) * 380; drawTree(c, x, 224, 0.56, { tier: tierB, seed: seed * 3 + i, ground: false }); }
   // 木栅栏
   const rng2 = rng(seed + 9);
   c.lineJoin = 'round';
   line(c, [[28, 262], [452, 262]], seed + 20, 3, 0.8); line(c, [[28, 274], [452, 274]], seed + 21, 3, 0.8);
   for (let x = 36; x < 450; x += 28) { const j = (rng2() - 0.5) * 2; shp(c, [[x - 6, 282], [x - 6, 256 + j], [x, 248 + j], [x + 6, 256 + j], [x + 6, 282]], WOOD, seed + x, 2.8, 0.5); line(c, [[x - 2, 260], [x - 2, 280]], seed + x + 1, 1.2, 0.3, rgba(INK, 0.4)); }
   // 前排
-  const xs = front === 1 ? [240] : front === 2 ? [150, 330] : [92, 240, 388];
-  xs.forEach((x, i) => drawTree(c, x, 310, 0.82, { tier: tierF, seed: seed * 7 + i + 2, ground: false }));
+  const xs = front === 1 ? [240] : front === 2 ? [160, 320] : [104, 240, 376];
+  xs.forEach((x, i) => drawTree(c, x, 310, 0.7, { tier: tierF, seed: seed * 7 + i + 2, ground: false }));
   // 地上的苹果箱
   const crate = (x: number, y: number, n: number) => {
     for (let i = 0; i < n; i++) ap(c, x - 18 + i * 18 + (i % 2) * 2, y - 16 - (i % 2) * 5, 9, i === 1 ? 'golden' : 'fuji');
