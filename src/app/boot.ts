@@ -126,7 +126,7 @@ wire();
 setupMotion();
 $('stage').addEventListener('click', (e) => void routeStageTap(e.clientX, e.clientY));
 mountPanels();
-initFtue();
+initFtue(awayAtBoot);
 if (app.DEBUG) {
   setupDebug();
   (window as unknown as { __game: unknown }).__game = {

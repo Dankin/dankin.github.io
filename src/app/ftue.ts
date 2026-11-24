@@ -55,7 +55,9 @@ function showHint(on: boolean): void {
   }
 }
 
-export function initFtue(): void {
+export function initFtue(awayMs = 0): void {
+  // 隔了一阵回来:先让「欢迎回来」之类的提示播完,引导 toast 往后放 14 秒
+  const quietUntil = performance.now() + (awayMs >= 60_000 ? 14_000 : 0);
   if (started) return;
   started = true;
   try {
@@ -96,7 +98,8 @@ export function initFtue(): void {
   let boughtAt = -1;
   setInterval(() => {
     const s = app.state;
-    if (app.readOnly) return;
+    if (app.readOnly || performance.now() < quietUntil) return;
+    if (document.getElementById('toast')?.classList.contains('show')) return; // 别和欢迎回来等提示抢位
     if (s.shakes > 0 && s.stock > 0 && !done.has('ftue-stock')) {
       mark('ftue-stock');
       glow(document.getElementById('handBar'), 4500);
