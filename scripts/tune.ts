@@ -4,7 +4,7 @@
 import { SHAKE, ROUTE_TIERS, SOURCE_TIERS } from '../src/core/content.ts';
 import { play, type Opts } from './sim.ts';
 
-const base = (cps: number): Opts => ({ cps, delay: 1.5, policy: 'balanced', gates: 'auto', events: 0.7, maxMin: 200, seed: 1, verbose: false });
+const base = (cps: number): Opts => ({ cps, delay: 1.5, policy: 'balanced', events: 0.7, maxMin: 200, seed: 1, verbose: false });
 const FW0 = [...SHAKE.maxByTier];
 const DROP0 = [...SHAKE.dropSec];
 const SR = SOURCE_TIERS.map((t) => t.rate);

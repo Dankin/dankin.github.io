@@ -45,7 +45,7 @@ function makeHook(noSlack = false): SimHook & { sys: ReturnType<typeof newSys> }
 
       // 推进 sys:被动入篮 / 订单 / 虫眼 / 腐烂
       const target = c.target > 0 ? c.target : s.coins;
-      const cold = s.gates.includes('cold' as never);
+      const cold = s.source.tier >= 4 && s.source.branch[4] === 1; // 星树·粗壮(库存×3)
       const tk = tickSys(sys, dt, {
         playSec: s.playSec, era, sourceTier: s.source.tier, routeTier: s.route.tier, coins: s.coins,
         income: th.income, targetCost: target, coldStorage: cold, progress: s.delivered / GOAL,

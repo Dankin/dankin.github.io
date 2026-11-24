@@ -1,12 +1,12 @@
 // v4 平衡模拟:贪心机器人从头玩到 82 亿。
-//   node scripts/sim.ts [cps=1] [--delay=1.5] [--policy=balanced|source|route] [--gates=auto|none|a,b,c]
+//   node scripts/sim.ts [cps=1] [--delay=1.5] [--policy=balanced|source|route] 
 //                       [--events=0.7] [--max=240] [--seed=1] [-v] [--json]
 // cps = 每秒点按次数(0 = 纯挂机)。delay = 够钱后多久才下手(模拟人的反应)。
 import { GOAL } from '../src/core/constants.ts';
-import { GATES, GATE_SLOTS, gateDef, ROUTE_TIERS, SOURCE_TIERS, type GateId } from '../src/core/content.ts';
+import { ROUTE_TIERS, SOURCE_TIERS } from '../src/core/content.ts';
 import { EVENT_GAP_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
-  buyHelper, buyExpand, buyUnit, canBuyUnit, shake, nextBranches, preview, setGate, tick, throughput, tierCost, unitCost, upgradeTier,
+  buyHelper, buyExpand, buyUnit, canBuyUnit, shake, nextBranches, preview, tick, throughput, tierCost, unitCost, upgradeTier,
   type Action, type LineId,
 } from '../src/core/game.ts';
 import { newState, type State } from '../src/core/state.ts';
@@ -15,7 +15,8 @@ export interface Opts {
   cps: number;
   delay: number;
   policy: 'balanced' | 'source' | 'route';
-  gates: 'auto' | 'none' | GateId[];
+  /** v6 起槽位已删除,保留字段只为兼容旧调用(忽略) */
+  gates?: unknown;
   events: number;
   maxMin: number;
   seed: number;
@@ -47,7 +48,6 @@ export interface Report {
   eras: number[];
   firstBuy: number;
   firstVehicle: number;
-  firstGate: number;
   idleMaxS: number;
   idleAtMin: number;
   /** 任意两次购买之间最长间隔(秒) */
@@ -59,7 +59,6 @@ export interface Report {
   /** 每次有意义购买(升档或 ≥2% 提升)距上一次的秒数 */
   gaps: number[];
   timeline: string;
-  gatesUsed: Record<string, number>;
   branches: string[];
   wastedPct: number;
   finalFlow: number;
@@ -119,51 +118,22 @@ function candidates(s: State, policy: Opts['policy']): Cand[] {
   return out;
 }
 
-function perms(ids: GateId[], k: number): (GateId | null)[][] {
-  const res: (GateId | null)[][] = [];
-  const rec = (cur: (GateId | null)[], used: Set<GateId>) => {
-    if (cur.length === k) { res.push(cur); return; }
-    for (const id of ids) if (!used.has(id)) rec([...cur, id], new Set([...used, id]));
-    rec([...cur, null], used);
-  };
-  rec([], new Set());
-  return res;
-}
-
-function bestGates(s: State, allowed: GateId[], goalFlow: boolean): (GateId | null)[] {
-  const ids = s.gatesUnlocked.filter((g) => allowed.includes(g));
-  let best = s.gates;
-  let bestV = -1;
-  const probe = { source: s.source, route: s.route, gates: [] as (GateId | null)[], charge: s.charge, combo: s.combo, helperLevel: s.helperLevel, shakeRate: s.shakeRate };
-  for (const p of perms(ids, GATE_SLOTS)) {
-    probe.gates = p;
-    const th = throughput(probe);
-    const v = goalFlow ? th.flow : th.income;
-    if (v > bestV * 1.0000001) { bestV = v; best = p; }
-  }
-  return best;
-}
-
 export function play(o: Opts): Report {
   const s = newState(0);
   const rnd = rng(o.seed);
   const dt = 0.25;
   const rep: Report = {
-    minutes: NaN, won: false, tierUps: [], eras: [], firstBuy: NaN, firstVehicle: NaN, firstGate: NaN,
-    idleMaxS: 0, idleAtMin: 0, tierWait: [0, 0, 0, 0, 0, 0], buyGapMaxS: 0, buyGapAtMin: 0, log: [], gaps: [], timeline: '', gatesUsed: {}, branches: [], wastedPct: 0, finalFlow: 0,
+    minutes: NaN, won: false, tierUps: [], eras: [], firstBuy: NaN, firstVehicle: NaN,
+    idleMaxS: 0, idleAtMin: 0, tierWait: [0, 0, 0, 0, 0, 0], buyGapMaxS: 0, buyGapAtMin: 0, log: [], gaps: [], timeline: '', branches: [], wastedPct: 0, finalFlow: 0,
   };
-  const allowedGates: GateId[] = o.gates === 'auto' ? GATES.map((g) => g.id) : o.gates === 'none' ? [] : o.gates;
   let clickAcc = 0;
   let evT = nextEventGap(rnd) * 0.5;
   let affSince: number | null = null;
   let idleStart: number | null = null;
   let lastWorthy = 0;
   let lastBuyT = 0;
-  let lastGateCheck = -99;
   let lastMinMark = 0;
-  let gateSig = '';
   let delivered0 = 0, wasted0 = 0;
-  const gateTime: Record<string, number> = {};
   const eraSeen = new Set<number>();
   const maxS = o.maxMin * 60;
   let hookTarget = 0;
@@ -183,25 +153,12 @@ export function play(o: Opts): Report {
     const res = tick(s, dt);
     o.hook?.step(s, dt, { rnd, target: hookTarget, cps: o.cps, res });
     const t = s.playSec;
-    for (const g of s.gates) if (g) gateTime[g] = (gateTime[g] ?? 0) + dt;
 
     if (s.delivered >= GOAL) { rep.won = true; rep.minutes = t / 60; break; }
 
     // 每 0.5 秒决策一次
     if (step % 2 !== 0) continue;
     const th = throughput(s);
-    // 道具:每 4 秒或有新解锁时重排;离终点近(<6 分钟)只看吞吐
-    if (t - lastGateCheck >= 4 && o.gates !== 'none' && t >= 8) {
-      lastGateCheck = t;
-      const left = (GOAL - s.delivered) / Math.max(1, th.flow);
-      const want = bestGates(s, allowedGates, left < 360);
-      const sig = want.join(',');
-      if (sig !== s.gates.join(',')) {
-        want.forEach((g, i) => setGate(s, i, g));
-        if (Number.isNaN(rep.firstGate)) rep.firstGate = t;
-        if (sig !== gateSig && rep.gatesUsed) gateSig = sig;
-      }
-    }
     // 购买
     const cs = candidates(s, o.policy);
     const inc = Math.max(1e-9, th.income);
@@ -241,7 +198,6 @@ export function play(o: Opts): Report {
             rep.branches.push(`${a.line === 'source' ? SOURCE_TIERS[L.tier].name : ROUTE_TIERS[L.tier].name}→${names[a.branch].name}`);
             const e = Math.min(s.source.tier, s.route.tier);
             if (e > 0 && !eraSeen.has(e)) { eraSeen.add(e); rep.eras[e] = t / 60; }
-            lastGateCheck = -99;
           }
         }
         if (ok) {
@@ -271,19 +227,16 @@ export function play(o: Opts): Report {
   rep.finalFlow = throughput(s).flow;
   o.hook?.finish?.(s, rep);
   if (!rep.won && process.env.SIMDBG) for (const c of candidates(s, o.policy)) console.log("CAND", JSON.stringify(c.action), c.cost.toExponential(2), c.gain.toExponential(2), c.gainPct.toFixed(4));
-  if (!rep.won && process.env.SIMDBG) console.log("STATE", JSON.stringify({ coins: s.coins, src: s.source, route: s.route, gates: s.gates, th: throughput(s) }));
-  const total = Object.values(gateTime).reduce((a, b) => a + b, 0) || 1;
-  for (const [g, v] of Object.entries(gateTime)) rep.gatesUsed[gateDef(g as GateId).name] = Math.round((100 * v) / total);
+  if (!rep.won && process.env.SIMDBG) console.log("STATE", JSON.stringify({ coins: s.coins, src: s.source, route: s.route, th: throughput(s) }));
   return rep;
 }
 
 export function parseArgs(argv: string[]): Opts {
-  const o: Opts = { cps: 1, delay: 1.5, policy: 'balanced', gates: 'auto', events: 0.7, maxMin: 240, seed: 1, verbose: false };
+  const o: Opts = { cps: 1, delay: 1.5, policy: 'balanced', events: 0.7, maxMin: 240, seed: 1, verbose: false };
   for (const a of argv) {
     if (a === '-v') o.verbose = true;
     else if (a.startsWith('--delay=')) o.delay = +a.slice(8);
     else if (a.startsWith('--policy=')) o.policy = a.slice(9) as Opts['policy'];
-    else if (a.startsWith('--gates=')) { const g = a.slice(8); o.gates = g === 'auto' || g === 'none' ? g : (g.split(',') as GateId[]); }
     else if (a.startsWith('--events=')) o.events = +a.slice(9);
     else if (a.startsWith('--max=')) o.maxMin = +a.slice(6);
     else if (a.startsWith('--seed=')) o.seed = +a.slice(7);
@@ -295,16 +248,14 @@ export function parseArgs(argv: string[]): Opts {
 const fm = (x: number) => (Number.isFinite(x) ? x.toFixed(1) : '—');
 
 export function print(o: Opts, r: Report) {
-  const gname = o.gates === 'auto' ? 'auto' : o.gates === 'none' ? 'none' : o.gates.join(',');
-  console.log(`cps=${o.cps} delay=${o.delay}s policy=${o.policy} gates=${gname} events=${o.events}`);
+  console.log(`cps=${o.cps} delay=${o.delay}s policy=${o.policy} events=${o.events}`);
   console.log(`${r.won ? '通关' : '未通关(超时)'} 总用时 ${fm(r.minutes)} 分钟`);
   const tu = r.eras.map((m, i) => (i > 0 ? `${i}:${fm(m)}` : '')).filter(Boolean).join('  ');
   console.log(`时代切换(两线都到第k档)分钟: ${tu || '—'}`);
-  console.log(`首次购买 ${fm(r.firstBuy)}s  首辆新车 ${fm(r.firstVehicle)}s  首次换道具 ${fm(r.firstGate)}s`);
+  console.log(`首次购买 ${fm(r.firstBuy)}s  首辆新车 ${fm(r.firstVehicle)}s`);
   console.log(`有意义购买(升档/扩建/≥3%提升)之间最长间隔 ${fm(r.buyGapMaxS)}s (第 ${fm(r.buyGapAtMin)} 分钟)  [目标≤90s]  |  最长无事可买(购买力) ${fm(r.idleMaxS)}s  浪费 ${r.wastedPct.toFixed(1)}%`);
   console.log(`升档前最长等待(第1..5档,秒): ${r.tierWait.slice(1).map((x) => x.toFixed(0)).join(' / ')}`);
   console.log(`瓶颈(每分钟 P=产出不够 C=运力不够 =平衡): ${r.timeline}`);
-  console.log(`道具使用时间占比: ${Object.entries(r.gatesUsed).map(([k, v]) => `${k}${v}%`).join(' ')}`);
   console.log(`分支: ${r.branches.join(' | ')}`);
   if (o.verbose && process.argv.includes('--buys')) for (const l of r.log) console.log('  ' + l);
   if (o.verbose) for (const t of r.tierUps) console.log(`  ${fm(t.min)}m ${t.line} → ${t.tier} (${t.branch})`);

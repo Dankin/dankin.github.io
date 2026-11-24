@@ -74,7 +74,7 @@ export interface RouteTierDef {
 // ───────────────────────── 手动:摇树 ─────────────────────────
 export const SHAKE = {
   /** 一下摇掉的苹果 = 1 + 当前产出(个/秒) × dropSec[产出档] × 手劲加成。后期手动只是调味。 */
-  dropSec: [0.8, 0.59, 0.46, 0.37, 0.25],
+  dropSec: [0.7, 0.5, 0.39, 0.31, 0.21],
   /** 每次有效摇树给摇劲的增量(0..1) */
   perShake: 0.08,
   /** 摇劲每秒指数衰减 */
@@ -89,10 +89,10 @@ export const SHAKE = {
   /** 连摇:相邻两次有效摇树不超过这么多秒才算连上 */
   comboWindow: 0.6,
   /** 连摇每一击对价值的加成(+0.8%),最多算 comboMax 击 */
-  comboStep: 0.008,
+  comboStep: 0.004,
   comboMax: 30,
   /** 摇劲产生的产出加成上限(摇满时 produce × (1+x)),按产出档递减 */
-  maxByTier: [2.19, 1.89, 1.6, 1.3, 0.81],
+  maxByTier: [2.19, 1.89, 1.6, 1.3, 1.0],
 };
 
 /** 升到新一档时白送的单位数(不然手摇掉量随档下降,升档会越升越亏) */
@@ -119,7 +119,7 @@ export const HELPER = {
   name: '老徐',
   unit: '级',
   joke: '老徐退休了,闲着也是闲着,帮你摇两下。',
-  rate: 0.15,
+  rate: 0.3,
   /** 最高级 */
   max: 8,
   /** 各级相当于旧版几位老徐(下标=级,0 级为 0) */
@@ -153,7 +153,7 @@ export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
     joke: '一棵树,一个你,一点耐心。',
   },
   {
-    name: '老树', unit: '棵老树', rate: 14, baseCost: 6400, growth: 1.12, tierCost: 6400,
+    name: '老树', unit: '棵老树', rate: 38, baseCost: 6400, growth: 1.12, tierCost: 6400,
     joke: '粗了,老了,木牌上写着"请勿攀爬"。',
     branches: [
       { name: '密植', joke: '枝多果小,挤挤挨挨,谁也别想偷懒。', effect: { produce: 1.3 } },
@@ -161,7 +161,7 @@ export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
     ],
   },
   {
-    name: '巨树', unit: '棵巨树', rate: 170, baseCost: 60000, growth: 1.12, tierCost: 60000,
+    name: '巨树', unit: '棵巨树', rate: 459, baseCost: 60000, growth: 1.12, tierCost: 60000,
     joke: '软梯挂下来,树屋亮着灯。老徐已经上去了。',
     branches: [
       { name: '密植', joke: '树屋住满了,枝也长满了,果子小但是多。', effect: { produce: 1.3 } },
@@ -169,7 +169,7 @@ export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
     ],
   },
   {
-    name: '云树', unit: '棵云树', rate: 1700, baseCost: 5000000, growth: 1.12, tierCost: 5000000,
+    name: '云树', unit: '棵云树', rate: 4590, baseCost: 5000000, growth: 1.12, tierCost: 5000000,
     joke: '树冠进了云里。吊篮缆绳一晃一晃,云表示:别蹭我。',
     branches: [
       { name: '密植', joke: '云里全是枝,苹果多得像下雨。', effect: { produce: 1.35 } },
@@ -177,7 +177,7 @@ export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
     ],
   },
   {
-    name: '星树', unit: '棵星树', rate: 20400, baseCost: 1000000000, growth: 1.12, tierCost: 1000000000,
+    name: '星树', unit: '棵星树', rate: 55080, baseCost: 1000000000, growth: 1.12, tierCost: 1000000000,
     joke: '树顶挂着星星彩灯,苹果夜里自己发光。',
     branches: [
       { name: '密植', joke: '满树彩灯,果多光多,电费算星星的。', effect: { floor: 0.3, produce: 1.25 } },
@@ -199,7 +199,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     joke: '提着走。累了就换只手。',
   },
   {
-    name: '挑扁担工', unit: '位挑担工', cap: 31, trip: 5.5, baseCost: 1400, growth: 1.12, tierCost: 1600,
+    name: '挑扁担工', unit: '位挑担工', cap: 84, trip: 5.5, baseCost: 1400, growth: 1.12, tierCost: 1600,
     joke: '两头一挑,走得慢,但稳。苹果在筐里跟着扁担颤。',
     branches: [
       { name: '加粗扁担', joke: '扁担粗了,筐子大了,腰有意见。', effect: { cap: 1.5, time: 1.1 } },
@@ -207,7 +207,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '小推车', unit: '辆小推车', cap: 160, trip: 6, baseCost: 54000, growth: 1.12, tierCost: 58000,
+    name: '小推车', unit: '辆小推车', cap: 432, trip: 6, baseCost: 54000, growth: 1.12, tierCost: 58000,
     joke: '带轮子的篮子。轮子有一个会吱呀叫。',
     branches: [
       { name: '重载板车', joke: '载得多,走得慢,像极了周一。', effect: { cap: 1.5, time: 1.1 } },
@@ -215,7 +215,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '卡车', unit: '辆卡车', cap: 2261, trip: 7, baseCost: 490000, growth: 1.12, tierCost: 540000,
+    name: '卡车', unit: '辆卡车', cap: 6105, trip: 7, baseCost: 490000, growth: 1.12, tierCost: 540000,
     joke: '突突突。喇叭比苹果先到。',
     branches: [
       { name: '重卡', joke: '大板车壮汉,轮胎比你高两个头。', effect: { cap: 1.5, stock: 1.5 } },
@@ -223,7 +223,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '货船', unit: '艘货船', cap: 29070, trip: 9, baseCost: 44000000, growth: 1.12, tierCost: 44000000,
+    name: '货船', unit: '艘货船', cap: 78489, trip: 9, baseCost: 44000000, growth: 1.12, tierCost: 44000000,
     joke: '苹果出海了。苹果:我晕船。',
     branches: [
       { name: '集装箱', joke: '一个箱子装一万个苹果,海关数得很累。', effect: { cap: 1.5, stock: 1.5 } },
@@ -231,7 +231,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '直升机', unit: '架直升机', cap: 65000, trip: 10, baseCost: 150000000, growth: 1.12, tierCost: 160000000,
+    name: '直升机', unit: '架直升机', cap: 175500, trip: 10, baseCost: 150000000, growth: 1.12, tierCost: 160000000,
     joke: '吊在半空,堵车跟它没关系。',
     branches: [
       { name: '吊篮', joke: '一根粗绳吊一大篮,地上的车只能抬头看。', effect: { cap: 1.5, stock: 1.5 } },
@@ -239,7 +239,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '飞机', unit: '架飞机', cap: 144500, trip: 11, baseCost: 540000000, growth: 1.12, tierCost: 540000000,
+    name: '飞机', unit: '架飞机', cap: 390150, trip: 11, baseCost: 540000000, growth: 1.12, tierCost: 540000000,
     joke: '苹果第一次坐头等舱,没人跟它说话。',
     branches: [
       { name: '货机', joke: '机舱里没座位,全是苹果。', effect: { cap: 1.5, stock: 1.5 } },
@@ -247,7 +247,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '传送门', unit: '道传送门', cap: 510000, trip: 13, baseCost: 8900000000, growth: 1.12, tierCost: 8900000000,
+    name: '传送门', unit: '道传送门', cap: 1377000, trip: 13, baseCost: 8900000000, growth: 1.12, tierCost: 8900000000,
     joke: '这头一个苹果,那头还是一个苹果。物理学家沉默了。',
     branches: [
       { name: '大口径', joke: '门开得大,苹果挤着过。', effect: { cap: 1.5 } },

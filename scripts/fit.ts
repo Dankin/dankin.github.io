@@ -23,7 +23,7 @@ export function applyFit(f: Fit): void {
   SHAKE.dropSec.splice(0, 6, ...DROP0.map((x) => x * f.drop));
   if (f.drop0) SHAKE.dropSec[0] = f.drop0;
 }
-const run = (cps: number) => play({ cps, delay: 1.5, policy: 'balanced', gates: 'auto', events: 0.7, maxMin: 240, seed: 1, verbose: false });
+const run = (cps: number) => play({ cps, delay: 1.5, policy: 'balanced', events: 0.7, maxMin: 240, seed: 1, verbose: false });
 
 if (process.argv[1]?.endsWith('/fit.ts') || process.argv[1] === 'scripts/fit.ts') {
   const iters = Number(process.argv[2] ?? 14);
