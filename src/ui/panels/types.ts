@@ -49,8 +49,6 @@ export interface PanelsApi {
   /** 进入某时代(= bus 'era'):弹明信片 + 排旁白。已看过的明信片不会重复弹 */
   enterEra(era: number, opts?: { force?: boolean }): void;
   openCodex(tab?: 'varieties' | 'eggs' | 'achievements'): void;
-  openMailbox(): void;
-  openPostcard(id: string): void;
   openOrders(): void;
   openOffer(): void;
   openSettings(): void;
@@ -62,6 +60,6 @@ export interface PanelsApi {
   isModalOpen(): boolean;
   closeAll(): void;
   /** 小红点:图鉴/信箱/订单有新东西 */
-  badges(): { codex: number; mailbox: number; orders: number };
+  badges(): { codex: number; orders: number };
   destroy(): void;
 }

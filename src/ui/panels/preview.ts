@@ -63,9 +63,6 @@ const go = async (): Promise<void> => {
   switch (scene) {
     case 'narr': api.say('树抖了一下。一个苹果,掉进了你的手里。', 'xu', { force: true }); break;
     case 'narr-long': api.say('这一棵树,已经替你送出了三千二百个苹果。老徐说,够吃到过年了,但是你好像并不打算停下来。', 'xu', { force: true }); break;
-    case 'postcard': api.enterEra(2, { force: true }); break;
-    case 'postcard0': api.enterEra(0, { force: true }); break;
-    case 'mailbox': for (const e of [0, 1, 2, 3]) api.enterEra(e, { force: true }), api.closeAll(); api.openMailbox(); break;
     case 'codex': case 'codex-empty': api.openCodex('varieties'); break;
     case 'codex-eggs': api.openCodex('eggs'); break;
     case 'codex-ach': api.openCodex('achievements'); break;

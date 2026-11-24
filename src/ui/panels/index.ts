@@ -6,7 +6,6 @@ import { anySheetOpen, closeAllSheets, h, onSheetChange } from './dom.ts';
 import { createGift } from './gift.ts';
 import { createNarration } from './narration.ts';
 import { createOrders } from './orders.ts';
-import { createPostcards } from './postcards.ts';
 import { openSettings } from './settings.ts';
 import { loadPrefs } from './store.ts';
 import type { PanelCtx, PanelsApi } from './types.ts';
@@ -37,20 +36,16 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
       d.dot.textContent = n > 9 ? '9+' : String(n);
     }
   };
-  const postcards = createPostcards(ctx, prefs, refreshDock);
   const orders = createOrders(ctx, prefs, root, refreshDock, (t) => narr.say(t, undefined, false));
   const gift = createGift(ctx, refreshDock);
 
   const api: PanelsApi = {
     say: (text, speaker, opts) => narr.say(text, speaker, opts?.force),
     onAway: (m) => narr.onAway(m),
-    enterEra(era, opts) {
+    enterEra(era) {
       narr.enterEra(era);
-      postcards.enter(era, opts?.force);
     },
     openCodex: (tab?: CodexTab) => openCodex(ctx, prefs, refreshDock, tab),
-    openMailbox: () => postcards.openMailbox(),
-    openPostcard: (id) => postcards.open(id, 'reread'),
     openOrders: () => orders.openOrders(),
     openOffer: () => orders.openOffer(),
     openSettings: () => openSettings(ctx, prefs, { openGift: () => gift.open(), onChange: refreshDock }),
@@ -61,7 +56,7 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
     },
     isModalOpen: () => anySheetOpen(),
     closeAll: () => closeAllSheets(),
-    badges: () => ({ codex: codexUnseen(ctx, prefs), mailbox: postcards.unread(), orders: orders.unseen() }),
+    badges: () => ({ codex: codexUnseen(ctx, prefs), orders: orders.unseen() }),
     destroy() {
       clearInterval(timer);
       narr.destroy();
@@ -94,7 +89,6 @@ export function mountPanels(ctx: PanelCtx): PanelsApi {
     };
     const st = (): ReturnType<PanelCtx['getState']> => ctx.getState();
     add('图', '图鉴', () => api.openCodex(), () => true, () => codexUnseen(ctx, prefs));
-    add('信', '信箱', () => api.openMailbox(), () => prefs.cardsSeen.length > 0, () => postcards.unread());
     add('单', '订单', () => api.openOrders(), () => orders.count() > 0 || (st().sys?.orders?.done ?? 0) > 0, () => orders.unseen());
     add('献', '献果', () => api.openOffer(), () => !!ctx.actions?.offer && offerOpen(st().source.tier, st().route.tier), () => 0);
     refreshDock();
