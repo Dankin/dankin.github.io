@@ -62,6 +62,6 @@ drawLaoXu(ctx, x, y, s, { lv: 1..8, state, t, seed, dir, p?, item?, tree? })
 ### 彩蛋角色 `drawCharacterEgg(ctx,kind,x,y,s,{p 0..1,t,seed,dir})`(eggs.ts)
 被点中 1~2 秒专属动作(时长 `EGG_DURATION[kind]`,台词 `EGG_LINES[kind]`);牛顿灯泡、圣诞老人掏礼物等。
 ### 老徐新站位 `drawLaoXuAt(ctx,'ground'|'treehouse'|'basket'|'top',x,y,s,o)`(laoxu-tree.ts)
-自带前景件(树屋栏杆+灯笼/吊篮前沿+摇摆/树顶彩灯串+叶台),o 同 drawLaoXu(`state` 建议 watch/cheer/clap/idle,别用 shake)。锚点由 art-nature 的 `treeAnchors(tier)`(待提供,{treehouse,basket,top}→{x,y} 相对树根)给出,s 不要缩到 <0.7。
+自带前景件(树屋栏杆+灯笼/吊篮前沿+摇摆/树顶彩灯串+叶台),o 同 drawLaoXu(`state` 建议 watch/cheer/clap/idle,别用 shake)。锚点用 `src/art/nature` 的 `treeAnchorsIdx(tierIdx 0..4, s=1, variant=0)` → {treehouse?,basket?,top?:{x,y}}(相对树根底部中心,y 向下,已乘 s);idx2 起树屋、idx3 吊篮、idx4 树顶,s 不要缩到 <0.7。
 ### 新阶段说明卡 `drawStageCard(ctx,x,y,w,h,{title,sub,lines,thumb(g,w,h),p,t,isNew,seed})`(stagecard.ts)
 (x,y)=左上角;返回缩略图槽 [x,y,w,h];p 0..1 弹入(约 0.35s,之后停留 ~1s);thumb 回调已 clip 到槽内。
