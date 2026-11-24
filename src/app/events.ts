@@ -1,6 +1,6 @@
 // 提示与事件:瓶颈提示、环境小话、苹果日报、小鸟/牛顿/流星。
 import { claimEvent, nextEventGap, pickEvent, type EventKind } from '../core/events.ts';
-import { AMBIENT_TEXT, BOTTLENECK_TIP, DAILY_NEWS, EVENT_TEXT, NEWTON_STAGES } from '../core/copy.ts';
+import { AMBIENT_TEXT, BOTTLENECK_TIP, EVENT_TEXT, NEWTON_STAGES } from '../core/copy.ts';
 import { worldAt } from '../core/world.ts';
 import type { Throughput } from '../core/game.ts';
 import { bus } from '../core/bus.ts';
@@ -36,21 +36,15 @@ export function bottleneckTip(th: Throughput): void {
   }
 }
 
-// ───────────── 环境小话(40–70 秒飘一句)和苹果日报(每 10 分钟一句 toast) ─────────────
+// ───────────── 环境小话(40–70 秒飘一句)(苹果日报已移到顶栏下的滚动条,见 ticker.ts) ─────────────
 let nextAmbient = performance.now() + 30000;
-let nextNews = performance.now() + 600000;
 let ambI = Math.floor(Math.random() * AMBIENT_TEXT.length);
-let newsI = Math.floor(Math.random() * DAILY_NEWS.length);
 export function ambient(): void {
   if (document.hidden || app.DEBUG && app.speed > 60) return;
   const now = performance.now();
   if (now >= nextAmbient && !app.orchard.eventActive()) {
     nextAmbient = now + 40000 + Math.random() * 30000;
     app.orchard.floatText(AMBIENT_TEXT[ambI++ % AMBIENT_TEXT.length]);
-  }
-  if (now >= nextNews && toastIdle() && bp.hidden && gp.hidden && app.state.delivered > 0) {
-    nextNews = now + 600000;
-    toast(DAILY_NEWS[newsI++ % DAILY_NEWS.length], 4200);
   }
 }
 

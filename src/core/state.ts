@@ -17,6 +17,10 @@ export interface Vehicle {
   load: number;
 }
 
+/** 底栏卡位:产出线买卡 / 产出线升档 / 运输线买卡 / 运输线升档 */
+export type PinSlot = 'srcBuy' | 'srcUp' | 'rtBuy' | 'rtUp';
+export const PIN_SLOTS: readonly PinSlot[] = ['srcBuy', 'srcUp', 'rtBuy', 'rtUp'];
+
 export interface Line {
   /** 当前最高档 0..5 */
   tier: number;
@@ -30,10 +34,21 @@ export interface Line {
 
 export interface State {
   version: number;
-  /** 果钱:买东西用 */
+  /**
+   * 玩家"手上的苹果":买东西用。界面叫"手上苹果",代码里沿用 coins(数值与 v3 完全一致,sim 零影响)。
+   * 账本:每送达一个苹果 coins += 它的价值(appleValue);每次购买 coins -= 价格、spent += 价格。
+   * 所以 "累计赚到的手上苹果" = coins + spent。
+   */
   coins: number;
-  /** 累计送达(进度条,82 亿) */
+  /** 累计花掉的手上苹果(只增,买单位/扩建/升档/老徐都计入;关卡道具免费不计)。v4 新增 */
+  spent: number;
+  /**
+   * 累计送达("已送出",进度条,82 亿):得分,只增,与花费无关,不会因购买减少。
+   * 和 coins 的区别:delivered 数的是个数,coins 数的是个数×单价(单价随道具/档位变)。
+   */
   delivered: number;
+  /** 钉住的目标卡(底栏 4 张卡之一);没有钉住为 null。只影响提示,不影响数值。v4 新增 */
+  pin: PinSlot | null;
   /** 累计点按/摇树次数(含没算上的) */
   shakes: number;
   /** 本局已玩秒数(游戏内时钟,所有计时器用它) */
@@ -79,7 +94,9 @@ export function newState(now: number): State {
   return {
     version: SAVE_VERSION,
     coins: 0,
+    spent: 0,
     delivered: 0,
+    pin: null,
     shakes: 0,
     playSec: 0,
     source: newLine(),

@@ -1,5 +1,5 @@
 import { SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from './constants.ts';
-import { newState, type State } from './state.ts';
+import { newState, PIN_SLOTS, type State } from './state.ts';
 
 /** 只用到这三个方法,便于测试时传入内存实现 */
 export interface KV {
@@ -17,9 +17,19 @@ export function fnv(str: string): string {
   return h.toString(16);
 }
 
-/** migrations[v] 把 v 版存档升到 v+1 版 */
-/** v1/v2 是旧的数值模型,结构完全不同:直接换成全新存档(见 parse)。 */
+/**
+ * migrations[v] 把 v 版存档升到 v+1 版(parse 会自动把 version 加一)。
+ * v1/v2 是旧的数值模型,结构完全不同:不迁移,直接换成全新存档(见 parse 的 MIN_MIGRATABLE)。
+ * 迁移前 load() 会把原始存档文本另存一份 `SAVE_KEY.v<旧版本>.bak`(见 migrationBackupKey)。
+ */
 export const migrations: Array<(s: any) => any> = [];
+/** 低于这个版本的存档无法迁移 */
+export const MIN_MIGRATABLE = 3;
+/** v3 → v4:加 spent(累计花费;旧档不可考,从 0 记)与 pin(钉住目标)。coins/delivered 等数值原样保留。 */
+migrations[3] = (s) => ({ ...s, spent: 0, pin: null });
+
+/** 迁移前备份的 key:每个旧版本一份,不覆盖已有的 */
+export const migrationBackupKey = (fromVersion: number): string => `${SAVE_KEY}.v${fromVersion}.bak`;
 
 export type LoadResult =
   | { kind: 'ok'; state: State; fromBackup: boolean }
@@ -31,7 +41,7 @@ export function serialize(s: State): string {
   return JSON.stringify({ sum: fnv(body), body });
 }
 
-export function parse(raw: string): { state: State; newer: boolean } | null {
+export function parse(raw: string): { state: State; newer: boolean; migratedFrom?: number } | null {
   try {
     const { sum, body } = JSON.parse(raw);
     if (typeof body !== 'string' || sum !== fnv(body)) return null;
@@ -39,12 +49,13 @@ export function parse(raw: string): { state: State; newer: boolean } | null {
     if (typeof s.version !== 'number') return null;
     if (s.version > SAVE_VERSION) return { state: s as State, newer: true };
     // 旧版(<3)是另一套玩法,存档不兼容:丢弃,从头开始
-    if (s.version < SAVE_VERSION) return null;
+    if (s.version < MIN_MIGRATABLE) return null;
+    const from = s.version as number;
     while (s.version < SAVE_VERSION) {
       s = migrations[s.version](s);
       s.version += 1;
     }
-    return { state: s as State, newer: false };
+    return from < SAVE_VERSION ? { state: s as State, newer: false, migratedFrom: from } : { state: s as State, newer: false };
   } catch {
     return null;
   }
@@ -74,9 +85,20 @@ export function load(kv: KV, now: number): LoadResult {
     const r = parse(raw);
     if (!r) continue;
     if (r.newer) return { kind: 'readonly', state: r.state };
+    if (r.migratedFrom !== undefined) backupBeforeMigration(kv, raw, r.migratedFrom);
     return { kind: 'ok', state: fillDefaults(r.state, now), fromBackup: i === 1 };
   }
   return { kind: 'new', state: newState(now) };
+}
+
+/** 旧版存档迁移前,把原文另存一份(已有就不覆盖:最早的那份最值钱) */
+function backupBeforeMigration(kv: KV, raw: string, from: number): void {
+  try {
+    const key = migrationBackupKey(from);
+    if (!kv.getItem(key)) kv.setItem(key, raw);
+  } catch {
+    /* 存储不可写:迁移照常进行,只是没有备份 */
+  }
 }
 
 /** 迁移后补齐可能缺失的字段;结构对不上(旧版存档)直接当新档 */
@@ -93,6 +115,8 @@ function fillDefaults(s: State, now: number): State {
   const out: any = {
     ...d,
     ...s,
+    spent: Math.max(0, num(legacy.spent, 0)),
+    pin: PIN_SLOTS.includes(legacy.pin) ? legacy.pin : null,
     shakes: num(legacy.shakes ?? legacy.clicks, 0),
     charge: Math.min(1, Math.max(0, num(legacy.charge ?? legacy.flywheel, 0))),
     shakeRate: 0,

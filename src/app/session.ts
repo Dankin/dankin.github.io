@@ -1,4 +1,5 @@
 // 会话:存档/读档、离线补算、主题/声音、通关、重开、换档后的重置。
+import { redrawHandIcon } from './hud.ts';
 import { isWon, settle } from '../core/game.ts';
 import { awayLine, SEALED } from '../core/copy.ts';
 import { save } from '../core/save.ts';
@@ -43,6 +44,7 @@ export function applyTheme(): void {
   document.documentElement.classList.toggle('dark', d);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', d ? '#16171b' : '#f4f1ea');
   $('btnTheme').textContent = THEME_LABEL[m];
+  redrawHandIcon();
 }
 export function applySound(): void {
   const on = app.state.settings.sound;

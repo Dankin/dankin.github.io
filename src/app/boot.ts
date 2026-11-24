@@ -5,10 +5,14 @@ import { exportSave, importSave, load, storageWritable } from '../core/save.ts';
 import { GATE_SLOTS } from '../core/content.ts';
 import { Orchard } from '../ui/orchard.ts';
 import '../ui/glue.css';
+import './app.css';
 import { $, $o } from './dom.ts';
 import { app, hooks, kv } from './ctx.ts';
 import { toast } from './toasts.ts';
 import { initBar, wireBar } from './bar.ts';
+import { initHud } from './hud.ts';
+import { startTicker } from './ticker.ts';
+import { installContentNews, trackNewsSignals } from './news.ts';
 import { chooseBranch, openGate } from './dialogs.ts';
 import { applySound, applyTheme, afterStateReplaced, catchUp, DARK_MQ, persist, resetGame } from './session.ts';
 import { armAudioUnlock, doShake, setupMotion } from './input.ts';
@@ -100,6 +104,9 @@ const awayAtBoot = loaded.kind === 'new' ? 0 : Date.now() - loaded.state.lastSee
 app.state = loaded.state;
 if (loaded.kind === 'readonly') app.readOnly = true;
 initBar();
+initHud();
+trackNewsSignals();
+installContentNews();
 app.orchard = new Orchard($<HTMLCanvasElement>('stage'));
 if (loaded.kind === 'readonly') toast('存档来自更新的版本,本页只读,不会覆盖存档。', 6000);
 else if (loaded.kind === 'ok') {
@@ -125,4 +132,5 @@ if (app.DEBUG) {
   };
 }
 afterStateReplaced();
+startTicker();
 startLoop();

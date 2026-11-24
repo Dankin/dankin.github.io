@@ -5,7 +5,8 @@ import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast, toastIdle } from './toasts.ts';
 import { renderHud } from './hud.ts';
-import { btn, renderAct, renderFocus, renderHelper } from './bar.ts';
+import { feedTicker } from './ticker.ts';
+import { btn, getGoal, renderAct, renderFocus, renderHelper } from './bar.ts';
 import { bp, fillBranch, renderGates } from './dialogs.ts';
 import { buildWorld } from './world.ts';
 import { ambient, bottleneckTip, maybeEvent } from './events.ts';
@@ -31,10 +32,11 @@ export function renderAll(): void {
   if (lastDelivered >= 0 && s.delivered > lastDelivered) bus.emit({ t: 'delivered', n: s.delivered - lastDelivered, total: s.delivered });
   lastDelivered = s.delivered;
 
-  renderHud(th);
   renderAct('source', btn.sb, btn.su, hints, th);
   renderAct('route', btn.rb, btn.ru, hints, th);
-  renderFocus();
+  renderFocus(th);
+  renderHud(th, getGoal());
+  feedTicker(th);
   renderGates();
   renderHelper(hints);
   if (!bp.hidden) fillBranch();

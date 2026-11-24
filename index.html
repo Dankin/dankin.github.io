@@ -17,10 +17,18 @@
 </head>
 <body>
 <header id="topbar">
+  <div id="hand" class="hand" role="group" aria-label="手上的苹果">
+    <canvas id="handIcon" aria-hidden="true"></canvas>
+    <div class="hv"><b id="handNum">0</b><span id="handRate"></span></div>
+    <div id="handBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="攒够下一件东西的进度"><i></i></div>
+    <span id="handGoal"></span>
+  </div>
   <div class="counts"><span class="lbl">已送出</span><b id="apples">0</b><span id="goalNum">/ 82亿</span></div>
   <button id="btnSettings" class="ib" type="button" aria-label="设置">⚙</button>
   <div id="goalWrap" role="progressbar" aria-label="送达进度" aria-valuemin="0" aria-valuemax="100"><i id="goalBar"></i></div>
 </header>
+
+<div id="news" role="status" aria-live="off" aria-label="苹果日报"><span id="newsMast">苹果日报</span><div id="newsView"><span id="newsText"></span></div></div>
 
 <main id="scene"><canvas id="stage" aria-label="苹果传送线"></canvas><div id="toast" role="status" aria-live="polite"></div><button id="btnHelper" type="button" hidden></button></main>
 

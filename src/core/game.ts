@@ -180,7 +180,9 @@ function addVehicle(s: State, tier: number): void {
 
 export function buyUnit(s: State, line: LineId, tier = s[line].tier): boolean {
   if (!canBuyUnit(s, line, tier)) return false;
-  s.coins -= unitCost(s, line, tier);
+  const cost = unitCost(s, line, tier);
+  s.coins -= cost;
+  s.spent += cost;
   s[line].units[tier] += 1;
   if (line === 'route') addVehicle(s, tier);
   return true;
@@ -203,7 +205,9 @@ export function canExpand(s: State, line: LineId, tier = s[line].tier): boolean 
 }
 export function buyExpand(s: State, line: LineId, tier = s[line].tier): boolean {
   if (!canExpand(s, line, tier)) return false;
-  s.coins -= expandInfo(s, line, tier)!.cost;
+  const cost = expandInfo(s, line, tier)!.cost;
+  s.coins -= cost;
+  s.spent += cost;
   s[line].ext[tier] += 1;
   return true;
 }
@@ -238,7 +242,9 @@ export function upgradeTier(s: State, line: LineId, branch: 0 | 1): UpgradeResul
   if (branch !== 0 && branch !== 1) return null;
   if (!canUpgradeTier(s, line)) return null;
   const L = s[line];
-  s.coins -= tierCost(s, line)!;
+  const cost = tierCost(s, line)!;
+  s.coins -= cost;
+  s.spent += cost;
   L.tier += 1;
   L.branch[L.tier] = branch;
   L.units[L.tier] = TIER_START_UNITS;
@@ -286,6 +292,7 @@ export function buyHelper(s: State): boolean {
   const c = helperCost(s);
   if (c === null || s.coins < c) return false;
   s.coins -= c;
+  s.spent += c;
   s.helpers += 1;
   return true;
 }

@@ -107,7 +107,7 @@ export function fillBranch(): void {
   const c = tierCost(app.state, branchLine) ?? 0;
   const can = app.state.coins >= c;
   $('branchTitle').textContent = `升级:${t.name}`;
-  $('branchSub').textContent = `${LINE_NAME[branchLine]} · 二选一,选了就定了 · ${fmt(c)} 果钱`;
+  $('branchSub').textContent = `${LINE_NAME[branchLine]} · 二选一,选了就定了 · ${fmt(c)} 苹果`;
   bs.forEach((b, i) => {
     const el = $(`branch${i}`);
     setText(el.querySelector('.nm') as HTMLElement, b.name);
@@ -138,7 +138,7 @@ export function openBranch(line: LineId): void {
 export function chooseBranch(i: 0 | 1): void {
   if (!canUpgradeTier(app.state, branchLine)) {
     const c = tierCost(app.state, branchLine) ?? 0;
-    toast(`果钱还差 ${fmt(Math.ceil(c - app.state.coins))}。`);
+    toast(`手上的苹果还差 ${fmt(Math.ceil(c - app.state.coins))}。`);
     return;
   }
   const line = branchLine;

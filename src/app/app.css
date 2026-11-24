@@ -1,0 +1,62 @@
+/* v5 app 层小部件:手上苹果(顶栏)、水位条、回本/图钉/目标。与 ui.css(界面设计)分开。 */
+:root { --leaf: #6aa84f; }
+:root.dark { --leaf: #7fbf62; }
+
+/* ---- 顶栏:手上苹果 ---- */
+#topbar { align-items: center; }
+.hand { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; padding-right: 8px; margin-right: 2px; }
+#handIcon { width: 22px; height: 22px; flex: none; }
+.hand .hv { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+#handNum { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+#handRate { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#handBar { position: absolute; left: 0; right: 8px; bottom: -4px; height: 3px; background: var(--f1); border-radius: 2px; overflow: hidden; }
+#handBar i { display: block; height: 100%; width: 0; background: var(--f3); transition: width 0.25s linear; }
+#handBar.pinned i { background: var(--red); }
+#handBar.full i { background: var(--red); animation: handFull 1.4s ease-in-out infinite; }
+#handBar.off { visibility: hidden; }
+#handGoal { position: absolute; left: 0; top: 100%; margin-top: 4px; z-index: 2; font-size: 11px; line-height: 1; color: var(--dim); white-space: nowrap; pointer-events: none; }
+@keyframes handFull { 50% { opacity: 0.55; } }
+.hand .spend { position: absolute; left: 28px; top: 0; font-size: 12px; font-weight: 800; color: var(--red); pointer-events: none; animation: spendUp 0.9s ease-out forwards; }
+@keyframes spendUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(14px); } }
+@media (max-height: 520px) {
+  #handGoal { display: none; }
+  #handNum { font-size: 16px; }
+  #handIcon { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hand .spend { animation: none; opacity: 0; }
+  #handBar.full i { animation: none; }
+  #handBar i { transition: none; }
+}
+
+/* ---- 底栏卡:回本 / 图钉 / 目标晚 X 秒 ---- */
+.act .pv { grid-column: 1; }
+.act .pb { grid-column: 2; grid-row: 2; justify-self: end; font-size: 11px; line-height: 1.2; white-space: nowrap; font-weight: 700; color: var(--dim); }
+.act .pb:empty { display: none; }
+.act .pb.g { color: #2f8f46; }
+.act .pb.y { color: #b8860b; }
+.act .pb.r { color: var(--red); }
+:root.dark .act .pb.g { color: #6fcf86; }
+:root.dark .act .pb.y { color: #e0b84a; }
+.act .pv.late { color: var(--red); font-weight: 700; }
+.act .pin { position: absolute; left: 6px; top: -10px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--paper); border: var(--line) solid var(--f3); color: var(--dim); cursor: pointer; }
+.act .pin[hidden] { display: none; }
+.act .pin.on { color: var(--red); border-color: var(--red); }
+.act .pin.on svg path { fill: currentColor; }
+.act.dim .pin { opacity: 0.6; }
+.act.goal:not(.bn) { border-color: var(--ink); border-width: 1.5px; }
+@media (pointer: coarse) {
+  /* 触屏:命中区放大(视觉不变) */
+  .act .pin::before { content: ""; position: absolute; inset: -10px; }
+}
+/* 钉住的卡即使还买不起也要亮着、显示价钱 */
+.act.dim.goal { opacity: 1; }
+.act.dim.goal .pr { visibility: visible; }
+
+/* ---- 新闻滚动条(R5) ---- */
+#news { flex: none; display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 calc(10px + var(--sar)) 0 calc(10px + var(--sal)); border-bottom: var(--line) solid var(--f1); font-size: 12px; color: var(--dim); overflow: hidden; }
+#newsMast { flex: none; font-weight: 800; color: var(--ink); letter-spacing: 0.5px; padding-right: 8px; border-right: var(--line) solid var(--f2); line-height: 14px; }
+#newsView { position: relative; flex: 1 1 0; min-width: 0; height: 100%; overflow: hidden; white-space: nowrap; display: flex; align-items: center; }
+#newsText { display: inline-block; white-space: nowrap; will-change: transform; }
+#newsText.still { max-width: 100%; overflow: hidden; text-overflow: ellipsis; transform: none; }
+@media (max-height: 420px) { #news { height: 20px; font-size: 11px; } }
