@@ -1,4 +1,4 @@
-// 彩蛋判定:56 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
+// 彩蛋判定:55 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
 // 奖励请用 EGG_BY_ID[id].reward(content)发放,hit 里不重复携带。
 import { ROUTE_ERA } from '../content.ts';
 import { CODEX, LAOXU } from './constants.ts';
@@ -80,7 +80,6 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['duoduo-refuse', (c) => c.ev.t === 'refuse' && bump(c, 'refuse') >= 10],
   ['atalanta', (c) => c.ev.t === 'gold' && c.ev.kind === 'tap' && (c.ev.since ?? 99) <= 3 && tapRun2(c)],
   ['idunn', (c) => c.snap.night && eraMax(c.snap) >= 4 && tapIs(c, 'gold-basket')],
-  ['sitting-under-tree', (c) => c.snap.night && tapIs(c, 'night-person')],
   // ── v6:卡车 / 鸟 / 收货站 / 云树 / 星树 ──
   ['truck-horn', (c) => c.snap.routeTier >= 3 && tapRun(c, 5, 1.25, 'truck')],
   ['bird-feather', (c) => c.ev.t === 'event' && c.ev.kind === 'bird' && c.ev.claimed && bump(c, 'birdHits') >= 10],

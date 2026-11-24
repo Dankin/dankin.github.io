@@ -13,7 +13,7 @@ sys 不直接改 State 的数值字段:需要加/扣果钱时返回数字,由 en
 | `pests.ts` | 虫眼简版:`tickPests`(每 3–4 分钟一波)、`tapPest`;不点最多咬走少量库存(单波 ≤4%,不致命) |
 | `offer.ts` | 献果:`offerOpen(sourceTier, routeTier)`(产出线 ≥3 且运输线 `ROUTE_ERA` ≥3,即货船起)、`doOffer`:送出 += W×0.15/v |
 | `decay.ts` | 防囤:库存超 `decayLimit(目标价,收入)=max(1.5×目标价, 300×收入)` 的部分指数腐烂,冷库道具免疫,可点清烂果 |
-| `codex.ts` / `eggs.ts` | 图鉴(15 品种 + 56 彩蛋)、成就 26 个。`checkEggs(snap, ev, codex, rnd)→[{id,reward,first}]`;彩蛋 id 与 `src/content/eggs.ts` 一一对应(测试校验) |
+| `codex.ts` / `eggs.ts` | 图鉴(15 品种 + 55 彩蛋)、成就 26 个。`checkEggs(snap, ev, codex, rnd)→[{id,reward,first}]`;彩蛋 id 与 `src/content/eggs.ts` 一一对应(测试校验) |
 | `newsRules.ts` | `pickNews(snap, recent, items, rnd)`:标签匹配(night/rain/low-stock/new-tier/idle…)+ 里程碑 1/10/25/50/75/90/99% 优先,同条冷却 |
 | `state.ts` | 接线层:`SysState`、`newSys/normalizeSys`、`tickSys`、`onShakeRoll`、`claimOrder`、`tapPestSys`、`cleanRotSys`、`offerSys`、`snapshotOf`、`onEvent`、`nextNews` |
 | `migrate.ts` | 存档 v4→v5 `migrateRouteTiers`、v6→v7 `migrateV6Redesign`(产出 6→5、运输 9→8、删槽位) |
@@ -77,7 +77,7 @@ const news = nextNews(s.sys, snap, NEWS_ITEMS, rnd);          // 8 秒一条
 ### 鸟与彩蛋角色(`sys/characters.ts`,常量 `BIRD`/`CHARACTER_REWARD`)
 - 鸟:点中 `birdHit(flow,value,rnd)→{apples,coins,feathers}`(≈6 秒送达量 + 2–4 根羽毛;app 发 `{t:'event',kind:'bird',phase:'hit'}` 与 `claimed:true`);不点飞走 `birdPeck(stock,flow)→被啄走苹果数`(≤库存 4%、≤40、≤flow×3s,永远不致命;app 从 stock 扣,发 `claimed:false`)。`events.ts` 的 `claimEvent('bird')`(10 秒量)保留作"事件奖励";要用小额请调 `birdHit`。
 - 角色:`CHARACTER_IDS`(newton/snow-white/snake/seed-sower/turtleneck/einstein/archer/farmer/runner/merchant/elf/reindeer),`characterClick(id,flow,value)→{apples,coins,eggId,actionS(1–2s),sfx,particle,buff}`;牛顿给 buff 不给苹果,其余给 ≈5 秒送达量的小额苹果。冷却 `CHARACTER_REWARD.cooldownS`(app 管)。点击后仍发 `{t:'tap',target}` 触发彩蛋/图鉴。
-- 新 `TAP_TARGETS`:truck、elf、sleigh-bell、reindeer-nose、gift-top、cloud-basket、star-lantern-1..7;新 `EggEvent {t:'gift-rim'}`(礼物堆第一次高过雪橇边沿时发一次)。彩蛋共 56 条(新 10:truck-horn/bird-feather/bird-ignore/bird-hat/elf-wave/sleigh-bell/reindeer-nose/gift-peek/cloud-basket/star-lantern)。trampoline-leak 已删。
+- 新 `TAP_TARGETS`:truck、elf、sleigh-bell、reindeer-nose、gift-top、cloud-basket、star-lantern-1..7;新 `EggEvent {t:'gift-rim'}`(礼物堆第一次高过雪橇边沿时发一次)。彩蛋共 55 条(新 10:truck-horn/bird-feather/bird-ignore/bird-hat/elf-wave/sleigh-bell/reindeer-nose/gift-peek/cloud-basket/star-lantern)。trampoline-leak 已删。
 
 ### app/ui 仍引用已删接口(eng-app/ui-v5 负责,`tsc` 目前在这些文件报错)
 - gate:`src/app/{boot,dialogs,ftue,render,session,sys,world}.ts`(`GATE_SLOTS/setGate/GATES/describeGate/gateDef/GateId/GATE_UNLOCK_TOAST/s.gates/s.gatesUnlocked/newGates/buy 'gate'`;`app/sys.ts` 的 `coldStorage` 改成 `s.source.tier>=4 && s.source.branch[4]===1`),`src/ui/{orchard,scene-art,preview}.ts`、`src/ui/panels/*`、`src/art/things/ui.ts:231`。

@@ -73,7 +73,7 @@ export interface Snapshot {
 export const TAP_TARGETS = [
   'treetop-fruit', 'newton', 'poison-stall', 'summit-gold', 'skyline', 'xu-head-apple', 'xu-throat', 'xu',
   'garage', 'window-silhouette', 'moon', 'seed-core', 'vinegar', 'jam', 'green-apple', 'orange', 'news',
-  'leaf-under', 'porter', 'clock', 'stocking', 'gold-basket', 'night-person', 'version', 'title',
+  'leaf-under', 'porter', 'clock', 'stocking', 'gold-basket', 'version', 'title',
   // v6:路上的卡车 / 圣诞收货站 / 云树吊篮 / 星树七盏灯
   'truck', 'elf', 'sleigh-bell', 'reindeer-nose', 'gift-top', 'cloud-basket',
   'star-lantern-1', 'star-lantern-2', 'star-lantern-3', 'star-lantern-4', 'star-lantern-5', 'star-lantern-6', 'star-lantern-7',

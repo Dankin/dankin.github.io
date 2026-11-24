@@ -19,7 +19,7 @@ const tap = (target: string, at = 0): EggEvent => ({ t: 'tap', target: target as
 const rnd = mulberry32(1);
 
 test('egg ids line up 1:1 with writer content', () => {
-  assert.equal(EGG_COUNT, 56);
+  assert.equal(EGG_COUNT, 55);
   assert.deepEqual([...EGG_IDS].sort(), EGGS.map((e) => e.id).sort());
 });
 
@@ -145,7 +145,7 @@ test('achievements unlock once, codexProgress counts, normalizeCodex tolerates j
   discoverKind(c, 'fuji', 1);
   const p = codexProgress(c);
   assert.equal(p.kinds.found, 1);
-  assert.equal(p.all.total, 15 + 56);
+  assert.equal(p.all.total, 15 + 55);
   assert.deepEqual(normalizeCodex(null), newCodex());
   assert.equal(normalizeCodex({ lastLoginDay: 5, kinds: 3 }).lastLoginDay, '');
   assert.equal(normalizeCodex(JSON.parse(JSON.stringify(c))).kinds.fuji?.n, 1);
