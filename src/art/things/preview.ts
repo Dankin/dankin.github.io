@@ -10,6 +10,7 @@ import { drawTransport8, drawFleet, runPhase, TRANSPORT8_NAMES, TRANSPORT8_BRANC
 import { drawSantaDepot } from './depot.ts';
 import { drawBird, birdFlight, BIRD_STATES, BIRD_KINDS } from './bird.ts';
 import { drawCharacterEgg } from './eggs.ts';
+import { drawLaoXuAt, LAOXU_SPOTS, LAOXU_SPOT_NAMES } from './laoxu-tree.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -331,6 +332,21 @@ addSection({
       }
       c.fillStyle = INKC; c.font = '9px sans-serif'; c.textAlign = 'left';
       c.fillText(CHAR_NAMES[k], 8 + col * 260, 26 + row * 120);
+    });
+  },
+});
+
+addSection({
+  id: 'xutree',
+  title: '老徐新树档站位:地面 / 树屋 / 吊篮 / 树顶彩灯(状态 watch、cheer、clap)',
+  w: 800,
+  h: 340,
+  draw(c, t, o) {
+    const sts = ['watch', 'cheer', 'clap'] as const;
+    LAOXU_SPOTS.forEach((sp, i) => {
+      c.fillStyle = INKC; c.font = '9px sans-serif'; c.textAlign = 'center';
+      c.fillText(LAOXU_SPOT_NAMES[sp], 100 + i * 195, 12);
+      sts.forEach((st, j) => drawLaoXuAt(c, sp, 100 + i * 195 - 0, 130 + j * 100 - (sp === 'ground' ? 0 : 0), 1, { ...o, t, state: st, lv: 4, seed: 2 }));
     });
   },
 });

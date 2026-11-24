@@ -15,3 +15,4 @@ export * from './transport-v6.ts';
 export * from './depot.ts';
 export * from './bird.ts';
 export * from './eggs.ts';
+export * from './laoxu-tree.ts';
