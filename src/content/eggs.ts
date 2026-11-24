@@ -480,6 +480,33 @@ export const EGGS: Egg[] = [
     reward: { kind: 'apples', amount: 10 },
     silhouette: 'pole',
   },
+  {
+    id: 'laoxu-spray',
+    name: '没偷懒',
+    layer: 'discover',
+    trigger: '老徐 6 级及以上,处于坐马扎偷懒状态时点击老徐,10% 概率触发。',
+    text: '没偷懒!(一口快乐水喷了出来)',
+    reward: { kind: 'apples', amount: 10 },
+    silhouette: 'laoxu-stool',
+  },
+  {
+    id: 'laoxu-qc',
+    name: '质检员',
+    layer: 'discover',
+    trigger: '老徐 6 级及以上,2 秒内连点老徐 3 次。',
+    text: '口袋里掉出三个苹果。质检,质检。',
+    reward: { kind: 'badge', id: 'badge-laoxu-qc' },
+    silhouette: 'laoxu-pocket',
+  },
+  {
+    id: 'laoxu-bubble',
+    name: '气泡水',
+    layer: 'discover',
+    trigger: '老徐 6 级及以上,处于偷懒状态时,长按老徐 3 秒。',
+    text: '咕嘟咕嘟。他打了个嗝,气泡升天。',
+    reward: { kind: 'apples', amount: 10 },
+    silhouette: 'laoxu-bubble',
+  },
 ];
 
 /** 图鉴里"未发现"时显示的灰色提示(key = egg id;不剧透具体操作,只给方向) */
@@ -528,6 +555,9 @@ export const EGG_TRIGGER_HINTS: Record<string, string> = {
   'shake-5000': '树的忍耐,也有限度。',
   'trampoline-leak': '蹦床,好像在偷偷弹。',
   'pole-snap': '扁担,也有承受极限。',
+  'laoxu-spray': '他坐着的时候,戳一戳。',
+  'laoxu-qc': '连点他。口袋里有东西。',
+  'laoxu-bubble': '他喝快乐水时,按住不放。',
 };
 
 /** 各层级总数(图鉴进度 n/N 用) */

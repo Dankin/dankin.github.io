@@ -333,7 +333,17 @@ const SYS = build('n-s-', undefined, [
   ['风太大,老徐的帽子飞走了。', ['new-tier', 'tier-helicopter'], 4],
 ] as Row[]);
 
-export const NEWS_ITEMS: NewsItem[] = [...E0, ...E1, ...E2, ...E3, ...E4, ...E5, ...COND, ...GENERIC, ...SYS];
+// 老徐 8 级相关。追加在末尾,不动旧 id。
+const LX = build('n-lx-', undefined, [
+  ['老徐称:没偷懒,只是坐着摇。', undefined, 2],
+  ['本报调查:老徐口袋里的苹果去哪了?', undefined, 2],
+  ['老徐自评质检合格率 100%,无人复核。', undefined, 2],
+  ['快乐水销量上涨,幕后推手是老徐。', undefined, 2],
+  ['老徐收徒,徒弟第一课:先学会倒水。', undefined, 2],
+  ['圣诞老头欠薪三年,老徐表示不急。', ['xmas'], 3],
+] as Row[]);
+
+export const NEWS_ITEMS: NewsItem[] = [...E0, ...E1, ...E2, ...E3, ...E4, ...E5, ...COND, ...GENERIC, ...SYS, ...LX];
 
 /** 含"与苹果公司无关"自嘲的条目 id 清单(全局 ≤6;验收脚本按文本含"与苹果公司无关"统计) */
 export const DISCLAIMER_NEWS_IDS: string[] = NEWS_ITEMS.filter((n) => n.text.includes('与苹果公司无关')).map((n) => n.id);
