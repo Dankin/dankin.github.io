@@ -265,7 +265,7 @@ export const drawGiftBox: ThingFn = (ctx, x, y, s, o = {}) => {
   ctx.save();
   ctx.translate(lift * 15, -18 - lift * 9);
   ctx.rotate(lift * 0.7);
-  cached(ctx, 'gift|lid', [-20, -10, 20, 3], 0, 0, 1, (g) => {
+  cached(ctx, 'gift|lid', [-20, -16, 20, 3], 0, 0, 1, (g) => {
     const k = new Ink(g, 6, 2, 0.28);
     k.poly([[-17, -8], [17, -8], [17, 0], [-17, 0]], { fill: '#f6eccb', shade: F.shade, lw: 2.1, j: 0.2 });
     k.poly([[-3.6, -8], [3.6, -8], [3.6, 0], [-3.6, 0]], { fill: '#e6b43a', lw: 1.4, j: 0.08 });
