@@ -3,6 +3,8 @@ import { drawTransport, TRANSPORT_W } from './transport.ts';
 import { drawDock } from './docks.ts';
 import { CHAR_KINDS, CHAR_NAMES, drawCharacter } from './characters.ts';
 import { drawPanel, drawButton, drawPin, drawIcon, PANEL_KINDS, PANEL_NAMES, ICON_IDS, ICON_NAMES } from './ui.ts';
+import { drawFlight, drawGoldHalo, drawFirework, drawGiftBox } from './fx.ts';
+import { drawApple } from './apple.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -118,6 +120,41 @@ addSection({
       c.fillText(ICON_NAMES[id], 36 + i * 64, 424);
       c.textAlign = 'left';
     });
+  },
+});
+
+addSection({
+  id: 'fx',
+  title: '特效:飞行轨迹(kind0 短弧 / kind1 带拖影)· 金苹果光晕 · 烟花(p=0.1..0.9)· 礼物盒(封印进度 0/.5/1 → 开盖 0.5/1)',
+  w: 760,
+  h: 300,
+  draw(c, t) {
+    c.fillStyle = '#cfe8c8';
+    c.fillRect(0, 0, 760, 300);
+    const k0 = (t * 0.6) % 1;
+    drawFlight(c, { x0: 20, y0: 70, x1: 150, y1: 80, arc: 24, kind: 0 }, k0);
+    drawFlight(c, { x0: 20, y0: 110, x1: 240, y1: 100, arc: 40, kind: 1 }, k0);
+    for (let i = 0; i < 12; i++) {
+      c.fillStyle = 'rgba(0,0,0,0.12)';
+      const kk = i / 11;
+      c.fillRect(20 + 220 * kk, 110 - 10 * kk * 0 - Math.sin(kk * Math.PI) * 40 + (100 - 110) * kk - 1, 1.5, 1.5);
+    }
+    // 金苹果光晕
+    drawGoldHalo(c, 300, 60, 1, { t });
+    drawApple(c, 300, 60, 8, { gold: true, leaf: true });
+    drawGoldHalo(c, 380, 60, 0.7, { t: t + 1, pulse: (t * 0.7) % 1 });
+    drawApple(c, 380, 60, 5.6, { gold: true, leaf: true });
+    // 烟花
+    for (let i = 0; i < 5; i++) {
+      const bx = 470 + i * 58;
+      c.fillStyle = '#243049';
+      c.fillRect(bx - 28, 6, 56, 120);
+      drawFirework(c, bx, 56, 1, { p: 0.1 + i * 0.2, seed: 5 + i * 11 });
+    }
+    // 礼物盒
+    const st = [[0, 0], [0, 0.5], [0, 1], [0.5, 1], [1, 1]];
+    st.forEach(([op, pg], i) => drawGiftBox(c, 60 + i * 130, 270, 1.6, { open: op, progress: pg, t }));
+    drawGiftBox(c, 710, 270, 1.2, { open: (t * 0.4) % 1, progress: 1, t });
   },
 });
 
