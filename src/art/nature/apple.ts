@@ -260,18 +260,89 @@ function paint(ctx: Ctx, d: Def, st: AppleState, lw: number, seed: number) {
 
 export interface AppleOpts { kind?: AppleKind; state?: AppleState; size?: number; seed?: number; shadow?: boolean }
 
-/** 预渲染的苹果 sprite。size=逻辑像素(32/48/64…)。锚点=苹果底部中心(接地点)。 */
-export function appleSprite(kind: AppleKind | string = 'fuji', state: AppleState = 'fresh', size = 64, shadow = false): Baked {
+/** 落地/下落小动画辅助参数(0/undefined = 无)。appleSprite 第 5 参可传,默认按品种(见 appleFxFor)。
+ *  glow=烘焙加强光晕(金);smoke=毒雾(动态,见 drawLandFx);fastFall=下落重力倍数(青);bounce=弹跳高度系数(红斑);
+ *  quake=落地震屏强度(巨无霸);roll=落地后滚走速度系数(虫蛀)。 */
+export interface AppleFx { glow?: boolean | string; fastFall?: number; bounce?: number; quake?: number; roll?: number; smoke?: boolean }
+const KIND_FX: Partial<Record<string, AppleFx>> = {
+  golden: { glow: true }, green: { fastFall: 1.9 }, spotted: { bounce: 1 }, giant: { quake: 1 }, wormy: { roll: 1 }, poison: { smoke: true },
+};
+/** 品种默认 fx */
+export function appleFxFor(kind: AppleKind | string): AppleFx { return KIND_FX[kind] ?? {}; }
+
+/** 预渲染的苹果 sprite。size=逻辑像素(32/48/64…)。锚点=苹果底部中心(接地点)。fx 不传=按品种默认(只有 glow 影响像素)。 */
+export function appleSprite(kind: AppleKind | string = 'fuji', state: AppleState = 'fresh', size = 64, shadow = false, fx?: AppleFx): Baked {
   const d = BYID.get(kind as AppleKind) ?? BYID.get('fuji')!;
   const k = size / CELL;
   const lw = size <= 36 ? 3.6 : size <= 48 ? 3.1 : 2.8;
   const seed = 11 + (APPLE_KINDS.indexOf(d.id) + 1) * 37;
   const R = d.R, cy = GROUND - R * d.ry * 0.98;
-  return bake(`apple|${d.id}|${state}|${size}|${shadow ? 1 : 0}`, size, size, (ctx) => {
+  const f: AppleFx = { ...appleFxFor(d.id), ...(fx ?? {}) };
+  const gcol = f.glow ? (typeof f.glow === 'string' ? f.glow : d.glow ?? '#ffe06a') : null;
+  const fxKey = fx ? `|${gcol ?? ''}` : '';
+  return bake(`apple|${d.id}|${state}|${size}|${shadow ? 1 : 0}${fxKey}`, size, size, (ctx) => {
     ctx.scale(k, k);
     if (shadow) { ell(ctx, CELL / 2 + 1.5, GROUND + 1.5, R * 0.95, R * 0.2); ctx.fillStyle = 'rgba(27,20,16,0.28)'; ctx.fill(); }
+    if (fx && gcol) {
+      const g = ctx.createRadialGradient(CELL / 2, cy, R * 0.6, CELL / 2, cy, CELL * 0.5);
+      g.addColorStop(0, rgba(gcol, 0.7)); g.addColorStop(1, rgba(gcol, 0));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, CELL, CELL);
+    }
     paint(ctx, d, state, lw, seed);
-  }, { ax: size / 2, ay: (GROUND + 1) * k, meta: { cx: size / 2, cy: cy * k, r: R * k } });
+  }, { ax: size / 2, ay: (GROUND + 1) * k, meta: { cx: size / 2, cy: cy * k, r: R * k, fx: f } as any });
+}
+
+export interface AppleLandFx {
+  /** 相对落点的偏移/旋转/缩放(世界单位,y 向上为负);t=落地后秒数 */
+  dx: number; dy: number; rot: number; sx: number; sy: number;
+  /** 0..1 光晕脉冲(金) */ glow: number;
+  /** 震屏振幅(世界单位,巨无霸,≤0.5s) */ shake: number;
+  /** 毒雾强度 0..1 */ smoke: number;
+  /** 尘土/冲击环 0..1 */ dust: number;
+  /** 苹果是否仍可见(虫蛀滚出屏后淡出) */ alpha: number;
+  /** 下落阶段重力倍数(青=快落) */ gravity: number;
+}
+/** 落地小动画:t=落地后经过秒数。给每个品种返回当帧偏移/形变/特效强度;其它品种=轻微一下压扁回弹。 */
+export function appleLandFx(kind: AppleKind | string, t: number): AppleLandFx {
+  const o: AppleLandFx = { dx: 0, dy: 0, rot: 0, sx: 1, sy: 1, glow: 0, shake: 0, smoke: 0, dust: 0, alpha: 1, gravity: 1 };
+  if (t < 0) return o;
+  const f = appleFxFor(kind), sq = (a: number, dur: number) => { const u = t / dur; return u < 1 ? Math.sin(u * Math.PI) * Math.exp(-u * 1.6) * a : 0; };
+  // 通用压扁
+  const s0 = sq(0.16, 0.22); o.sx = 1 + s0; o.sy = 1 - s0;
+  if (f.fastFall) { o.gravity = f.fastFall; o.dust = Math.max(0, 1 - t / 0.25) * 0.8; const s1 = sq(0.1, 0.12); o.sx = 1 + s1 * 0.4 + s0 * 0.5; o.sy = 1 - s1 * 0.5; }
+  if (f.bounce) { // 红斑:三连弹,高度递减
+    const H = [34, 16, 7], D = [0.46, 0.3, 0.2]; let u = t, i = 0;
+    while (i < 3 && u > D[i]) { u -= D[i]; i++; }
+    if (i < 3) { const q = u / D[i]; o.dy = -4 * H[i] * q * (1 - q); o.sx = 1; o.sy = 1; if (q < 0.14 || q > 0.86) { o.sx = 1.14; o.sy = 0.88; } }
+  }
+  if (f.quake) { o.shake = Math.max(0, 1 - t / 0.5) * 5 * f.quake * Math.sin(t * 60); o.dust = Math.max(0, 1 - t / 0.6); const q = sq(0.3, 0.3); o.sx = 1 + q; o.sy = 1 - q; }
+  if (f.roll) { // 虫蛀:弹一下后滚走
+    const u = Math.max(0, t - 0.15); o.dx = 72 * f.roll * (1 - Math.exp(-u * 2.2)); o.rot = o.dx / 17;
+    o.alpha = t < 1.6 ? 1 : Math.max(0, 1 - (t - 1.6) / 0.5);
+  }
+  if (f.glow) o.glow = 0.55 + 0.45 * Math.sin(t * 5);
+  if (f.smoke) o.smoke = Math.min(1, t / 0.2) * Math.max(0, 1 - Math.max(0, t - 1.6) / 0.8);
+  return o;
+}
+/** 画落地的附加特效(尘环/光晕/毒雾);(x,y)=落点(苹果底部中心),s=缩放。苹果本体仍由调用方 drawApple/spr.draw 画。 */
+export function drawLandFx(ctx: Ctx, kind: AppleKind | string, t: number, x: number, y: number, s = 1) {
+  const f = appleFxFor(kind), o = appleLandFx(kind, t); if (t < 0) return;
+  ctx.save();
+  if (o.dust > 0.01) {
+    const u = 1 - o.dust, R = (12 + u * 38) * s;
+    ctx.strokeStyle = rgba('#fff6dc', o.dust * 0.8); ctx.lineWidth = 3 * s * o.dust + 1;
+    ell(ctx, x, y - 2 * s, R, R * 0.22); ctx.stroke();
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * TAU + 0.4, px = x + Math.cos(a) * R * 0.9, py = y - 3 * s - Math.sin(a * 2) * 3 * s - u * 10 * s; ctx.beginPath(); ctx.arc(px, py, (2.5 + i % 2) * s * o.dust, 0, TAU); ctx.fillStyle = rgba('#e9dcc0', o.dust * 0.9); ctx.fill(); }
+  }
+  if (f.glow) { ctx.globalCompositeOperation = 'lighter'; const R = (26 + o.glow * 8) * s, g = ctx.createRadialGradient(x, y - 14 * s, 2, x, y - 14 * s, R); g.addColorStop(0, rgba('#ffe27a', 0.55 * o.glow)); g.addColorStop(1, rgba('#ffe27a', 0)); ctx.fillStyle = g; ctx.fillRect(x - R, y - 14 * s - R, R * 2, R * 2); }
+  if (f.smoke && o.smoke > 0.01) {
+    for (let i = 0; i < 6; i++) {
+      const ph = (t * 0.7 + i / 6) % 1, wob = Math.sin(t * 2.2 + i * 1.7) * 6 * s, py = y - 12 * s - ph * 46 * s, r = (6 + ph * 9) * s;
+      ctx.beginPath(); ctx.arc(x + wob + (i % 3 - 1) * 5 * s, py, r, 0, TAU);
+      ctx.fillStyle = rgba(i % 2 ? '#8a8a96' : '#6f6f7c', (1 - ph) * 0.55 * o.smoke); ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 /** 把苹果的"体心"放到 (cx,cy) */
