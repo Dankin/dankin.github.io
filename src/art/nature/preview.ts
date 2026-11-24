@@ -1,4 +1,4 @@
-import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES } from './index';
+import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES, drawBackdrop, BackdropMode } from './index';
 
 const root = document.getElementById('root')!;
 const DPR = Math.min(2, devicePixelRatio || 1);
@@ -38,8 +38,22 @@ function trees() {
   };
   draw(0, 0.016); anims.push(draw);
 }
+function backdrop() {
+  const d = sec('背景 白天/黄昏/夜晚 横屏 844×390 + 竖屏 390×844(树5/树3 放置示意)');
+  const modes: BackdropMode[] = ['day', 'dusk', 'night'];
+  const items: [BackdropMode, number, number][] = [...modes.map((m) => [m, 844, 390] as [BackdropMode, number, number]), ...modes.map((m) => [m, 390, 844] as [BackdropMode, number, number])];
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px'; d.appendChild(wrap);
+  for (const [m, w, h] of items) {
+    const [c, x] = mk(w, h); wrap.appendChild(c);
+    anims.push((t) => {
+      drawBackdrop(x, w, h, t, { mode: m, layers: 'back' });
+      drawTree(x, w * 0.5, h * 0.9, h > w ? 0.9 : 0.8, { tier: 4, seed: 2 });
+      drawBackdrop(x, w, h, t, { mode: m, layers: 'front' });
+    });
+  }
+}
 const qs = new URLSearchParams(location.search); if (qs.get('shake')) shakeEl.value = qs.get('shake')!;
-const secs: Record<string, () => void> = { apples, trees };
+const secs: Record<string, () => void> = { apples, trees, backdrop };
 const q = new URLSearchParams(location.search).get('sec');
 for (const k of Object.keys(secs)) if (!q || q === k) secs[k]();
 document.getElementById('info')!.textContent = JSON.stringify(bakeStats());
