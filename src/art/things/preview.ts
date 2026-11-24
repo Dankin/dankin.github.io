@@ -9,6 +9,7 @@ import { drawLaoXu, drawStool, drawBench, drawBottle, drawTeaCup, drawRadio, dra
 import { drawTransport8, drawFleet, runPhase, TRANSPORT8_NAMES, TRANSPORT8_BRANCH_NAMES, TRANSPORT8_W, TRANSPORT8_FLIES } from './transports8.ts';
 import { drawSantaDepot } from './depot.ts';
 import { drawBird, birdFlight, BIRD_STATES, BIRD_KINDS } from './bird.ts';
+import { drawCharacterEgg } from './eggs.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -312,6 +313,25 @@ addSection({
       drawBird(c, f.x, f.y, 1.6, { ...o, t: t + b, kind: BIRD_KINDS[b], state: f.state, p: f.p, dir: f.dir, seed: b + 3 });
     }
     drawBird(c, 750, 300, 1.6, { ...o, t, state: 'perch', dir: -1, kind: 'dove' });
+  },
+});
+
+addSection({
+  id: 'egg',
+  title: '彩蛋角色被点中动作:12 角色 × p=0.15/0.35/0.55/0.8(气泡文字见 EGG_LINES)',
+  w: 800,
+  h: 520,
+  draw(c, t, o) {
+    CHAR_KINDS.forEach((k, i) => {
+      const ps = [0.15, 0.35, 0.55, 0.8];
+      const col = i % 3, row = Math.floor(i / 3);
+      for (let j = 0; j < 4; j++) {
+        const bx = 40 + col * 260 + j * 62, by = 110 + row * 120;
+        drawCharacterEgg(c, k, bx, by, 1, { ...o, t, p: ps[j], seed: 3 });
+      }
+      c.fillStyle = INKC; c.font = '9px sans-serif'; c.textAlign = 'left';
+      c.fillText(CHAR_NAMES[k], 8 + col * 260, 26 + row * 120);
+    });
   },
 });
 
