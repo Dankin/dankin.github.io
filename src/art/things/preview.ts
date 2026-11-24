@@ -6,6 +6,7 @@ import { drawPanel, drawButton, drawPin, drawIcon, PANEL_KINDS, PANEL_NAMES, ICO
 import { drawFlight, drawGoldHalo, drawFirework, drawGiftBox } from './fx.ts';
 import { drawApple } from './apple.ts';
 import { drawLaoXu, drawStool, drawBench, drawBottle, drawTeaCup, drawRadio, drawRecliner, drawApprentice, LAOXU_STATES, LAOXU_STATE_NAMES, LAOXU_LEVEL_NAMES } from './laoxu.ts';
+import { drawTransport8, drawFleet, runPhase, TRANSPORT8_NAMES, TRANSPORT8_BRANCH_NAMES, TRANSPORT8_W, TRANSPORT8_FLIES } from './transports8.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -222,6 +223,47 @@ addSection({
     const st = [[0, 0], [0, 0.5], [0, 1], [0.5, 1], [1, 1]];
     st.forEach(([op, pg], i) => drawGiftBox(c, 60 + i * 130, 270, 1.6, { open: op, progress: pg, t }));
     drawGiftBox(c, 710, 270, 1.2, { open: (t * 0.4) % 1, progress: 1, t });
+  },
+});
+
+addSection({
+  id: 't8',
+  title: 'v6 运输 8 档 × 2 分支(行:分支0空/分支0载/分支1空/分支1载)',
+  w: 800,
+  h: 420,
+  draw(c, t, o) {
+    const xs = [45, 110, 175, 285, 420, 525, 640, 745];
+    c.fillStyle = INKC;
+    c.font = '9px sans-serif';
+    c.textAlign = 'center';
+    for (let br = 0; br < 2; br++)
+      for (let row = 0; row < 2; row++)
+        for (let i = 0; i < 8; i++) {
+          const y = 100 + (br * 2 + row) * 100;
+          const fl = TRANSPORT8_FLIES[i];
+          drawTransport8(c, i, br as 0 | 1, xs[i] + (br === 1 && i === 3 ? -12 : 0), y, 1, { ...o, t, load: row ? (o.load ?? 1) : 0, move: o.move, fly: fl ? 0.3 : undefined });
+          if (row === 0 && br === 0) c.fillText(TRANSPORT8_NAMES[i], xs[i], 10);
+          if (row === 0) c.fillText(TRANSPORT8_BRANCH_NAMES[i][br] + ' w' + TRANSPORT8_W[i][br], xs[i], y + 12);
+        }
+  },
+});
+
+addSection({
+  id: 'fleet',
+  title: '4 段行程车队(装货/行驶/卸货/返回;n=3 与 n=9→×N);每行一档分支 0/1 交替',
+  w: 800,
+  h: 420,
+  draw(c, t, o) {
+    for (let i = 0; i < 8; i++) {
+      const y = 36 + i * 50;
+      c.fillStyle = 'rgba(0,0,0,0.05)';
+      c.fillRect(30, y, 640, 1);
+      c.fillStyle = INKC;
+      c.font = '9px sans-serif';
+      c.textAlign = 'left';
+      c.fillText(TRANSPORT8_NAMES[i] + ' ' + runPhase(t / 8).name, 4, y - 14);
+      drawFleet(c, i, y, 0.6, { ...o, t, n: i === 4 ? 9 : 3, cycle: 8, x0: 70, x1: 600, branch: (i % 2) as 0 | 1, seed: i + 1 });
+    }
   },
 });
 
