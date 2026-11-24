@@ -15,7 +15,7 @@ import { startTicker } from './ticker.ts';
 import { installContentNews, trackNewsSignals } from './news.ts';
 import { chooseBranch, openGate } from './dialogs.ts';
 import { applySound, applyTheme, afterStateReplaced, catchUp, DARK_MQ, persist, resetGame } from './session.ts';
-import { armAudioUnlock, doShake, setupMotion } from './input.ts';
+import { armAudioUnlock, doShake, routeStageTap, setupMotion } from './input.ts';
 import { setupDebug } from './debug.ts';
 import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
@@ -124,6 +124,7 @@ if (loaded.kind === 'new') sysAway(0);
 $('saveWarn').textContent = app.canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
 setupMotion();
+$('stage').addEventListener('click', (e) => void routeStageTap(e.clientX, e.clientY));
 mountPanels();
 initFtue();
 if (app.DEBUG) {

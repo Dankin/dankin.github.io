@@ -7,7 +7,7 @@ import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast } from './toasts.ts';
 import { bp, gp } from './dialogs.ts';
-import { rollShake } from './sys.ts';
+import { claimOrderAct, cleanRotAct, rollShake, tapPestAct, tapTargetAct } from './sys.ts';
 
 // ───────────── 手感:摇树 / 苹果噼里啪啦掉下来 ─────────────
 let lastShakeText = 0;
@@ -41,6 +41,24 @@ export function doShake(strength = 1): void {
     rollShake(r);
   }
   onShakeResult(r);
+}
+
+// ───────────── 场景热点:点画布 → orchard.tapTarget(px,py) → 害虫 / 订单 / 烂果 / 彩蛋热点 ─────────────
+type Tappable = { tapTarget?: (px: number, py: number) => string | null };
+/** 把一次点击翻成场景热点动作。返回是否命中了热点。 */
+export function routeStageTap(clientX: number, clientY: number): boolean {
+  const o = app.orchard as unknown as Tappable;
+  if (!o.tapTarget) return false;
+  const r = $('stage').getBoundingClientRect();
+  const id = o.tapTarget(clientX - r.left, clientY - r.top);
+  if (!id) return false;
+  if (id.startsWith('pest:')) tapPestAct(Number(id.slice(5)));
+  else if (id.startsWith('order:')) {
+    const r2 = claimOrderAct(Number(id.slice(6)));
+    if (!r2.ok) toast('货还没备齐。');
+  } else if (id === 'rot') cleanRotAct();
+  else tapTargetAct(id);
+  return true;
 }
 
 // ───────────── 音频解锁:iOS 要在 pointerup/click 手势里 resume,一直试到 running 为止 ─────────────
