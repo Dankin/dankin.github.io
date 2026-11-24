@@ -94,16 +94,18 @@ test('升档:要钱、要选分支、送起步单位、记录时间、解锁道�
   assert.equal(s.tierTimes.source[0], 42);
   // 分支效果生效
   assert.deepEqual(mods(s).value, br[1].effect.value ?? 1);
-  // 总档数到 2 解锁第四个道具
+  // 时代(产出档 + ROUTE_ERA[运输档])到 2 解锁第四个道具:挑扁担工(ROUTE_ERA 0)不算,小推车(1)才算
+  assert.ok(!s.gatesUnlocked.includes('pack'));
+  upgradeTier(s, 'route', 0)!;
+  assert.equal(s.vehicles.filter((v) => v.tier === 1).length, TIER_START_UNITS, '升运输档送起步车辆');
   assert.ok(!s.gatesUnlocked.includes('pack'));
   const r2 = upgradeTier(s, 'route', 0)!;
   assert.ok(r2.newGates.includes('pack'));
   assert.ok(s.gatesUnlocked.includes('pack'));
-  assert.equal(s.vehicles.filter((v) => v.tier === 1).length, TIER_START_UNITS, '升运输档送起步车辆');
 });
 
 test('升到最高档后不能再升', () => {
-  const s = atTiers(5, 5);
+  const s = atTiers(5, 8);
   s.coins = 1e30;
   assert.equal(tierCost(s, 'source'), null);
   assert.equal(nextBranches(s, 'route'), null);
@@ -233,7 +235,7 @@ test('preview:不改状态,数字与真正执行一致', () => {
   assert.equal(g.cost, 0);
   const t = preview(s, { kind: 'tier', line: 'source', branch: 0 });
   assert.equal(t.cost, tierCost(s, 'source'));
-  assert.equal(preview(atTiers(5, 5), { kind: 'tier', line: 'source', branch: 0 }).ok, false);
+  assert.equal(preview(atTiers(5, 8), { kind: 'tier', line: 'source', branch: 0 }).ok, false);
 });
 
 test('nextHints:价格、等待秒数、建议', () => {
@@ -246,7 +248,7 @@ test('nextHints:价格、等待秒数、建议', () => {
   assert.ok(h.route.unit.waitSec > 0);
   s.coins = 1e9;
   assert.equal(nextHints(s).route.unit.waitSec, 0);
-  assert.equal(nextHints(atTiers(5, 5)).source.tier, null);
+  assert.equal(nextHints(atTiers(5, 8)).source.tier, null);
 });
 
 test('摇树:苹果直接掉进堆场,蓄摇劲,计数', () => {

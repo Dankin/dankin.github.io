@@ -1,5 +1,6 @@
 // 彩蛋判定:43 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
 // 奖励请用 EGG_BY_ID[id].reward(content)发放,hit 里不重复携带。
+import { ROUTE_ERA } from '../content.ts';
 import { CODEX } from './constants.ts';
 import type { CodexState } from './codex.ts';
 import type { EggEvent, Snapshot, TapTarget } from './types.ts';
@@ -17,7 +18,8 @@ interface Ctx {
 
 const tapIs = (c: Ctx, t: TapTarget): boolean => c.ev.t === 'tap' && c.ev.target === t;
 /** 时代:两线较高者(writer 的 minEra) */
-const eraMax = (s: Snapshot): number => Math.max(s.sourceTier, s.routeTier);
+const routeEra = (s: Snapshot): number => ROUTE_ERA[s.routeTier] ?? s.routeTier;
+const eraMax = (s: Snapshot): number => Math.max(s.sourceTier, routeEra(s));
 
 /** 连点计数:相邻点击间隔 ≤ gap 才累计,到 n 次触发并清零。key 默认用热点名 */
 function tapRun(c: Ctx, n: number, gap: number, key?: string): boolean {
@@ -58,9 +60,9 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['apple-of-eye', (c) => c.snap.helpers >= 1 && tapRun(c, 5, CODEX.tapGapS, 'xu')],
   ['pie', (c) => (c.ev.t === 'rot' && bump(c, 'rotCleaned', c.ev.cleaned) >= CODEX.pieRot) || (c.ev.t === 'overflow' && bump(c, 'overflow') >= CODEX.pieRot)],
   ['johnny', (c) => c.ev.t === 'idle' && c.ev.sec >= CODEX.idleEggS],
-  ['garage', (c) => c.snap.routeTier >= 2 && tapIs(c, 'garage')],
+  ['garage', (c) => routeEra(c.snap) >= 2 && tapIs(c, 'garage')],
   ['turtleneck', (c) => c.snap.sourceTier >= 3 && tapIs(c, 'window-silhouette')],
-  ['einstein', (c) => c.snap.routeTier >= 5 && tapIs(c, 'moon')],
+  ['einstein', (c) => routeEra(c.snap) >= 5 && tapIs(c, 'moon')],
   ['core', (c) => tapIs(c, 'seed-core') && bump(c, 'coreTaps') >= 7],
   ['vinegar', (c) => eraMax(c.snap) >= 1 && tapIs(c, 'vinegar')],
   ['jam', (c) => tapIs(c, 'jam')],

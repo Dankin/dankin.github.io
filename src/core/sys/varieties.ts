@@ -19,7 +19,7 @@ export interface VarietyDef {
   weight: number;
   /** 价值乘数(相对富士红 = 1,归一前) */
   value: number;
-  /** 出现的最低 era(source.tier + route.tier 的 min,0..5) */
+  /** 出现的最低 era(min(source.tier, ROUTE_ERA[route.tier]),0..5) */
   minEra: number;
   /** 堆场占用格数(仅展示;数值上按期望价值,不影响容量) */
   slots: number;

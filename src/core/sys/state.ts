@@ -1,5 +1,6 @@
 // SysState:systems 全部可存档状态 + 每帧推进 + 与 eng-app 的接线函数。
 // 纯函数/纯数据,不 import bus、不 import game.ts。eng-app 把 `sys: SysState` 放进 State 并存档(见 README)。
+import { ROUTE_ERA } from '../content.ts';
 import { BAG } from './constants.ts';
 import { checkAchievements, checkEggs, discoverKind, newCodex, normalizeCodex, type CodexState } from './codex.ts';
 import { cleanRot, decayLimit, decayStep, newRot, type RotState } from './decay.ts';
@@ -172,7 +173,7 @@ export function snapshotOf(sys: SysState, h: SnapHost): Snapshot {
   const { nowMs, ...rest } = h;
   return {
     ...rest,
-    era: Math.min(h.sourceTier, h.routeTier),
+    era: Math.min(h.sourceTier, ROUTE_ERA[h.routeTier] ?? h.routeTier),
     night: se.night,
     season: se.season,
     weather: se.weather,

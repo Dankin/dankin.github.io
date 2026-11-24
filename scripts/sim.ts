@@ -20,6 +20,21 @@ export interface Opts {
   maxMin: number;
   seed: number;
   verbose: boolean;
+  /** 可选:每个模拟步(tick 之后)调用,让 sim-v5 接入 sys 系统 */
+  hook?: SimHook;
+}
+
+export interface SimCtx {
+  rnd: () => number;
+  /** 机器人当前想买的目标价(上一次决策的 best.cost) */
+  target: number;
+  cps: number;
+  /** 本步 tick 的结果 */
+  res: { deliveredNow: number; coinsNow: number; wastedNow: number };
+}
+export interface SimHook {
+  step(s: State, dt: number, c: SimCtx): void;
+  finish?(s: State, rep: Report): void;
 }
 
 export interface Report {
@@ -46,6 +61,8 @@ export interface Report {
   branches: string[];
   wastedPct: number;
   finalFlow: number;
+  /** hook 额外统计 */
+  extra?: Record<string, number>;
 }
 
 function rng(seed: number): () => number {
@@ -147,6 +164,7 @@ export function play(o: Opts): Report {
   const gateTime: Record<string, number> = {};
   const eraSeen = new Set<number>();
   const maxS = o.maxMin * 60;
+  let hookTarget = 0;
   for (let step = 0; s.playSec < maxS; step++) {
     // 手动
     if (o.cps > 0) {
@@ -160,7 +178,8 @@ export function play(o: Opts): Report {
       const kind = pickEvent(false, rnd);
       if (rnd() < o.events) claimEvent(s, kind);
     }
-    tick(s, dt);
+    const res = tick(s, dt);
+    o.hook?.step(s, dt, { rnd, target: hookTarget, cps: o.cps, res });
     const t = s.playSec;
     for (const g of s.gates) if (g) gateTime[g] = (gateTime[g] ?? 0) + dt;
 
@@ -188,6 +207,7 @@ export function play(o: Opts): Report {
     let best: Cand | null = null;
     for (const c of cs) if (!best || score(c) < score(best)) best = c;
     const worthy = cs.some((c) => c.cost <= s.coins && (c.tier || c.action.kind === 'expand' || c.gainPct >= 0.03));
+    if (best) hookTarget = best.cost;
     if (worthy) {
       lastWorthy = t;
       if (idleStart !== null) idleStart = null;
@@ -247,6 +267,7 @@ export function play(o: Opts): Report {
   if (!rep.won) rep.minutes = s.playSec / 60;
   rep.wastedPct = (100 * wasted0) / Math.max(1, delivered0 + wasted0);
   rep.finalFlow = throughput(s).flow;
+  o.hook?.finish?.(s, rep);
   if (!rep.won && process.env.SIMDBG) for (const c of candidates(s, o.policy)) console.log("CAND", JSON.stringify(c.action), c.cost.toExponential(2), c.gain.toExponential(2), c.gainPct.toFixed(4));
   if (!rep.won && process.env.SIMDBG) console.log("STATE", JSON.stringify({ coins: s.coins, src: s.source, route: s.route, gates: s.gates, th: throughput(s) }));
   const total = Object.values(gateTime).reduce((a, b) => a + b, 0) || 1;
@@ -271,7 +292,7 @@ export function parseArgs(argv: string[]): Opts {
 
 const fm = (x: number) => (Number.isFinite(x) ? x.toFixed(1) : '—');
 
-function print(o: Opts, r: Report) {
+export function print(o: Opts, r: Report) {
   const gname = o.gates === 'auto' ? 'auto' : o.gates === 'none' ? 'none' : o.gates.join(',');
   console.log(`cps=${o.cps} delay=${o.delay}s policy=${o.policy} gates=${gname} events=${o.events}`);
   console.log(`${r.won ? '通关' : '未通关(超时)'} 总用时 ${fm(r.minutes)} 分钟`);

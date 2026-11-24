@@ -1,10 +1,10 @@
 import { SAVE_VERSION } from './constants.ts';
 import type { GateId } from './content.ts';
-import { GATE_SLOTS, TIER_COUNT } from './content.ts';
+import { GATE_SLOTS, TIER_COUNTS } from './content.ts';
 
 /** 一个"车"。n > 24 时多辆车合并成一个车队,w 是它代表几辆。 */
 export interface Vehicle {
-  /** 运输档 0..5 */
+  /** 运输档 0..8(见 content.ts ROUTE_IDS) */
   tier: number;
   /** 代表几辆车(≥1) */
   w: number;
@@ -86,8 +86,9 @@ export interface State {
   settings: { sound: boolean; reducedMotion: boolean; dark: 'auto' | 'light' | 'dark' };
 }
 
-export function newLine(): Line {
-  return { tier: 0, units: Array(TIER_COUNT).fill(0).map((_, i) => (i === 0 ? 1 : 0)), branch: Array(TIER_COUNT).fill(-1) as (0 | 1 | -1)[], ext: Array(TIER_COUNT).fill(0) };
+export function newLine(line: 'source' | 'route' = 'source'): Line {
+  const n = TIER_COUNTS[line];
+  return { tier: 0, units: Array(n).fill(0).map((_, i) => (i === 0 ? 1 : 0)), branch: Array(n).fill(-1) as (0 | 1 | -1)[], ext: Array(n).fill(0) };
 }
 
 export function newState(now: number): State {
@@ -100,7 +101,7 @@ export function newState(now: number): State {
     shakes: 0,
     playSec: 0,
     source: newLine(),
-    route: newLine(),
+    route: newLine('route'),
     gates: Array(GATE_SLOTS).fill(null) as (GateId | null)[],
     gatesUnlocked: ['wash', 'wax', 'rush'],
     stock: 0,

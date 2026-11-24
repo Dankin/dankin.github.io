@@ -1,5 +1,6 @@
-// 献果:两条线都到 3 档后开放。献出 W 果钱,送出 += W × 15% / v(v = 每个苹果的价值)。
+// 献果:两条线都到 3 档(运输线按 ROUTE_ERA 折算:货船起算)后开放。献出 W 果钱,送出 += W × 15% / v(v = 每个苹果的价值)。
 // 折价 15%:献果比"留着再投资"慢,但能把"无事可买"的闲置库存变成进度。
+import { ROUTE_ERA } from '../content.ts';
 import { OFFER } from './constants.ts';
 
 export interface OfferState {
@@ -14,7 +15,7 @@ export interface OfferState {
 export const newOffer = (): OfferState => ({ coins: 0, apples: 0, count: 0 });
 
 export const offerOpen = (sourceTier: number, routeTier: number): boolean =>
-  Math.min(sourceTier, routeTier) >= OFFER.unlockTier;
+  Math.min(sourceTier, ROUTE_ERA[routeTier] ?? routeTier) >= OFFER.unlockTier;
 
 /** 献出 W 果钱折算多少送出苹果(v = 每个苹果的价值,≥ 一个很小的正数) */
 export const offerApples = (W: number, v: number): number => (W > 0 && v > 0 ? (W * OFFER.discount) / v : 0);

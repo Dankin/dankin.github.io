@@ -123,9 +123,9 @@ test('decay: rot apples spawn, capped, and are cleanable', () => {
 });
 
 test('offer: opens at both tiers ≥3; 15% discount', () => {
-  assert.equal(offerOpen(3, 2), false);
-  assert.equal(offerOpen(3, 3), true);
-  assert.equal(offerOpen(5, 5), true);
+  assert.equal(offerOpen(3, 4), false);
+  assert.equal(offerOpen(3, 5), true);
+  assert.equal(offerOpen(5, 8), true);
   assert.ok(Math.abs(offerApples(1000, 2) - 75) < 1e-9);
   assert.equal(OFFER.discount, 0.15);
   const os = newOffer();

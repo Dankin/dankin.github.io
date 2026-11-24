@@ -25,13 +25,13 @@ function v3(): Record<string, unknown> {
   return s;
 }
 
-test('SAVE_VERSION 是 4', () => assert.equal(SAVE_VERSION, 4));
+test('SAVE_VERSION 是 5', () => assert.equal(SAVE_VERSION, 5));
 
 test('迁移 v3→v4:数值原样,spent=0,pin=null', () => {
   const r = parse(wrap(v3()))!;
   assert.equal(r.newer, false);
   assert.equal(r.migratedFrom, 3);
-  assert.equal(r.state.version, 4);
+  assert.equal(r.state.version, SAVE_VERSION);
   assert.equal(r.state.spent, 0);
   assert.equal(r.state.pin, null);
   assert.equal(r.state.coins, 4321);
@@ -45,7 +45,7 @@ test('load 旧档:迁移前先把原文存成 .v3.bak;再次加载不覆盖它',
   kv.setItem(SAVE_KEY, raw);
   const r = load(kv, 5000);
   assert.equal(r.kind, 'ok');
-  assert.equal(r.kind === 'ok' && r.state.version, 4);
+  assert.equal(r.kind === 'ok' && r.state.version, SAVE_VERSION);
   assert.equal(kv.getItem(migrationBackupKey(3)), raw, '原文原样备份');
   // 玩一会儿存档(已经是 v4),再来一次 load:不再迁移,也不碰备份
   if (r.kind === 'ok') save(kv, r.state, 6000);

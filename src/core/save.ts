@@ -1,5 +1,6 @@
 import { SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from './constants.ts';
 import { newState, PIN_SLOTS, type State } from './state.ts';
+import { migrateRouteTiers } from './sys/migrate.ts';
 
 /** 只用到这三个方法,便于测试时传入内存实现 */
 export interface KV {
@@ -27,6 +28,8 @@ export const migrations: Array<(s: any) => any> = [];
 export const MIN_MIGRATABLE = 3;
 /** v3 → v4:加 spent(累计花费;旧档不可考,从 0 记)与 pin(钉住目标)。coins/delivered 等数值原样保留。 */
 migrations[3] = (s) => ({ ...s, spent: 0, pin: null });
+/** v4 → v5:运输线 6 档 → 9 档(旧索引 0..5 映射到 0,2,4,5,7,8),见 sys/migrate.ts。M2 加 State.sys 时在这里一起补 newSys()。 */
+migrations[4] = (s) => migrateRouteTiers(s);
 
 /** 迁移前备份的 key:每个旧版本一份,不覆盖已有的 */
 export const migrationBackupKey = (fromVersion: number): string => `${SAVE_KEY}.v${fromVersion}.bak`;

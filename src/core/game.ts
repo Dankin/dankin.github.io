@@ -1,7 +1,7 @@
 // v4 核心玩法:产出 → 堆场 → 车 → 送达。所有函数都改传入的 State(除非注明纯函数)。
 import { GOAL, OFFLINE_CAP_MS, SHORT_AWAY_MS } from './constants.ts';
 import {
-  GATES, HELPER, MAX_CONVOYS, MAX_TIER, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
+  GATES, HELPER, MAX_CONVOYS, ROUTE_ERA, maxTier, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
   type BranchDef, type Effect, type GateId,
 } from './content.ts';
 import { EXPAND, RED_EXP, TIER_START_UNITS, UNIT_MAX } from './content.ts';
@@ -215,7 +215,7 @@ export function buyExpand(s: State, line: LineId, tier = s[line].tier): boolean 
 /** 升到下一档要花多少(已是最高档返回 null) */
 export function tierCost(s: State, line: LineId): number | null {
   const L = s[line];
-  return L.tier >= MAX_TIER ? null : tiersOf(line)[L.tier + 1].tierCost;
+  return L.tier >= maxTier(line) ? null : tiersOf(line)[L.tier + 1].tierCost;
 }
 
 export function canUpgradeTier(s: State, line: LineId): boolean {
@@ -226,7 +226,7 @@ export function canUpgradeTier(s: State, line: LineId): boolean {
 /** 下一档的两个分支;已最高档返回 null */
 export function nextBranches(s: State, line: LineId): [BranchDef, BranchDef] | null {
   const L = s[line];
-  return L.tier >= MAX_TIER ? null : tiersOf(line)[L.tier + 1].branches;
+  return L.tier >= maxTier(line) ? null : tiersOf(line)[L.tier + 1].branches;
 }
 
 export interface UpgradeResult {
@@ -254,7 +254,7 @@ export function upgradeTier(s: State, line: LineId, branch: 0 | 1): UpgradeResul
 }
 
 export function unlockGates(s: State): GateId[] {
-  const sum = s.source.tier + s.route.tier;
+  const sum = era(s);
   const fresh: GateId[] = [];
   for (const g of GATES) {
     if (g.unlockAt <= sum && !s.gatesUnlocked.includes(g.id)) {
@@ -469,8 +469,8 @@ export function nextHints(s: State): Hints {
 }
 
 /** 画面用:当前总时代 0..10(产出档 + 运输档);两条线都到才算整档 = min */
-export const era = (s: State): number => s.source.tier + s.route.tier;
-export const eraMin = (s: State): number => Math.min(s.source.tier, s.route.tier);
+export const era = (s: State): number => s.source.tier + ROUTE_ERA[s.route.tier];
+export const eraMin = (s: State): number => Math.min(s.source.tier, ROUTE_ERA[s.route.tier]);
 
 // ───────────────────────── 手动:摇树 ─────────────────────────
 export interface ShakeResult {

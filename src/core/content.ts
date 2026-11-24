@@ -1,6 +1,6 @@
 // v4 全部内容与数值。想调平衡,只改这个文件(再跑 node scripts/sim.ts 看结果)。
 //
-// 模型:产出线(6 档)把苹果放进堆场,运输线(6 档)的车从堆场装货、开到终点、送达才结算。
+// 模型:产出线(6 档)把苹果放进堆场,运输线(9 档)的车从堆场装货、开到终点、送达才结算。
 // 吞吐 = min(产出, 运力)。每次升档要选 2 个分支之一;3 个道具槽可随时免费更换。
 
 export type GateId = 'wash' | 'wax' | 'rush' | 'pack' | 'juice' | 'cold' | 'red' | 'belt' | 'brand' | 'glove' | 'chant';
@@ -196,7 +196,15 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     joke: '提着走。累了就换只手。',
   },
   {
-    name: '小推车', unit: '辆小推车', cap: 160, trip: 6, baseCost: 12000, growth: 1.12, tierCost: 13000,
+    name: '挑扁担工', unit: '位挑担工', cap: 31, trip: 5.5, baseCost: 1400, growth: 1.12, tierCost: 1600,
+    joke: '两头挑,走得慢,但不占路。苹果在筐里跟着扁担颤。',
+    branches: [
+      { name: '加粗扁担', joke: '扁担粗了,筐子大了,腰有意见。', effect: { cap: 1.5, time: 1.1 } },
+      { name: '小碎步', joke: '碎步走,筐不晃,苹果不撒。', effect: { time: 0.72 } },
+    ],
+  },
+  {
+    name: '小推车', unit: '辆小推车', cap: 160, trip: 6, baseCost: 54000, growth: 1.12, tierCost: 58000,
     joke: '带轮子的篮子。轮子有一个会吱呀叫。',
     branches: [
       { name: '重载板车', joke: '载得多,走得慢,像极了周一。', effect: { cap: 1.5, time: 1.1 } },
@@ -204,7 +212,15 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '卡车', unit: '辆卡车', cap: 2261, trip: 7, baseCost: 110000, growth: 1.12, tierCost: 120000,
+    name: '蹦床', unit: '张蹦床', cap: 600, trip: 6.5, baseCost: 160000, growth: 1.12, tierCost: 180000,
+    joke: '一蹦老远。落地的时候总会少一两个苹果,没人知道去哪了。',
+    branches: [
+      { name: '高弹网', joke: '弹得远,弹得快,有的苹果直接弹进了邻居家。', effect: { time: 0.7, cap: 0.9 } },
+      { name: '兜底网', joke: '底下加张网,接得住,就是弹得没那么高。', effect: { cap: 1.4, time: 1.1 } },
+    ],
+  },
+  {
+    name: '卡车', unit: '辆卡车', cap: 2261, trip: 7, baseCost: 490000, growth: 1.12, tierCost: 540000,
     joke: '突突突。喇叭比苹果先到。',
     branches: [
       { name: '重卡', joke: '轮胎比你高两个头,喇叭是首交响乐。', effect: { cap: 1.5, stock: 1.5 } },
@@ -212,7 +228,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '货船', unit: '艘货船', cap: 29070, trip: 9, baseCost: 10000000, growth: 1.12, tierCost: 10000000,
+    name: '货船', unit: '艘货船', cap: 29070, trip: 9, baseCost: 44000000, growth: 1.12, tierCost: 44000000,
     joke: '苹果出海了。苹果:我晕船。',
     branches: [
       { name: '集装箱', joke: '一个箱子装一万个苹果,海关数得很累。', effect: { cap: 1.5, stock: 1.5 } },
@@ -220,7 +236,15 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '飞机', unit: '架飞机', cap: 144500, trip: 11, baseCost: 120000000, growth: 1.12, tierCost: 120000000,
+    name: '直升机', unit: '架直升机', cap: 65000, trip: 10, baseCost: 150000000, growth: 1.12, tierCost: 160000000,
+    joke: '吊在半空,哪里堵车都不关它的事。',
+    branches: [
+      { name: '吊篮', joke: '一根粗绳吊一大篮,路上的车只能抬头看。', effect: { cap: 1.5, stock: 1.5 } },
+      { name: '双旋翼', joke: '两个螺旋桨抢着转,噪音是苹果的两倍。', effect: { time: 0.7 } },
+    ],
+  },
+  {
+    name: '飞机', unit: '架飞机', cap: 144500, trip: 11, baseCost: 540000000, growth: 1.12, tierCost: 540000000,
     joke: '苹果第一次坐头等舱,没人跟它说话。',
     branches: [
       { name: '货机', joke: '机舱里没座位,全是苹果。', effect: { cap: 1.5, stock: 1.5 } },
@@ -228,7 +252,7 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '传送门', unit: '道传送门', cap: 510000, trip: 13, baseCost: 2000000000, growth: 1.12, tierCost: 2000000000,
+    name: '传送门', unit: '道传送门', cap: 510000, trip: 13, baseCost: 8900000000, growth: 1.12, tierCost: 8900000000,
     joke: '这头一个苹果,那头还是一个苹果。物理学家沉默了。',
     branches: [
       { name: '大口径', joke: '门开得大,苹果挤着过。', effect: { cap: 1.5 } },
@@ -258,8 +282,15 @@ export const GATES: GateDef[] = [
 
 export const gateDef = (id: GateId): GateDef => GATES.find((g) => g.id === id)!;
 
-export const TIER_COUNT = 6;
-export const MAX_TIER = TIER_COUNT - 1;
+/** 每条线的档数:产出 6 档,运输 9 档(挑扁担工/蹦床/直升机是 v5 加的中间档) */
+export const TIER_COUNTS: Record<Line, number> = { source: SOURCE_TIERS.length, route: ROUTE_TIERS.length };
+export const maxTier = (line: Line): number => TIER_COUNTS[line] - 1;
+/** 运输档 → 旧 6 档"时代"刻度(basket0 cart1 truck2 ship3 plane4 portal5),
+ *  era / 道具解锁 / 新闻时代 / sys 的 era 一律用 source.tier + ROUTE_ERA[route.tier],不随新增中间档漂移。 */
+export const ROUTE_ERA: readonly number[] = [0, 0, 1, 1, 2, 3, 3, 4, 5];
+/** 运输档 id(与 src/art/things 的运输档对应) */
+export const ROUTE_IDS = ['basket', 'porter', 'cart', 'trampoline', 'truck', 'ship', 'helicopter', 'plane', 'portal'] as const;
+export type RouteId = (typeof ROUTE_IDS)[number];
 /** 每条线每档最多画多少辆车/个单位(多的合并成"车队",权重 > 1) */
 export const MAX_CONVOYS = 24;
 

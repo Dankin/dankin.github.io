@@ -46,8 +46,8 @@ test('no loss without hoarding or pests when poor', () => {
 
 test('offer closed until both lines tier 3; open applies 15% discount', () => {
   const s = newSys();
-  assert.equal(offerSys(s, { sourceTier: 3, routeTier: 2 }, 1000, 1e6, 1), null);
-  const r = offerSys(s, { sourceTier: 3, routeTier: 3 }, 1000, 1e6, 1)!;
+  assert.equal(offerSys(s, { sourceTier: 3, routeTier: 4 }, 1000, 1e6, 1), null);
+  const r = offerSys(s, { sourceTier: 3, routeTier: 5 }, 1000, 1e6, 1)!;
   assert.ok(r && Math.abs(r.apples - 150) < 1e-6);
 });
 
@@ -60,7 +60,7 @@ test('order claim + pest tap pay reward only on success', () => {
 test('snapshotOf fills derived fields; onEvent fires eggs and achievements', () => {
   const s = newSys();
   const raw = {
-    playSec: 100, delivered: 0, progress: 0, sourceTier: 1, routeTier: 1, units: 3, shakes: 1, helpers: 0, combo: 0, coins: 5, income: 1,
+    playSec: 100, delivered: 0, progress: 0, sourceTier: 1, routeTier: 2, units: 3, shakes: 1, helpers: 0, combo: 0, coins: 5, income: 1,
     targetCost: 10, stockFill: 0, wasted: 0, idleSec: 0, sinceTierSec: 5, bottleneck: 'balanced' as const, eventOnScreen: null, eventsOnScreen: 0,
     sessionSec: 5, sinceEventSec: 999, nowMs: Date.UTC(2026, 10, 24, 4),
   };
