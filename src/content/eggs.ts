@@ -1,4 +1,4 @@
-// 彩蛋库(纯数据)。策划 22 + 叙事 20,去重合并 + 用户点名补充,共 43 条。
+// 彩蛋库(纯数据)。策划 22 + 叙事 20,去重合并 + 用户点名补充 + v6 新增(小鸟/收货站/云树/星树),条数见 EGG_COUNT。
 // 用途:图鉴"彩蛋页"(已发现显示 name/text,未发现显示剪影 + EGG_TRIGGER_HINTS 的灰字提示)、
 //       彩蛋触发时弹出的一句文案、奖励发放。
 //
@@ -13,7 +13,7 @@
 //            badge  = 成就徽章(reward.id 为徽章 id);
 //            cosmetic = 外观(reward.id 为外观 id)。
 //   silhouette 图鉴未发现时的剪影 id(art 同事按此出图;缺省 = 通用问号剪影)。
-//   minEra   最早可触发的时代(0..5);缺省 0。
+//   minEra   最早可触发的时代(0..5):0 小树/篮子 1 老树/挑担工 2 巨树/卡车 3 云树/货船 4 星树/飞机 5 终点/传送门;缺省 0。
 //   once     全部只触发一次(存档记 id)。
 //   带"与苹果公司无关"声明的彩蛋见 DISCLAIMER_EGG_IDS,弹出时附带 DISCLAIMER。
 //
@@ -59,7 +59,7 @@ export const EGGS: Egg[] = [
     id: 'eve',
     name: '夏娃',
     layer: 'always',
-    trigger: '第一次升到第 2 时代(小果园)之后,树顶会出现一颗发亮的苹果,点击它。',
+    trigger: '第一次升到老树之后,树顶会出现一颗发亮的苹果,点击它。',
     text: '别吃!……算了,吃吧。没人说不能摘第二颗。',
     reward: { kind: 'badge', id: 'badge-forbidden' },
     silhouette: 'eve',
@@ -78,7 +78,7 @@ export const EGGS: Egg[] = [
     id: 'snow-white',
     name: '白雪公主',
     layer: 'always',
-    trigger: '进入第 3 时代(果山)后,山脚会出现老太婆摊位,点击摊位上的红苹果。',
+    trigger: '进入巨树阶段后,树脚会出现老太婆摊位,点击摊位上的红苹果。',
     text: '这个红的最好看。这个,不进仓库。',
     reward: { kind: 'badge', id: 'badge-poison' },
     silhouette: 'snow-white',
@@ -88,7 +88,7 @@ export const EGGS: Egg[] = [
     id: 'paris',
     name: '帕里斯的金苹果',
     layer: 'always',
-    trigger: '进入第 3 时代(果山)后,山顶会出现一颗金色苹果,点击它。',
+    trigger: '进入巨树阶段后,树顶会出现一颗金色苹果,点击它。',
     text: '献给最美的……三位女神吵起来了。',
     reward: { kind: 'cosmetic', id: 'skin-golden-apple' },
     silhouette: 'golden-apple',
@@ -98,7 +98,7 @@ export const EGGS: Egg[] = [
     id: 'big-apple',
     name: '大苹果',
     layer: 'always',
-    trigger: '进入第 4 时代(果城)后,点击远景里最高的那栋楼。',
+    trigger: '进入云树阶段后,点击远景里最高的那栋楼。',
     text: '这里叫大苹果。别的城市嫉妒。',
     reward: { kind: 'apples', amount: 20 },
     silhouette: 'skyscraper',
@@ -197,7 +197,7 @@ export const EGGS: Egg[] = [
     id: 'garage',
     name: '车库里的剪影',
     layer: 'discover',
-    trigger: '进入第 3 时代(卡车)后,点击卡车车库门口的黑色剪影。',
+    trigger: '进入巨树阶段(卡车)后,点击树脚车库门口的黑色剪影。',
     text: '咬一口才完整。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-garage' },
     silhouette: 'garage-bite',
@@ -208,7 +208,7 @@ export const EGGS: Egg[] = [
     id: 'turtleneck',
     name: '高领先生',
     layer: 'discover',
-    trigger: '进入第 4 时代(果城)后,点击大楼窗口里穿高领衫的黑色剪影。',
+    trigger: '进入云树阶段后,点击远景窗口里穿高领衫的黑色剪影。',
     text: '保持饥饿,保持愚蠢。(与苹果公司无关)',
     reward: { kind: 'badge', id: 'badge-turtleneck' },
     silhouette: 'turtleneck',
@@ -219,7 +219,7 @@ export const EGGS: Egg[] = [
     id: 'einstein',
     name: '爱因斯坦',
     layer: 'discover',
-    trigger: '进入第 6 时代(传送门)后,点击夜空中的月亮。',
+    trigger: '进入最后阶段(传送门)后,点击夜空中的月亮。',
     text: 'E=mc²,但苹果的质量不算。',
     reward: { kind: 'apples', amount: 15 },
     silhouette: 'einstein',
@@ -238,7 +238,7 @@ export const EGGS: Egg[] = [
     id: 'vinegar',
     name: '苹果醋',
     layer: 'discover',
-    trigger: '点击果园角落的醋桶。',
+    trigger: '点击树脚边的醋桶。',
     text: '酸到想起前任。',
     reward: { kind: 'apples', amount: 5 },
     silhouette: 'barrel',
@@ -369,7 +369,7 @@ export const EGGS: Egg[] = [
     id: 'idunn',
     name: '伊登的金苹果',
     layer: 'discover',
-    trigger: '进入第 5 时代(果星)后,点击夜空里的金色苹果篮。',
+    trigger: '进入星树阶段后,点击夜空里的金色苹果篮。',
     text: '伊登的金苹果,吃一个不显老。',
     reward: { kind: 'gold', amount: 1 },
     silhouette: 'basket-gold',
@@ -462,14 +462,14 @@ export const EGGS: Egg[] = [
     silhouette: 'tree-talk',
   },
   {
-    id: 'trampoline-leak',
-    name: '蹦床小费',
+    id: 'truck-horn',
+    name: '喇叭连按',
     layer: 'discover',
-    trigger: '拥有蹦床时,在 5 秒内点击蹦床图标 5 次。',
-    text: '蹦床吐出一个苹果:这是小费。',
+    trigger: '拥有卡车时,5 秒内点击路上的卡车 5 次。',
+    text: '卡车按了五声喇叭。苹果回头看了一眼。',
     reward: { kind: 'apples', amount: 10 },
-    silhouette: 'trampoline',
-    minEra: 1,
+    silhouette: 'truck',
+    minEra: 2,
   },
   {
     id: 'pole-snap',
@@ -506,6 +506,90 @@ export const EGGS: Egg[] = [
     text: '咕嘟咕嘟。他打了个嗝,气泡升天。',
     reward: { kind: 'apples', amount: 10 },
     silhouette: 'laoxu-bubble',
+  },
+  // ───────── v6 新增:小鸟 / 收货站 / 云树 / 星树 ─────────
+  {
+    id: 'bird-feather',
+    name: '羽毛收藏家',
+    layer: 'discover',
+    trigger: '累计点中飞过的小鸟 10 次。',
+    text: '羽毛落了一地。鸟:不要了,你拿去。',
+    reward: { kind: 'apples', amount: 12 },
+    silhouette: 'feather',
+  },
+  {
+    id: 'bird-ignore',
+    name: '鸟的口粮',
+    layer: 'discover',
+    trigger: '小鸟来时不点它,被啄走苹果,累计 5 次。',
+    text: '鸟吃饱了。它说:谢谢款待。',
+    reward: { kind: 'badge', id: 'badge-bird-friend' },
+    silhouette: 'bird-fat',
+  },
+  {
+    id: 'bird-hat',
+    name: '戴帽的鸟',
+    layer: 'rare',
+    trigger: '12 月 24 日当天,点中小鸟(它头上会戴一顶红色小帽)。',
+    text: '这只鸟,提前过节了。',
+    reward: { kind: 'cosmetic', id: 'skin-bird-hat' },
+    silhouette: 'bird-hat',
+  },
+  {
+    id: 'elf-wave',
+    name: '别点我,我在数',
+    layer: 'discover',
+    trigger: '在收货站,每次间隔不超过 3 秒,点击小精灵 5 次。',
+    text: '小精灵:别点我,数到哪了?',
+    reward: { kind: 'apples', amount: 10 },
+    silhouette: 'elf',
+  },
+  {
+    id: 'sleigh-bell',
+    name: '叮',
+    layer: 'discover',
+    trigger: '在收货站,点击雪橇上的铃铛。',
+    text: '叮。雪橇说:还没起飞,别催。',
+    reward: { kind: 'apples', amount: 8 },
+    silhouette: 'bell',
+  },
+  {
+    id: 'reindeer-nose',
+    name: '红鼻子',
+    layer: 'rare',
+    trigger: '在收货站,连续点击驯鹿的鼻子 3 次。',
+    text: '红的。亮的。有点烫。别问。',
+    reward: { kind: 'badge', id: 'badge-red-nose' },
+    silhouette: 'reindeer',
+  },
+  {
+    id: 'gift-peek',
+    name: '只是看看',
+    layer: 'discover',
+    trigger: '礼物堆第一次高过雪橇边沿时,点击最上面的那个包裹。',
+    text: '包裹上写着:不许拆。我没拆,我只是看看。',
+    reward: { kind: 'apples', amount: 15 },
+    silhouette: 'parcel',
+  },
+  {
+    id: 'cloud-basket',
+    name: '云边吊篮',
+    layer: 'discover',
+    trigger: '云树阶段,点击云边挂着的吊篮(老徐在里面)。',
+    text: '老徐在吊篮里喝快乐水:别告诉小满。',
+    reward: { kind: 'apples', amount: 12 },
+    silhouette: 'basket-cloud',
+    minEra: 3,
+  },
+  {
+    id: 'star-lantern',
+    name: '七盏星灯',
+    layer: 'discover',
+    trigger: '星树阶段,依次点击树上的七盏星灯(每次间隔不超过 4 秒)。',
+    text: '七盏灯,七个愿。别告诉树。',
+    reward: { kind: 'gold', amount: 1 },
+    silhouette: 'lantern',
+    minEra: 4,
   },
 ];
 
@@ -553,11 +637,20 @@ export const EGG_TRIGGER_HINTS: Record<string, string> = {
   'title-7': '标题,是不是可以点?',
   'core-82': '到终点时,会剩点什么。',
   'shake-5000': '树的忍耐,也有限度。',
-  'trampoline-leak': '蹦床,好像在偷偷弹。',
+  'truck-horn': '卡车跑起来,试试连点它。',
   'pole-snap': '扁担,也有承受极限。',
   'laoxu-spray': '他坐着的时候,戳一戳。',
   'laoxu-qc': '连点他。口袋里有东西。',
   'laoxu-bubble': '他喝快乐水时,按住不放。',
+  'bird-feather': '小鸟飞过时,试着戳它。',
+  'bird-ignore': '小鸟来了,故意不理它。',
+  'bird-hat': '平安夜当天,鸟头上有点红。',
+  'elf-wave': '收货站的小精灵,别逗太快。',
+  'sleigh-bell': '收货站的雪橇上,挂着个小东西。',
+  'reindeer-nose': '驯鹿的鼻子,连戳几下。',
+  'gift-peek': '礼物堆最顶上那个。',
+  'cloud-basket': '云边吊篮里,有人在歇着。',
+  'star-lantern': '星树上的灯,一盏一盏点。',
 };
 
 /** 各层级总数(图鉴进度 n/N 用) */
@@ -598,3 +691,29 @@ export const EGG_TEXT: Record<string, EggText> = Object.fromEntries(
 export const EXTRA_EGG_IDS: string[] = EGGS.map((e) => e.id).filter(
   (id) => !Object.values(SYS_EGG_ID_MAP).includes(id),
 );
+
+// ───────────── v6:彩蛋角色被点中的反应 + 飘字 ─────────────
+// 用途:点中彩蛋角色(牛顿等)时:角色做 1–2 秒动作 + 一句反应(reaction,气泡)+ 飘字(floats,随机取一条,{n} = 本次收益数,
+//       程序替换成"+N"的数字部分,不要自己再拼"+")+ 粒子 + 音效 + 图鉴亮起。
+// 键 = systems 的彩蛋 id(与 EGG_TEXT 同)。小鸟/收货站角色的在 finale.ts(BIRD / STATION_FLOATS)。
+// 约束:reaction ≤16 字;飘字 ≤12 字(含 {n} 按 4 位数算);只写收益,不写数值之外的说明。
+export interface EggFloat {
+  name: string;
+  reaction: string;
+  floats: string[];
+}
+
+export const EGG_CHAR_FLOATS: Record<string, EggFloat> = {
+  newton: { name: '牛顿', reaction: '哎哟!又是你!', floats: ['+{n} 万有引力', '+{n} 砸出来的', '+{n} 工伤补助'] },
+  eve: { name: '夏娃', reaction: '别吃!……算了。', floats: ['+{n} 禁果', '+{n} 第二口', '+{n} 伊甸红利'] },
+  snowwhite: { name: '白雪公主', reaction: '这颗,不进仓库。', floats: ['+{n} 红的那颗', '+{n} 好心的老太婆', '+{n} 七人份'] },
+  paris: { name: '帕里斯', reaction: '献给最美的!', floats: ['+{n} 金灿灿', '+{n} 三位女神', '+{n} 最美的'] },
+  tell: { name: '威廉·退尔', reaction: '稳住……放!', floats: ['+{n} 正中靶心', '+{n} 一箭双果', '+{n} 儿子没事'] },
+  snake: { name: '伊甸蛇', reaction: '嘘……尝尝?', floats: ['+{n} 蛇的推荐', '+{n} 来路不明', '+{n} 嘶——'] },
+  adam: { name: '亚当', reaction: '我只咬了一口。', floats: ['+{n} 喉结作证', '+{n} 咽不下去', '+{n} 亚当的口粮'] },
+  johnny: { name: '苹果籽约翰', reaction: '种子,撒一路。', floats: ['+{n} 种子雨', '+{n} 一路播种', '+{n} 到处是树'] },
+  einstein: { name: '爱因斯坦', reaction: '质量不算。', floats: ['+{n} 相对论', '+{n} 光速的零头', '+{n} 月亮上掉的'] },
+  kimura: { name: '木村', reaction: '一万颗,活这一颗。', floats: ['+{n} 奇迹苹果', '+{n} 不打药', '+{n} 十年一颗'] },
+  jobs: { name: '高领先生', reaction: '保持饥饿。(与苹果公司无关)', floats: ['+{n} 咬了一口', '+{n} 再来一个', '+{n} 无关,真的'] },
+  orange: { name: '果多多', reaction: '三个橘子,换不换?', floats: ['+{n} 还价成功', '+{n} 奸商让利', '+{n} 这次五个'] },
+};
