@@ -49,7 +49,7 @@ export const VARIETY_TEXTS: VarietyText[] = [
     id: 'delicious', name: '蛇果', nickname: '红衣大侠',
     desc: '深红,发亮,不太笑。',
     lore: '名字里没有蛇。据说是英文 Delicious 的音译,和伊甸园没有关系。',
-    hint: '果园壮大之后才见得到。',
+    hint: '树长大之后才见得到。',
   },
   {
     id: 'pinkLady', name: '粉红佳人', nickname: '爱美的人',
@@ -73,7 +73,7 @@ export const VARIETY_TEXTS: VarietyText[] = [
     id: 'purple', name: '紫玉', nickname: '深紫低调',
     desc: '紫得很深,话很少。',
     lore: '紫色来自花青素,和蓝莓、紫甘蓝是一家人。',
-    hint: '果城的货架上才有。',
+    hint: '树冠入云之后才有。',
   },
   {
     id: 'silver', name: '灰银', nickname: '月光色',
@@ -95,7 +95,7 @@ export const VARIETY_TEXTS: VarietyText[] = [
   },
   {
     id: 'golden', name: '金苹果', nickname: '三位女神吵起来了',
-    desc: '一闪一闪,据说值一座果山。',
+    desc: '一闪一闪,据说值一座金山。',
     lore: '神话里,刻着"献给最美者"的金苹果引来了三位女神,后来又引来了特洛伊战争。',
     hint: '金光一闪,别眨眼。',
   },
@@ -162,3 +162,25 @@ export const VARIETY_ORDER: VarietyId[] = [
 export const VARIETY_TEXT: Record<VarietyId, VarietyText> = Object.fromEntries(
   VARIETY_TEXTS.map((v) => [v.id, v]),
 ) as Record<VarietyId, VarietyText>;
+
+// ───────────── v6:品种落地特性(一句话,只描述手感,不放数字) ─────────────
+// 用途:图鉴描述下方的"特性"小字,以及首次遇见该品种时的小提示。
+//       只是画面/音效小差异,不制造点击压力(没有"错过会损失")。
+// 约束:≤16 字。
+export const VARIETY_TRAITS: Record<VarietyId, string> = {
+  fuji: '落地稳稳当当。',
+  goldenDel: '落地轻轻一弹。',
+  granny: '掉得特别快。',
+  golden: '落下时会发光。',
+  delicious: '落地一声闷响。',
+  pinkLady: '飘着落下来。',
+  redStreak: '落地会弹一下。',
+  purple: '落下时带点紫雾。',
+  silver: '落地泛着银光。',
+  worm: '落地就往旁边滚。',
+  caramel: '落地粘在原地。',
+  giant: '落地,地面抖一抖。',
+  kent: '落下时撒点花瓣。',
+  poison: '落地冒一缕灰烟。',
+  forbidden: '落下时四周变暗。',
+};
