@@ -11,6 +11,7 @@ import { killReward, newPests, tapPest, tickPests, type PestEvent, type PestsSta
 import { appleCtxAt, seasonAt } from './season.ts';
 import type { EggEvent, Snapshot } from './types.ts';
 import { bagAdd, rollApple, type Apple, type Bag } from './varieties.ts';
+import { newLaoxu, normalizeLaoxu, stepLaoxu, takeCrit, tapLaoxu, type LaoxuEvent, type LaoxuState, type LaoxuTap } from './laoxu.ts';
 import { shanghai, type Rnd } from './util.ts';
 
 export interface SysState {
@@ -30,12 +31,14 @@ export interface SysState {
   lastEventAt: number;
   /** 本次防囤线(每帧更新,只读展示用) */
   limit: number;
+  /** 老徐行为状态机(sys/laoxu.ts) */
+  laoxu: LaoxuState;
 }
 
 export function newSys(): SysState {
   return {
     v: 1, bag: {}, bagT: 0, orders: newOrders(), pests: newPests(), rot: newRot(), offer: newOffer(),
-    codex: newCodex(), news: newNewsState(), recentNews: [], lastEventAt: -1, limit: 0,
+    codex: newCodex(), news: newNewsState(), recentNews: [], lastEventAt: -1, limit: 0, laoxu: newLaoxu(),
   };
 }
 
@@ -54,6 +57,7 @@ export function normalizeSys(raw: unknown): SysState {
   if (r.news && typeof r.news.mIdx === 'number') s.news = { ...s.news, ...r.news };
   if (Array.isArray(r.recentNews)) s.recentNews = r.recentNews.filter((x) => typeof x === 'string').slice(-80);
   if (typeof r.lastEventAt === 'number') s.lastEventAt = r.lastEventAt;
+  s.laoxu = normalizeLaoxu(r.laoxu);
   return s;
 }
 
@@ -74,6 +78,12 @@ export interface SysInput {
   coldStorage: boolean;
   /** 进度 0..1 */
   progress: number;
+  /** 老徐等级 0..8(缺省 0:不推进老徐状态机) */
+  helperLevel?: number;
+  /** 玩家多久没操作(秒;缺省 0) */
+  idleSec?: number;
+  /** 屏幕上有事件(鸟/牛顿/流星)(缺省 false) */
+  eventOnScreen?: boolean;
 }
 
 export type SysEvent =
@@ -88,6 +98,10 @@ export interface SysTick {
   /** 本帧要从 coins 扣掉的量(腐烂 + 虫咬),eng-app 做 s.coins -= coinsLoss(不会扣成负) */
   coinsLoss: number;
   events: SysEvent[];
+  /** 老徐出工系数 0..1:eng-app 每帧 s.helperAct = helperAct */
+  helperAct: number;
+  /** 老徐状态变化/精神焕发事件(给气泡/台词用) */
+  laoxu: LaoxuEvent[];
 }
 
 /** 每帧推进(任意 dt;dt>5 视为离线结算,只做安全的部分) */
@@ -124,7 +138,14 @@ export function tickSys(sys: SysState, dt: number, inp: SysInput, rnd: Rnd): Sys
   const d = decayStep(sys.rot, Math.max(0, inp.coins - loss), sys.limit, dt, inp.coldStorage);
   loss += d.rotted;
   if (d.spawned) events.push({ t: 'rot', spawned: d.spawned });
-  return { coinsLoss: Math.min(loss, Math.max(0, inp.coins)), events };
+  const newOrder = events.some((e) => e.t === 'order-new');
+  const lx = stepLaoxu(sys.laoxu, dt, rnd, {
+    level: inp.helperLevel ?? 0,
+    idleSec: inp.idleSec ?? 0,
+    night: se.night,
+    visitor: !!inp.eventOnScreen || newOrder || events.some((e) => e.t === 'pest-wave'),
+  });
+  return { coinsLoss: Math.min(loss, Math.max(0, inp.coins)), events, helperAct: lx.act, laoxu: lx.events };
 }
 
 function intoBag(sys: SysState, a: Apple, playSec: number): SysEvent[] {
@@ -154,6 +175,15 @@ export function tapPestSys(sys: SysState, id: number, income: number): { r: 'hit
 }
 
 /** 点清烂果:返回清理个数 */
+/** 摇树取老徐的暴击倍数(精神焕发时 3,否则 1;取一次就消耗) */
+export const laoxuCrit = (sys: SysState): number => takeCrit(sys.laoxu);
+
+/** 玩家点老徐:返回结果与奖励(苹果数 = rewardS × income) */
+export function tapLaoxuSys(sys: SysState, income: number, rnd: Rnd): LaoxuTap & { reward: number } {
+  const r = tapLaoxu(sys.laoxu, rnd);
+  return { ...r, reward: r.r === 'none' ? 0 : r.rewardS * income };
+}
+
 export const cleanRotSys = (sys: SysState, n = Infinity): number => cleanRot(sys.rot, n);
 
 /** 献果:eng-app 先 s.coins -= r.spent(spent 是果钱),再 s.coins += r.apples 对应的……见 README */
@@ -174,6 +204,7 @@ export function snapshotOf(sys: SysState, h: SnapHost): Snapshot {
   return {
     ...rest,
     era: Math.min(h.sourceTier, ROUTE_ERA[h.routeTier] ?? h.routeTier),
+    laoxuMode: sys.laoxu.mode,
     night: se.night,
     season: se.season,
     weather: se.weather,

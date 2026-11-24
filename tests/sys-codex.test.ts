@@ -8,7 +8,7 @@ import { EGGS } from '../src/content/eggs.ts';
 
 function snap(over: Partial<Snapshot> = {}): Snapshot {
   return {
-    playSec: 100, delivered: 0, progress: 0, sourceTier: 0, routeTier: 0, era: 0, units: 2, shakes: 0, helpers: 0, combo: 0,
+    playSec: 100, delivered: 0, progress: 0, sourceTier: 0, routeTier: 0, era: 0, units: 2, shakes: 0, helperLevel: 0, combo: 0,
     coins: 0, income: 1, targetCost: 10, stockFill: 0, wasted: 0, idleSec: 0, sinceTierSec: 100, bottleneck: 'balanced',
     night: false, season: 0, weather: 'clear', wall: shanghai(Date.UTC(2026, 10, 24, 4)), eventOnScreen: null,
     ordersActive: 0, pestsActive: 0, offerOpen: false, goldSeen: false, hoardRatio: 0, eventsOnScreen: 0, sessionSec: 0, rotTotal: 0,
@@ -19,7 +19,7 @@ const tap = (target: string, at = 0): EggEvent => ({ t: 'tap', target: target as
 const rnd = mulberry32(1);
 
 test('egg ids line up 1:1 with writer content', () => {
-  assert.equal(EGG_COUNT, 44);
+  assert.equal(EGG_COUNT, 47);
   assert.deepEqual([...EGG_IDS].sort(), EGGS.map((e) => e.id).sort());
 });
 
@@ -73,7 +73,7 @@ test('xmas-eve only on Dec 24 login; xmas-sock needs Dec≥20', () => {
 
 test('tap-run eggs: apple-of-eye (5 in 2s) resets on slow taps; title-7; phone-pun', () => {
   const c = newCodex();
-  const s = snap({ helpers: 1, sourceTier: 1 });
+  const s = snap({ helperLevel: 1, sourceTier: 1 });
   let ids: string[] = [];
   for (let i = 0; i < 4; i++) ids.push(...checkEggs(s, tap('xu', i * 1), c, rnd).map((x) => x.id)); // 1s apart: too slow? gap ≤ tapGapS
   const c2 = newCodex();
@@ -145,7 +145,7 @@ test('achievements unlock once, codexProgress counts, normalizeCodex tolerates j
   discoverKind(c, 'fuji', 1);
   const p = codexProgress(c);
   assert.equal(p.kinds.found, 1);
-  assert.equal(p.all.total, 15 + 44);
+  assert.equal(p.all.total, 15 + 47);
   assert.deepEqual(normalizeCodex(null), newCodex());
   assert.equal(normalizeCodex({ lastLoginDay: 5, kinds: 3 }).lastLoginDay, '');
   assert.equal(normalizeCodex(JSON.parse(JSON.stringify(c))).kinds.fuji?.n, 1);

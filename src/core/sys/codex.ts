@@ -83,7 +83,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'tier-1', name: '升了第一档', test: (s) => Math.max(s.sourceTier, s.routeTier) >= 1 },
   { id: 'tier-3', name: '两线三档', test: (s) => s.era >= 3 },
   { id: 'tier-5', name: '两线满档', test: (s) => s.era >= 5 },
-  { id: 'helpers-5', name: '五个帮手', test: (s) => s.helpers >= 5 },
+  { id: 'helpers-5', name: '五个帮手', test: (s) => s.helperLevel >= 5 },
   { id: 'p-1', name: '送出 1%', test: (s) => s.progress >= 0.01 },
   { id: 'p-10', name: '送出 10%', test: (s) => s.progress >= 0.1 },
   { id: 'p-50', name: '过半', test: (s) => s.progress >= 0.5 },

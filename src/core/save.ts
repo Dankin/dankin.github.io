@@ -1,4 +1,5 @@
 import { SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from './constants.ts';
+import { HELPER, helperOldTotal } from './content.ts';
 import { newState, PIN_SLOTS, type State } from './state.ts';
 import { migrateRouteTiers } from './sys/migrate.ts';
 import { newSys, normalizeSys } from './sys/state.ts';
@@ -31,6 +32,19 @@ export const MIN_MIGRATABLE = 3;
 migrations[3] = (s) => ({ ...s, spent: 0, pin: null });
 /** v4 → v5:运输线 6 档 → 9 档(旧索引 0..5 映射到 0,2,4,5,7,8),见 sys/migrate.ts。同时加 State.sys(玩法系统状态)。 */
 migrations[4] = (s) => ({ ...migrateRouteTiers(s), sys: newSys() });
+
+/**
+ * v5 → v6:老徐从"数量 0..12"改成"等级 0..8"。按"相当于几位老徐"折算:取 equiv ≤ 旧数量的最高级,
+ * 多出来的那几位按旧价退回手上苹果(不丢进度)。旧字段 helpers 删除,新字段 helperLevel。
+ */
+migrations[5] = (s) => {
+  const n = Math.max(0, Math.min(12, Math.floor(Number(s.helpers) || 0)));
+  let lv = 0;
+  for (let l = 1; l <= HELPER.max; l++) if (HELPER.equiv[l] <= n) lv = l;
+  const refund = helperOldTotal(n) - helperOldTotal(HELPER.equiv[lv]);
+  const { helpers: _drop, ...rest } = s;
+  return { ...rest, helperLevel: lv, helperAct: 1, coins: (Number(s.coins) || 0) + Math.max(0, refund) };
+};
 
 /** 迁移前备份的 key:每个旧版本一份,不覆盖已有的 */
 export const migrationBackupKey = (fromVersion: number): string => `${SAVE_KEY}.v${fromVersion}.bak`;
@@ -126,7 +140,8 @@ function fillDefaults(s: State, now: number): State {
     charge: Math.min(1, Math.max(0, num(legacy.charge ?? legacy.flywheel, 0))),
     shakeRate: 0,
     shakeTok: Math.min(3, Math.max(0, num(legacy.shakeTok, 3))),
-    helpers: Math.max(0, Math.floor(num(legacy.helpers, 0))),
+    helperLevel: Math.min(HELPER.max, Math.max(0, Math.floor(num(legacy.helperLevel, 0)))),
+    helperAct: Math.min(1, Math.max(0, num(legacy.helperAct, 1))),
     source: line(s.source, d.source),
     route: line(s.route, d.route),
     gates: d.gates.map((_, i) => s.gates?.[i] ?? null),

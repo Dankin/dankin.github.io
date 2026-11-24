@@ -60,7 +60,7 @@ test('order claim + pest tap pay reward only on success', () => {
 test('snapshotOf fills derived fields; onEvent fires eggs and achievements', () => {
   const s = newSys();
   const raw = {
-    playSec: 100, delivered: 0, progress: 0, sourceTier: 1, routeTier: 2, units: 3, shakes: 1, helpers: 0, combo: 0, coins: 5, income: 1,
+    playSec: 100, delivered: 0, progress: 0, sourceTier: 1, routeTier: 2, units: 3, shakes: 1, helperLevel: 0, combo: 0, coins: 5, income: 1,
     targetCost: 10, stockFill: 0, wasted: 0, idleSec: 0, sinceTierSec: 5, bottleneck: 'balanced' as const, eventOnScreen: null, eventsOnScreen: 0,
     sessionSec: 5, sinceEventSec: 999, nowMs: Date.UTC(2026, 10, 24, 4),
   };

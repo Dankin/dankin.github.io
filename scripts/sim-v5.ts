@@ -6,18 +6,24 @@
 import { GOAL } from '../src/core/constants.ts';
 import { shake, throughput } from '../src/core/game.ts';
 import { SIM } from '../src/core/sys/constants.ts';
-import { claimOrder, canFulfill, newSys, offerSys, onShakeRoll, tapPestSys, tickSys } from '../src/core/sys/state.ts';
+import { claimOrder, canFulfill, laoxuCrit, newSys, offerSys, onShakeRoll, tapLaoxuSys, tapPestSys, tickSys } from '../src/core/sys/state.ts';
 import { seasonAt } from '../src/core/sys/season.ts';
 import { decayLimit } from '../src/core/sys/decay.ts';
 import { offerOpen } from '../src/core/sys/offer.ts';
 import { parseArgs, play, print, type Opts, type Report, type SimHook } from './sim.ts';
 
-function makeHook(): SimHook & { sys: ReturnType<typeof newSys> } {
+function makeHook(noSlack = false): SimHook & { sys: ReturnType<typeof newSys> } {
   const sys = newSys();
-  const x = { orderReward: 0, orderDone: 0, pestKilled: 0, pestBitten: 0, pestLost: 0, rot: 0, offerCoins: 0, offerApples: 0, seasonDelta: 0, income: 0, bagShakes: 0 };
+  const x = { lvFinal: 0, critShakes: 0, slackS: 0, sodas: 0, helperActSum: 0, steps: 0, orderReward: 0, orderDone: 0, pestKilled: 0, pestBitten: 0, pestLost: 0, rot: 0, offerCoins: 0, offerApples: 0, seasonDelta: 0, income: 0, bagShakes: 0 };
   let shakeAcc = 0;
   const hook: SimHook & { sys: typeof sys } = {
     sys,
+    shakeMul() {
+      if (noSlack) return 1;
+      const m = laoxuCrit(sys);
+      if (m > 1) x.critShakes++;
+      return m;
+    },
     step(s, dt, c) {
       const th = throughput(s);
       const era = Math.min(s.source.tier, s.route.tier);
@@ -43,7 +49,11 @@ function makeHook(): SimHook & { sys: ReturnType<typeof newSys> } {
       const tk = tickSys(sys, dt, {
         playSec: s.playSec, era, sourceTier: s.source.tier, routeTier: s.route.tier, coins: s.coins,
         income: th.income, targetCost: target, coldStorage: cold, progress: s.delivered / GOAL,
+        helperLevel: s.helperLevel, idleSec: c.cps > 0 ? 0 : s.playSec, eventOnScreen: false,
       }, c.rnd);
+      s.helperAct = noSlack ? 1 : tk.helperAct;
+      x.helperActSum += s.helperAct; x.steps++;
+      if (sys.laoxu.mode === 'slack') x.slackS += dt;
       s.coins = Math.max(0, s.coins - tk.coinsLoss);
       for (const e of tk.events) {
         if (e.t === 'pest-bite') { x.pestBitten++; x.pestLost += e.lost; }
@@ -88,23 +98,34 @@ function makeHook(): SimHook & { sys: ReturnType<typeof newSys> } {
         订单完成: x.orderDone, 订单奖励占收入百分比: x.income > 0 ? (100 * x.orderReward) / x.income : 0,
         虫消灭: x.pestKilled, 虫咬次数: x.pestBitten, 虫咬损失占收入百分比: x.income > 0 ? (100 * x.pestLost) / x.income : 0,
         烂果个数: x.rot, 献果次数: sys.offer.count, 献果送出苹果: x.offerApples, 季节修正占收入百分比: x.income > 0 ? (100 * x.seasonDelta) / x.income : 0,
-        入篮次数: x.bagShakes,
+        入篮次数: x.bagShakes, 老徐偷懒秒数: x.slackS, 老徐暴击摇树: x.critShakes, 老徐平均出工系数: x.steps ? x.helperActSum / x.steps : 1, 老徐偷懒次数: sys.laoxu.slacks,
       };
-      void s;
+      x.lvFinal = s.helperLevel; (rep.extra as Record<string, number>).老徐最终等级 = x.lvFinal;
     },
   };
   return hook;
 }
 
-export function playV5(o: Opts): Report {
-  return play({ ...o, hook: makeHook() });
+export function playV5(o: Opts, noSlack = false): Report {
+  return play({ ...o, hook: makeHook(noSlack) });
 }
 
 const pass = (r: Report, cps: number) => (cps === 0 ? r.minutes <= 75 : cps === 1 ? r.minutes >= 55 && r.minutes <= 65 : cps >= 4 ? r.minutes >= 42 : true);
 
 if (process.argv[1]?.endsWith('sim-v5.ts')) {
   const args = process.argv.slice(2);
-  if (args.includes('--all')) {
+  if (args.includes('--laoxu')) {
+    // 老徐偷懒/打盹/暴击的净影响:同种子对比"全程出工(无偷懒无暴击)"与"完整状态机"
+    for (const cps of [0, 1, 4]) {
+      let a = 0, b = 0;
+      for (const seed of [1, 2, 3]) {
+        const o = { ...parseArgs([String(cps), `--seed=${seed}`]), cps };
+        a += playV5(o, true).minutes;
+        b += playV5(o, false).minutes;
+      }
+      console.log(`cps=${cps}: 全程出工 ${(a / 3).toFixed(1)} 分 → 完整老徐 ${(b / 3).toFixed(1)} 分  净影响 ${((b - a) / 3 >= 0 ? '+' : '')}${((b - a) / 3).toFixed(1)} 分`);
+    }
+  } else if (args.includes('--all')) {
     for (const cps of [0, 1, 4]) {
       const rows: string[] = [];
       let sum = 0;

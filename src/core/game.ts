@@ -1,7 +1,7 @@
 // v4 核心玩法:产出 → 堆场 → 车 → 送达。所有函数都改传入的 State(除非注明纯函数)。
 import { GOAL, OFFLINE_CAP_MS, SHORT_AWAY_MS } from './constants.ts';
 import {
-  GATES, HELPER, MAX_CONVOYS, ROUTE_ERA, maxTier, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
+  GATES, HELPER, helperOldTotal, MAX_CONVOYS, ROUTE_ERA, maxTier, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
   type BranchDef, type Effect, type GateId,
 } from './content.ts';
 import { EXPAND, RED_EXP, TIER_START_UNITS, UNIT_MAX } from './content.ts';
@@ -40,8 +40,10 @@ function addEffect(m: Mods, e: Effect, k = 1): void {
 export const tiersOf = (line: LineId) => (line === 'source' ? SOURCE_TIERS : ROUTE_TIERS);
 
 /** 当前所有分支 + 道具(含红绳相邻放大)合成的乘数 */
-export function mods(s: Pick<State, 'source' | 'route' | 'gates'>): Mods {
+export function mods(s: Pick<State, 'source' | 'route' | 'gates'> & { helperLevel?: number }): Mods {
   const m = unit1();
+  // 老徐 8 级(退休顾问):运输指路 + 产出线整体小加成
+  if ((s.helperLevel ?? 0) >= HELPER.max) addEffect(m, HELPER.bonus);
   for (const line of ['source', 'route'] as const) {
     const L = s[line];
     for (let t = 1; t <= L.tier; t++) {
@@ -64,14 +66,15 @@ export function mods(s: Pick<State, 'source' | 'route' | 'gates'>): Mods {
 export const comboMult = (s: Pick<State, 'combo'>, m?: Pick<Mods, 'combo'>): number =>
   1 + Math.min(s.combo, SHAKE.comboMax) * SHAKE.comboStep * (m?.combo ?? 1);
 
-/** 老徐们每秒总共摇几下 */
-export const helperRate = (s: Pick<State, 'helpers'>, m: Pick<Mods, 'auto'>): number => s.helpers * HELPER.rate * m.auto;
+/** 老徐每秒总共摇几下(helperAct:0..1,由 sys/laoxu 的状态给出,偷懒=0,缺省 1) */
+export const helperRate = (s: Pick<State, 'helperLevel'> & { helperAct?: number }, m: Pick<Mods, 'auto'>): number =>
+  (HELPER.equiv[s.helperLevel] ?? 0) * HELPER.rate * m.auto * (s.helperAct ?? 1);
 
 /** 老徐把摇劲稳定在多少(0..1):每秒蓄 rate×perShake,衰减 decay */
-export const autoCharge = (s: Pick<State, 'helpers'>, m: Pick<Mods, 'auto'>): number => Math.min(1, (helperRate(s, m) * SHAKE.perShake) / SHAKE.decay);
+export const autoCharge = (s: Pick<State, 'helperLevel'> & { helperAct?: number }, m: Pick<Mods, 'auto'>): number => Math.min(1, (helperRate(s, m) * SHAKE.perShake) / SHAKE.decay);
 
 /** 摇劲水平:手动蓄的、保底、老徐稳住的,取最大 */
-export const chargeLevel = (s: Pick<State, 'charge' | 'helpers'>, m: Pick<Mods, 'floor' | 'auto'>): number =>
+export const chargeLevel = (s: Pick<State, 'charge' | 'helperLevel'> & { helperAct?: number }, m: Pick<Mods, 'floor' | 'auto'>): number =>
   Math.max(s.charge, m.floor, autoCharge(s, m));
 
 /** 每个苹果的价值(果钱),含连摇 */
@@ -135,7 +138,7 @@ export function bottleneckOf(produce: number, carry: number): Bottleneck {
   return r > 1.1 ? 'carry' : r < 0.9 ? 'produce' : 'balanced';
 }
 
-export function throughput(s: Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helpers' | 'shakeRate'>): Throughput {
+export function throughput(s: Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate'>): Throughput {
   const m = mods(s);
   const bp = baseProduce(s.source) * m.produce;
   const fm = fwMax(s, m);
@@ -279,10 +282,11 @@ export function setGate(s: State, slot: number, id: GateId | null): boolean {
 }
 
 // ───────────────────────── 老徐(自动摇树) ─────────────────────────
-/** 下一位老徐的价格;没解锁(果园之前)或已满员为 null */
-export function helperCost(s: Pick<State, 'source' | 'helpers'>): number | null {
-  if (s.source.tier < HELPER.unlockTier || s.helpers >= HELPER.max) return null;
-  return Math.floor(HELPER.baseCost * Math.pow(HELPER.growth, s.helpers));
+/** 老徐升到下一级的价格;没解锁(果园之前)或已满级为 null */
+export function helperCost(s: Pick<State, 'source' | 'helperLevel'>): number | null {
+  if (s.source.tier < HELPER.unlockTier || s.helperLevel >= HELPER.max) return null;
+  const to = s.helperLevel + 1;
+  return helperOldTotal(HELPER.equiv[to]) - helperOldTotal(HELPER.equiv[s.helperLevel]);
 }
 export function canBuyHelper(s: State): boolean {
   const c = helperCost(s);
@@ -293,7 +297,7 @@ export function buyHelper(s: State): boolean {
   if (c === null || s.coins < c) return false;
   s.coins -= c;
   s.spent += c;
-  s.helpers += 1;
+  s.helperLevel += 1;
   return true;
 }
 
@@ -347,14 +351,14 @@ function plainOf(a: Action, ok: boolean, bm: Mods, am: Mods, before: Throughput,
   return parts.slice(0, 2).join('、');
 }
 
-type Lite = Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helpers' | 'shakeRate' | 'gatesUnlocked'>;
+type Lite = Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate' | 'gatesUnlocked'>;
 const lite = (s: State): Lite => ({
   source: { ...s.source, units: [...s.source.units], branch: [...s.source.branch], ext: [...s.source.ext] },
   route: { ...s.route, units: [...s.route.units], branch: [...s.route.branch], ext: [...s.route.ext] },
   gates: [...s.gates],
   charge: s.charge,
   combo: s.combo,
-  helpers: s.helpers,
+  helperLevel: s.helperLevel,
   shakeRate: s.shakeRate,
   gatesUnlocked: s.gatesUnlocked,
 });
@@ -385,7 +389,7 @@ export function preview(s: State, a: Action): Preview {
     ok = c !== null;
     if (ok) {
       cost = c!;
-      l.helpers += 1;
+      l.helperLevel += 1;
     }
   } else if (a.kind === 'tier') {
     const c = tierCost(s, a.line);
@@ -485,14 +489,15 @@ export interface ShakeResult {
 /**
  * 摇一下树:苹果直接掉进堆场(1 + 当前产出×dropSec×手劲),同时蓄一点摇劲、续上连摇。
  * 有效频率上限 SHAKE.maxRate 次/秒(令牌桶 s.shakeTok,突发 SHAKE.burst)。牛顿事件期间掉落与摇劲翻倍。
+ * mul:额外掉落倍数(老徐偷懒后的"精神焕发"暴击 ×3,由 sys 的 laoxuCrit 给出)。
  */
-export function shake(s: State): ShakeResult {
+export function shake(s: State, mul = 1): ShakeResult {
   if (s.shakeTok < 1) return { ok: false, dropped: 0, combo: s.combo };
   s.shakeTok -= 1;
   s.shakes += 1;
   const m = mods(s);
   const k = s.playSec < s.newtonUntil ? 2 : 1;
-  const dropped = throughput(s).shakeDrop * k;
+  const dropped = throughput(s).shakeDrop * k * mul;
   s.charge = Math.min(1, s.charge + SHAKE.perShake * k);
   s.shakeRate += 1 / SHAKE.rateTau;
   s.combo = s.comboT > 0 ? s.combo + 1 : 1;

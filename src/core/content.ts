@@ -121,17 +121,34 @@ export const EXPAND = {
   names: ['加固', '扩建', '大扩建'],
 };
 
-/** 老徐:自动摇树的帮工。每位每秒摇 rate 下(效果同手动,但没有连摇)。第 n 位的价格 = baseCost × growth^n。 */
+/**
+ * 老徐:可升级的角色,8 级(1 喊加油 2 打拍子 3 鼓掌 4 伸手帮忙 5 正经摇树 6 掏马扎 7 带徒弟 8 退休顾问),档名文案见 src/content/laoxu.ts。
+ * 每级的自动摇树频率 = equiv[级] × rate(次/秒,效果同手动但没有连摇);equiv 是"相当于旧版几位老徐"。
+ * 升到第 L 级的价格 = 旧版第 equiv[L-1]+1 … equiv[L] 位老徐的价格之和(baseCost × growth^i),所以总花费与旧曲线一致;
+ * 第 6、7 级会偷懒(sys/laoxu.ts),所以 equiv 略高于旧曲线按比例,把偷懒损失补回来;第 8 级频率 12(徒弟接班)并带全体加成 bonus。
+ */
 export const HELPER = {
   name: '老徐',
-  unit: '位老徐',
+  unit: '级',
   joke: '老徐退休了,闲着也是闲着,帮你摇两下。',
   rate: 0.15,
-  max: 12,
+  /** 最高级 */
+  max: 8,
+  /** 各级相当于旧版几位老徐(下标=级,0 级为 0) */
+  equiv: [0, 1, 2, 3, 4, 6, 9, 11, 12] as readonly number[],
   baseCost: 400,
   growth: 2.2,
+  /** 第 8 级价格 */
+  /** 第 8 级(退休顾问)的全体加成:产出线 produce × 运输时间 time(≈ +3.5%) */
+  bonus: { produce: 1.02, time: 0.985 },
   /** 产出档 ≥ 这个才能雇 */
   unlockTier: 1,
+};
+/** 旧版 n 位老徐的累计价格 */
+export const helperOldTotal = (n: number): number => {
+  let c = 0;
+  for (let i = 0; i < n; i++) c += Math.floor(HELPER.baseCost * Math.pow(HELPER.growth, i));
+  return c;
 };
 
 /** 堆场容量 = max(STOCK_MIN, STOCK_SECONDS × 不含摇劲的产出) × 加成 */

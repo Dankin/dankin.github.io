@@ -21,11 +21,12 @@ function v3(): Record<string, unknown> {
   s.version = 3;
   s.coins = 4321;
   s.delivered = 9999;
+  delete s.helperLevel;
   s.helpers = 2;
   return s;
 }
 
-test('SAVE_VERSION 是 5', () => assert.equal(SAVE_VERSION, 5));
+test('SAVE_VERSION 是 6', () => assert.equal(SAVE_VERSION, 6));
 
 test('迁移 v3→v4:数值原样,spent=0,pin=null', () => {
   const r = parse(wrap(v3()))!;
@@ -36,7 +37,7 @@ test('迁移 v3→v4:数值原样,spent=0,pin=null', () => {
   assert.equal(r.state.pin, null);
   assert.equal(r.state.coins, 4321);
   assert.equal(r.state.delivered, 9999);
-  assert.equal(r.state.helpers, 2);
+  assert.equal(r.state.helperLevel, 2);
 });
 
 test('load 旧档:迁移前先把原文存成 .v3.bak;再次加载不覆盖它', () => {
@@ -102,4 +103,29 @@ test('账本:tick 赚到的钱不进 spent', () => {
   const s = newState(0);
   for (let i = 0; i < 20; i++) tick(s, 1);
   assert.equal(s.spent, 0);
+});
+
+/** 造一份 v5 存档(老徐是数量 helpers) */
+function v5(helpers: number): Record<string, unknown> {
+  const s: Record<string, unknown> = { ...newState(1000) };
+  delete s.helperLevel;
+  delete s.helperAct;
+  s.version = 5;
+  s.coins = 100;
+  s.helpers = helpers;
+  return s;
+}
+
+test('迁移 v5→v6:老徐数量折算成等级,取不超过原效果的最高档并把差价退回库存', () => {
+  const want: Array<[number, number]> = [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 4], [6, 5], [7, 5], [8, 5], [9, 6], [10, 6], [11, 7], [12, 8]];
+  for (const [n, lv] of want) {
+    const r = parse(wrap(v5(n)))!;
+    assert.equal(r.migratedFrom, 5);
+    assert.equal(r.state.helperLevel, lv, `helpers ${n} → lv ${lv}`);
+    assert.equal(r.state.helperAct, 1);
+    assert.equal((r.state as unknown as Record<string, unknown>).helpers, undefined);
+    assert.ok(r.state.coins >= 100, '不扣钱');
+  }
+  // 5 位老徐:等级 4 对应 4 位,多出的第 5 位退回(原价 400×2.2^4)
+  assert.equal(parse(wrap(v5(5)))!.state.coins, 100 + Math.floor(400 * 2.2 ** 4));
 });

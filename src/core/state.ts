@@ -73,8 +73,10 @@ export interface State {
   shakeTok: number;
   /** 近期摇树频率(次/秒,约 2 秒滑动平均):吞吐估算要把手摇算进去 */
   shakeRate: number;
-  /** 雇了几位老徐(自动摇树) */
-  helpers: number;
+  /** 老徐等级 0..8(0=没请;每级是一种形态,不是个数)。自动摇频率见 content.ts HELPER.equiv */
+  helperLevel: number;
+  /** 老徐当前的出工系数 0..1(sys/laoxu 的状态决定:偷懒=0,打盹略低);缺省 1。每帧由 sys 写入,不影响离线结算 */
+  helperAct: number;
   vehicles: Vehicle[];
   /** 累计浪费(堆场满了溢出)的苹果 */
   wasted: number;
@@ -114,7 +116,8 @@ export function newState(now: number): State {
     comboT: 0,
     shakeTok: 3,
     shakeRate: 0,
-    helpers: 0,
+    helperLevel: 0,
+    helperAct: 1,
     vehicles: [{ tier: 0, w: 1, phase: 0, load: 0 }],
     wasted: 0,
     newtonUntil: 0,

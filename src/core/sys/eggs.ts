@@ -1,7 +1,7 @@
 // 彩蛋判定:43 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
 // 奖励请用 EGG_BY_ID[id].reward(content)发放,hit 里不重复携带。
 import { ROUTE_ERA } from '../content.ts';
-import { CODEX } from './constants.ts';
+import { CODEX, LAOXU } from './constants.ts';
 import type { CodexState } from './codex.ts';
 import type { EggEvent, Snapshot, TapTarget } from './types.ts';
 import type { AppleKind } from './varieties.ts';
@@ -22,10 +22,10 @@ const routeEra = (s: Snapshot): number => ROUTE_ERA[s.routeTier] ?? s.routeTier;
 const eraMax = (s: Snapshot): number => Math.max(s.sourceTier, routeEra(s));
 
 /** 连点计数:相邻点击间隔 ≤ gap 才累计,到 n 次触发并清零。key 默认用热点名 */
-function tapRun(c: Ctx, n: number, gap: number, key?: string): boolean {
+function tapRun(c: Ctx, n: number, gap: number, key?: string, target?: TapTarget): boolean {
   if (c.ev.t !== 'tap') return false;
   const k = key ?? c.ev.target;
-  if (c.ev.target !== k) return false;
+  if (c.ev.target !== (target ?? k)) return false;
   const run = (c.codex.tapRun[k] ??= { n: 0, last: -1e9 });
   run.n = c.ev.at - run.last <= gap ? run.n + 1 : 1;
   run.last = c.ev.at;
@@ -54,10 +54,10 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['xmas-sock', (c) => tapIs(c, 'stocking') && c.snap.wall.m === 12 && c.snap.wall.d >= CODEX.xmasFromDay],
 
   // ── 可发现 ──
-  ['tell', (c) => c.snap.helpers >= 1 && tapIs(c, 'xu-head-apple')],
+  ['tell', (c) => c.snap.helperLevel >= 1 && tapIs(c, 'xu-head-apple')],
   ['snake', (c) => c.ev.t === 'shake' && c.rnd() < CODEX.snakeP],
-  ['adam', (c) => c.snap.helpers >= 1 && tapIs(c, 'xu-throat')],
-  ['apple-of-eye', (c) => c.snap.helpers >= 1 && tapRun(c, 5, CODEX.tapGapS, 'xu')],
+  ['adam', (c) => c.snap.helperLevel >= 1 && tapIs(c, 'xu-throat')],
+  ['apple-of-eye', (c) => c.snap.helperLevel >= 1 && tapRun(c, 5, CODEX.tapGapS, 'xu')],
   ['pie', (c) => (c.ev.t === 'rot' && bump(c, 'rotCleaned', c.ev.cleaned) >= CODEX.pieRot) || (c.ev.t === 'overflow' && bump(c, 'overflow') >= CODEX.pieRot)],
   ['johnny', (c) => c.ev.t === 'idle' && c.ev.sec >= CODEX.idleEggS],
   ['garage', (c) => routeEra(c.snap) >= 2 && tapIs(c, 'garage')],
@@ -88,6 +88,9 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['triple-event', (c) => c.ev.t === 'time' && c.snap.eventsOnScreen >= 3],
   ['money-tree', (c) => c.ev.t === 'shake' && c.ev.combo >= CODEX.moneyTreeCombo],
   ['three-am', (c) => c.ev.t === 'time' && c.snap.wall.hour === CODEX.nightHour],
+  ['laoxu-spray', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && c.snap.laoxuMode === 'slack' && tapIs(c, 'xu') && c.rnd() < LAOXU.sprayP],
+  ['laoxu-qc', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && tapRun(c, LAOXU.qcTaps, LAOXU.qcWindowS / (LAOXU.qcTaps - 1), 'xu-qc', 'xu')],
+  ['laoxu-bubble', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && c.snap.laoxuMode === 'slack' && c.ev.t === 'hold' && c.ev.target === 'xu' && c.ev.sec >= LAOXU.bubbleHoldS],
   ['laoxu-sleep', (c) => c.ev.t === 'away' && c.ev.ms >= CODEX.sleeperAwayMs],
   ['title-7', (c) => tapRun(c, 7, CODEX.tapGapLongS, 'title')],
   ['core-82', (c) => c.ev.t === 'win' || (c.ev.t === 'time' && c.snap.progress >= 1)],

@@ -171,3 +171,42 @@ export const SIM = {
   /** 通关前这么多秒,机器人把手上全部苹果献出去(最后冲刺) */
   offerRushS: 90,
 };
+
+/** 老徐行为状态机(sys/laoxu.ts):6 级起会偷懒/打盹 */
+export const LAOXU = {
+  /** 会偷懒/打盹的最低等级(6 掏马扎) */
+  slackFromLv: 6,
+  /** 偷懒只在这个等级区间(8 级退休顾问不再偷懒,只打盹/看热闹) */
+  slackToLv: 7,
+  /** 干活多久(秒)后坐下偷懒:[最短, 最长] */
+  slackEveryS: [60, 100] as [number, number],
+  /** 偷懒持续(秒):[最短, 最长] */
+  slackS: [10, 16] as [number, number],
+  /** 偷懒偷完"精神焕发":下一次摇树暴击倍数 */
+  critMul: 3,
+  /** 精神焕发有效期(秒),不摇就作废 */
+  critWindowS: 30,
+  /** 玩家无操作多少秒老徐打盹 */
+  napIdleS: 90,
+  /** 打盹时的出工系数(迷迷糊糊地还在摇) */
+  napMul: 1,
+  /** 看热闹(访客/流星/订单)时的出工系数 */
+  watchMul: 1,
+  /** 看热闹至少持续(秒),避免闪烁 */
+  watchMinS: 5,
+  /** 被叫醒后多久内不再打盹(秒) */
+  wakeCoolS: 45,
+  /** 点偷懒中的老徐:拿到"气泡水"的概率(其余=叫醒) */
+  sodaP: 0.3,
+  /** 气泡水奖励(收入秒) */
+  sodaIncomeS: 8,
+  /** 点打盹中的老徐:叫醒后给的安慰奖励(收入秒) */
+  wakeIncomeS: 0,
+  /** 彩蛋 laoxu-spray:偷懒时点老徐的概率 */
+  sprayP: 0.1,
+  /** 彩蛋 laoxu-bubble:偷懒时长按多少秒 */
+  bubbleHoldS: 3,
+  /** 彩蛋 laoxu-qc:连点次数/窗口秒 */
+  qcTaps: 3,
+  qcWindowS: 2,
+};

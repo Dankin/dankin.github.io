@@ -360,7 +360,7 @@ test('老徐:价格涨、有解锁和上限、自动摇出苹果和摇劲', () =
   const pv = preview(t, { kind: 'helper' });
   assert.equal(pv.cost, c0);
   assert.equal(buyHelper(t), true);
-  assert.equal(t.helpers, 1);
+  assert.equal(t.helperLevel, 1);
   assert.ok(helperCost(t)! > c0);
   const after = throughput(t);
   assert.ok(after.auto > 0 && after.produce > before.produce);
@@ -374,7 +374,7 @@ test('老徐:价格涨、有解锁和上限、自动摇出苹果和摇劲', () =
   assert.ok(u.stock + u.wasted > 0);
   assert.ok(Math.abs((u.stock + u.wasted + u.delivered) / 10 - throughput(u).produce) / throughput(u).produce < 0.15);
   // 上限
-  t.helpers = HELPER.max;
+  t.helperLevel = HELPER.max;
   assert.equal(helperCost(t), null);
   assert.equal(nextHints(t).helper, null);
   assert.ok(nextHints(atTiers(1, 0)).helper);

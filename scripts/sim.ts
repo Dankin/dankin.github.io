@@ -34,6 +34,8 @@ export interface SimCtx {
 }
 export interface SimHook {
   step(s: State, dt: number, c: SimCtx): void;
+  /** 玩家每次摇树前问一下额外倍数(老徐暴击) */
+  shakeMul?(): number;
   finish?(s: State, rep: Report): void;
 }
 
@@ -132,7 +134,7 @@ function bestGates(s: State, allowed: GateId[], goalFlow: boolean): (GateId | nu
   const ids = s.gatesUnlocked.filter((g) => allowed.includes(g));
   let best = s.gates;
   let bestV = -1;
-  const probe = { source: s.source, route: s.route, gates: [] as (GateId | null)[], charge: s.charge, combo: s.combo, helpers: s.helpers, shakeRate: s.shakeRate };
+  const probe = { source: s.source, route: s.route, gates: [] as (GateId | null)[], charge: s.charge, combo: s.combo, helperLevel: s.helperLevel, shakeRate: s.shakeRate };
   for (const p of perms(ids, GATE_SLOTS)) {
     probe.gates = p;
     const th = throughput(probe);
@@ -169,7 +171,7 @@ export function play(o: Opts): Report {
     // 手动
     if (o.cps > 0) {
       clickAcc += o.cps * dt;
-      while (clickAcc >= 1) { shake(s); clickAcc -= 1; }
+      while (clickAcc >= 1) { shake(s, o.hook?.shakeMul?.() ?? 1); clickAcc -= 1; }
     }
     // 事件
     evT -= dt;
@@ -244,7 +246,7 @@ export function play(o: Opts): Report {
         }
         if (ok) {
           if (Number.isNaN(rep.firstBuy)) rep.firstBuy = t;
-          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helpers}` : a.kind === 'expand' ? `EXPAND ${a.line} t${a.tier} #${s[a.line].ext[a.tier ?? 0]}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
+          if (o.verbose) rep.log.push(`${(t / 60).toFixed(1)}m ${a.kind === 'unit' ? `unit ${a.line} t${a.tier} x${s[a.line].units[a.tier ?? 0]}` : a.kind === 'tier' ? `TIER ${a.line}` : a.kind === 'helper' ? `helper x${s.helperLevel}` : a.kind === 'expand' ? `EXPAND ${a.line} t${a.tier} #${s[a.line].ext[a.tier ?? 0]}` : ''} cost ${best.cost.toExponential(1)} +${(best.gainPct * 100).toFixed(0)}% inc/s ${th.income.toExponential(1)}`);
           if (best.tier || a.kind === 'expand' || best.gainPct >= 0.03) {
             const gap = t - lastBuyT;
             if (a.kind === 'tier') { const nt = s[a.line].tier; rep.tierWait[nt] = Math.max(rep.tierWait[nt], gap); }

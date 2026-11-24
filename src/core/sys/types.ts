@@ -18,7 +18,9 @@ export interface Snapshot {
   /** 两线单位数合计 */
   units: number;
   shakes: number;
-  helpers: number;
+  helperLevel: number;
+  /** 老徐当前状态(sys.laoxu.mode;缺省 work) */
+  laoxuMode?: 'work' | 'slack' | 'nap' | 'watch';
   combo: number;
   coins: number;
   /** 每秒收入(果钱) */
@@ -98,4 +100,6 @@ export type EggEvent =
   /** 堆场溢出提示弹出一次 */
   | { t: 'overflow' }
   /** 点了"拒绝"果多多的出价 */
-  | { t: 'refuse' };
+  | { t: 'refuse' }
+  /** 长按热点(app 在松手/满阈值时发一次;sec = 按住秒数) */
+  | { t: 'hold'; target: TapTarget; sec: number };
