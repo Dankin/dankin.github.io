@@ -7,6 +7,7 @@ import { drawFlight, drawGoldHalo, drawFirework, drawGiftBox } from './fx.ts';
 import { drawApple } from './apple.ts';
 import { drawLaoXu, drawStool, drawBench, drawBottle, drawTeaCup, drawRadio, drawRecliner, drawApprentice, LAOXU_STATES, LAOXU_STATE_NAMES, LAOXU_LEVEL_NAMES } from './laoxu.ts';
 import { drawTransport8, drawFleet, runPhase, TRANSPORT8_NAMES, TRANSPORT8_BRANCH_NAMES, TRANSPORT8_W, TRANSPORT8_FLIES } from './transports8.ts';
+import { drawSantaDepot } from './depot.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -264,6 +265,19 @@ addSection({
       c.fillText(TRANSPORT8_NAMES[i] + ' ' + runPhase(t / 8).name, 4, y - 14);
       drawFleet(c, i, y, 0.6, { ...o, t, n: i === 4 ? 9 : 3, cycle: 8, x0: 70, x1: 600, branch: (i % 2) as 0 | 1, seed: i + 1 });
     }
+  },
+});
+
+addSection({
+  id: 'depot',
+  title: '圣诞老人收货站:level 0/.3/.7/1 + 收货过程 + 雪橇起飞(用载量=level,装卸=receive)',
+  w: 800,
+  h: 330,
+  draw(c, t, o) {
+    const lv = [0, 0.3, 0.7, 1];
+    lv.forEach((l, i) => drawSantaDepot(c, 70 + i * 195, 120, 0.62, { ...o, t, level: l, receive: i === 1 ? (t * 0.5) % 1 : 0, seed: 2 }));
+    const tk = [0.0, 0.35, 0.7];
+    tk.forEach((v, i) => drawSantaDepot(c, 90 + i * 260, 290, 0.62, { ...o, t, level: 1, takeoff: v, seed: 2 }));
   },
 });
 
