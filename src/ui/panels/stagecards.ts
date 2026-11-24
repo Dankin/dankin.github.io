@@ -116,7 +116,7 @@ export function createStageCards(ctx: PanelCtx, prefs: PanelPrefs, onChange: () 
       },
     });
     // 首次弹出 8 秒后自动收起(点穿遮罩,场景可继续玩)
-    const auto = window.setTimeout(() => sheet.close(), STAGE_CARD_UI.autoCloseMs ?? 8000);
+    const auto = window.setTimeout(() => sheet.close(), 8000);
     sheet.body.append(cv, h('div', 'panel-stage-acts', ok, hint));
     sfx(ctx, replay ? 'modal' : 'narrOpen');
     if (!replay && !prefs.cardsSeen.includes(c.id)) {
