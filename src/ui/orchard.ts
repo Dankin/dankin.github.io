@@ -1,6 +1,6 @@
 /** v4 场景引擎:左 生产 → 中 路线(3 个关卡) → 右 码头。一块画布,一条连续的线。 */
 import { APPLE, GOLDC, P, TAU, apple, circ, clamp, ease, lerp, pen, poly, rect, rs, seg, setTheme, setUnit, sparkle, sv, text } from './pen.ts';
-import { EMIT, PILE_MAX, SRC_NAMES, drawPile, drawSource, drawShakeMeter } from './sources.ts';
+import { EMIT, PILE_MAX, SRC_NAMES, drawGift, drawPile, drawSource, drawShakeMeter } from './sources.ts';
 import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawGate, drawPortalRing, drawVehicle, gateBadge } from './route.ts';
 import { fmt } from './format.ts';
 
@@ -32,6 +32,8 @@ export interface WorldView {
   combo: number;
   /** 每趟运送苹果数(显示 +N 用,可选) */
   perTrip?: number;
+  /** 各槽当前是否买得起(可选;缺省视为买得起 → 圈会呼吸) */
+  gateCan?: boolean[];
 }
 
 export const EMPTY_WORLD: WorldView = {
@@ -50,9 +52,9 @@ export const EMPTY_WORLD: WorldView = {
   combo: 0,
 };
 
-const GATE_NAME: Record<string, string> = { wash: '洗果', wax: '打蜡', juice: '榨汁', pack: '包装', cold: '冷链', rush: '加急', string: '红绳' };
+const GATE_NAME: Record<string, string> = { wash: '洗果', wax: '打蜡', juice: '榨汁', pack: '包装', cold: '冷链', rush: '加急', string: '红绳', belt: '传送带', glove: '手套', chant: '号子', brand: '吊牌' };
 /** 同屏最多画几辆(其余以 ×N 表示) */
-const VIS_MAX = [5, 5, 5, 3, 3, 10];
+const VIS_MAX = [3, 3, 3, 3, 3, 10];
 const MAX_PARTS = 56;
 const MAX_FLY = 14;
 
@@ -121,6 +123,11 @@ interface Lay {
   dockX: number;
   dockY: number;
   gateU: number[];
+  /** 礼物盒位置(世界坐标,底部中心) */
+  boxX: number;
+  boxY: number;
+  /** 画面实际高度(世界单位) */
+  Hs: number;
 }
 
 export class Orchard {
@@ -152,6 +159,11 @@ export class Orchard {
   private pileV = 0;
   private sway = 0;
   private fwV = 0;
+  /** 礼物盒进度:目标 / 平滑值(0..1,对数刻度)、是否已满 */
+  private progT = 0;
+  private progV = 0;
+  private progFull = false;
+  private giftPop = 0;
   private hint = 1;
   private spawnT = 0;
   private flingT = 0;
@@ -247,6 +259,23 @@ export class Orchard {
     this.lastInput = this.t;
   }
 
+  /**
+   * 进度象征:frac = 已送出 / 目标(82亿),0..1。内部按对数刻度映射
+   * (1e-9 → 0,1 → 1),所以早期每一档增长都看得见;frac ≥ 1 时礼物盒打开。
+   */
+  setProgress(frac: number): void {
+    const f = Math.max(0, Math.min(1, frac || 0));
+    const p = f <= 1e-9 ? 0 : (Math.log10(f) + 9) / 9;
+    if (p - this.progT > 0.02) this.giftPop = 1;
+    this.progT = p;
+    const full = f >= 1;
+    if (full && !this.progFull) {
+      this.giftPop = 1;
+      this.ring(this.lay.boxX, this.lay.boxY - 6, true);
+    }
+    this.progFull = full;
+  }
+
   setWorld(wv: WorldView): void {
     const o = this.wv;
     const first = this.firstWorld;
@@ -280,6 +309,7 @@ export class Orchard {
     }
     this.wv = { ...EMPTY_WORLD, ...wv, srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
     this.syncVehs();
+    this.syncSS();
     this.lastInput = this.t;
   }
 
@@ -319,7 +349,7 @@ export class Orchard {
     if (this.ev && this.evHit(x, y)) return 'event';
     const L = this.lay;
     if (this.gateAt(x, y) >= 0) return 'gate';
-    if (Math.abs(x - L.srcX) < 32 * L.ss && y < L.srcY + 4 && y > L.srcY - 52 * L.ss) return 'source';
+    if (Math.abs(x - L.srcX) < 36 * L.ss && y < L.srcY + 4 && y > L.srcY - 52 * L.ss) return 'source';
     if (Math.abs(x - L.dockX) < 22 && y < L.dockY + 4 && y > L.dockY - 30) return 'dock';
     return 'none';
   }
@@ -327,8 +357,8 @@ export class Orchard {
   /** 命中哪个关卡圈(世界坐标)。圈 ≥44px:半径取 max(徽章半径, 23/s)+余量 */
   private gateAt(x: number, y: number): number {
     const L = this.lay;
-    const { r, by } = gateBadge(23 / L.s);
-    for (let i = 0; i < 3; i++) {
+    const { r, by } = gateBadge(22 / L.s);
+    for (let i = 0; i < Math.min(3, this.wv.gatesUnlocked); i++) {
       const q = this.at(L.gateU[i]);
       if (Math.abs(x - q.x) < r + 2 && y > q.y + by - r - 2 && y < q.y + 4) return i;
     }
@@ -376,31 +406,37 @@ export class Orchard {
       s = Math.min(aw / Wu, (h - 4) / Hu);
       L.meterX = 11;
       L.srcX = 58;
-      L.pileX = 101;
+      L.pileX = 105;
       L.srcY = L.pileY = L.dockY = Hu - 8;
       L.dockX = 211;
       L.ss = 1.22;
-      L.pts = [113, L.srcY, 189, L.srcY];
+      L.pts = [116, L.srcY, 189, L.srcY];
+      L.boxX = 12;
+      L.boxY = L.srcY;
+      L.Hs = Hu;
       L.gateU = [0.25, 0.5, 0.75];
     } else {
       Wu = 126;
-      Hu = 138;
-      s = Math.min(aw / Wu, (h - 4) / Hu);
-      const ga = 58;
-      const gb = 128;
+      s = Math.max(1, (w - this.insL - this.insR - mg * 2) / Wu);
+      Hu = h / s; // 竖屏:世界单位铺满画布高度,地面线按比例
+      const ga = Hu * 0.57; // 生产地面线 ≈ y=400/700
+      const gb = Hu * 0.885; // 运输地面线 ≈ y=620/700
       L.meterX = 10;
       L.srcX = 44;
-      L.pileX = 83;
+      L.pileX = 104;
       L.ss = 1;
       L.srcY = L.pileY = ga;
-      L.dockX = 28;
+      L.dockX = 24;
       L.dockY = gb;
-      L.pts = [94, ga, 110, ga, 117, ga + 6, 117, gb - 6, 110, gb, 50, gb];
+      L.pts = [110, ga, 115, ga, 120, ga + 5, 120, gb - 6, 113, gb, 50, gb];
       L.gateU = [0.58, 0.72, 0.86];
+      L.boxX = 44;
+      L.boxY = ga + 24;
+      L.Hs = Hu;
     }
     L.s = s;
     L.ox = this.insL + mg + (aw - Wu * s) / 2;
-    L.oy = (h - Hu * s) / 2;
+    L.oy = portrait ? 0 : (h - Hu * s) / 2;
     L.len = [];
     let tot = 0;
     for (let i = 2; i < L.pts.length; i += 2) {
@@ -410,6 +446,14 @@ export class Orchard {
     }
     L.total = tot;
     this.lay = L;
+    this.syncSS();
+  }
+
+  /** 每档生产线的绘制倍率:竖屏按目标像素高(树150/果园190/果山240…)放大 */
+  private syncSS(): void {
+    const L = this.lay;
+    const t = Math.max(0, Math.min(5, this.wv.srcTier | 0));
+    L.ss = L.portrait ? [1.25, 1.5, 1.55, 1.3, 1.25, 1.25][t] : [1.22, 1.22, 1.22, 1.18, 1.12, 1.12][t];
   }
 
   /** 路线上 u∈[0,1] 处的位置与方向 */
@@ -567,6 +611,8 @@ export class Orchard {
       this.gateFlash[i] = Math.max(0, this.gateFlash[i] - dt * 2.2);
     }
     this.fwV += (wv.shake - this.fwV) * Math.min(1, dt * 6);
+    this.progV += (this.progT - this.progV) * Math.min(1, dt * 2.5);
+    if (this.giftPop > 0) this.giftPop = Math.max(0, this.giftPop - dt * 1.6);
     this.pileV += (wv.stock01 * PILE_MAX - this.pileV) * Math.min(1, dt * 4);
     if (!this.everShook && !this.reducedMotion) {
       this.nudgeT -= dt;
@@ -757,7 +803,7 @@ export class Orchard {
     g.setTransform(this.dpr * L.s, 0, 0, this.dpr * L.s, this.dpr * L.ox, this.dpr * L.oy);
     setUnit(L.s);
     const W = L.portrait ? 126 : 224;
-    const H = L.portrait ? 138 : 66;
+    const H = L.portrait ? L.Hs : 66;
     // 远山(淡线)
     const rows = L.portrait ? [L.srcY, L.dockY] : [L.srcY];
     for (const gy of rows) {
@@ -918,7 +964,11 @@ export class Orchard {
     drawSource(c, wv.srcTier, { t, n: wv.srcUnits, br: wv.srcBranch, sway: rm ? 0 : this.sway, shake: this.fwV, reduced: rm });
     rs(c);
     sv(c, L.srcX, L.srcY, L.ss);
-    drawShakeMeter(c, this.fwV, wv.combo, 0, t, 15);
+    drawShakeMeter(c, this.fwV, wv.combo, 0, t, 9);
+    rs(c);
+    // 树下礼物盒:进度象征(对数刻度,满则打开)
+    sv(c, L.boxX, L.boxY, 1 + 0.12 * Math.sin(this.giftPop * Math.PI));
+    drawGift(c, this.progV, this.progFull, t);
     rs(c);
     if (!this.everShook) this.drawFirstHint(c, t, rm);
     sv(c, L.pileX, L.pileY);
@@ -933,11 +983,14 @@ export class Orchard {
       const locked = i >= wv.gatesUnlocked;
       sv(c, q.x, q.y, 1 + 0.1 * Math.sin(this.gatePop[i] * Math.PI));
       if (locked) {
+        // 未解锁:34px 的细虚线圈,α0.35,无台座
+        const r = 17 / L.s;
         c.globalAlpha = 0.35;
-        circ(c, 0, -7, 2.6, null, 1);
-        rect(c, -1.6, -6, 3.2, 2.6, P.f1, 1, 0.5);
+        c.setLineDash([2, 1.8]);
+        circ(c, 0, -(r + 5), r, null, 0.7);
+        c.setLineDash([]);
         c.globalAlpha = 1;
-      } else drawGate(c, wv.gates[i], this.gateFlash[i], t, wv.gates.filter((g) => g).length === 0 && i === 0, 23 / L.s);
+      } else drawGate(c, wv.gates[i], this.gateFlash[i], t, wv.gates.filter((g) => g).length === 0 && i === 0, 22 / L.s, wv.gateCan ? wv.gateCan[i] !== false : true);
       rs(c);
     }
 
@@ -1047,6 +1100,13 @@ export class Orchard {
     }
   }
 
+  /** 运输单位的目标宽度(px):篮18 / 推车34 / 卡车70 / 货船80 / 飞机84,按世界缩放换算 */
+  private vehK(tier: number): number {
+    const px = [18, 34, 70, 80, 84][tier] ?? 34;
+    const nat = [7, 10, 14, 13, 13][tier] ?? 10;
+    return px / (this.lay.s * nat);
+  }
+
   private drawQueue(c: C): void {
     const L = this.lay;
     const waiting = this.vehs.filter((v) => v.state === 0).length;
@@ -1058,7 +1118,7 @@ export class Orchard {
       if (v.state !== 0) continue;
       if (first && LANE_OF[this.wv.rtTier] !== 3) {
         first = false;
-        sv(c, q0.x, q0.y + (LANE_OF[this.wv.rtTier] === 2 ? -22 : this.wv.rtTier === 3 ? 2.5 : 0));
+        sv(c, q0.x, q0.y + (LANE_OF[this.wv.rtTier] === 2 ? -22 : this.wv.rtTier === 3 ? 2.5 : 0), this.vehK(this.wv.rtTier));
         drawVehicle(c, this.wv.rtTier, { t: this.t, ph: v.ph, full: false, dir: q0.dir, br: this.wv.rtBranch });
         rs(c);
       } else {
@@ -1131,7 +1191,7 @@ export class Orchard {
       const q = this.at(u);
       const dir = q.dir * dirF;
       const oy = (lane === 2 ? -22 + Math.sin(this.t * 2 + v.ph) * 0.8 : lane === 1 ? 2.2 + Math.sin(this.t * 2.4 + v.ph) * 0.5 : lane === 3 ? -8 : 0) + (dirF < 0 && leave && lane !== 2 ? 2.4 : 0);
-      sv(c, px === px ? px : q.x, (py === py ? py : q.y) + oy);
+      sv(c, px === px ? px : q.x, (py === py ? py : q.y) + oy, lane === 3 ? 1 : this.vehK(tier));
       if (lane === 3) {
         drawBead(c, full, this.t);
       } else {

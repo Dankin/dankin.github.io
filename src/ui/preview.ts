@@ -91,6 +91,7 @@ function ui(): void {
     }
   }
   o.setWorld(world());
+  o.setProgress(st.delivered / 8.2e9);
 }
 
 function dev(): void {

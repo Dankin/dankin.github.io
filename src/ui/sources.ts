@@ -19,9 +19,9 @@ export interface SrcOpt {
 /** 各档"出果点"(相对原点),UI 的飞果从这里出发 */
 export const EMIT: Array<[number, number]> = [
   [4, -20],
-  [22, -6],
-  [22, -3],
+  [28, -4],
   [24, -3],
+  [26, -3],
   [8, -2],
   [14, -18],
 ];
@@ -67,86 +67,79 @@ function tier0(c: C, o: SrcOpt): void {
 }
 
 /* ---------- 1 果园 ---------- */
-const ORCH: number[] = [-22, -5, 0.4, -8, -5, 0.4, 7, -5, 0.4, 21, -5, 0.4, -18, 0, 0.52, -2, 0, 0.52, 14, 0, 0.52, 27, 0, 0.5];
+const FRONT_X = [-10, 3, 16];
+const BACK_X = [-20, -6, 8, 22];
 function tier1(c: C, o: SrcOpt): void {
-  const n = clamp(3 + o.n[1], 4, 8);
-  // 田垄
+  const total = clamp(3 + o.n[1], 4, 7);
+  const nf = 3;
+  const nb = total - nf;
+  // 田垄(后排/前排各一道淡虚线)
   pen(c, 1, P.f3);
-  c.setLineDash([2.5 / 1, 2.5]);
-  for (let r = 0; r < 2; r++) {
+  c.setLineDash([2.5, 2.5]);
+  for (const yy of [-9, 0]) {
     c.beginPath();
-    c.moveTo(-30, -5 + r * 5 + 2.2);
-    c.lineTo(30, -5 + r * 5 + 2.2);
+    c.moveTo(-32, yy + 2.2);
+    c.lineTo(32, yy + 2.2);
     c.stroke();
   }
   c.setLineDash([]);
-  // 栅栏
-  for (let i = 0; i < 6; i++) seg(c, -30 + i * 2.6, -1, -30 + i * 2.6, -6.5, 1.2);
-  seg(c, -30, -2.8, -15, -2.8, 1.2);
-  seg(c, -30, -5, -15, -5, 1.2);
-  for (let i = 0; i < n; i++) tree(c, ORCH[i * 3], ORCH[i * 3 + 1], ORCH[i * 3 + 2], o, 3, i * 1.3);
-  // 采果工 + 木箱
+  // 后排:灰线 0.7×(半透明)
+  c.save();
+  c.globalAlpha = 0.5;
+  for (let i = 0; i < nb; i++) tree(c, BACK_X[i], -9, 0.62, o, 2, i * 1.7 + 0.8);
+  c.restore();
+  // 前排:墨线 1.0×(≤3)
+  for (let i = 0; i < nf; i++) tree(c, FRONT_X[i], 0, 0.9, o, 3, i * 1.3);
+  // 采果工(两树之间)+ 木箱
   const a = o.reduced ? 0 : Math.sin(o.t * 2.4) * 2;
-  circ(c, 24, -12 - a * 0.1, 1.6, P.f0, 1.3);
-  seg(c, 24, -10.4, 24, -5.5, 1.5);
-  seg(c, 24, -9, 27 + a * 0.3, -14.5 - a * 0.4, 1.4);
-  seg(c, 24, -5.5, 22.8, -1, 1.4);
-  seg(c, 24, -5.5, 25.4, -1, 1.4);
-  rect(c, 14, -4, 6, 4, P.f2, 1.3);
-  apple(c, 16, -4.6, 1.2, 1);
-  apple(c, 18.5, -4.8, 1.2, 1);
+  circ(c, -8.5, -12 - a * 0.1, 1.6, P.f0, 1.3);
+  seg(c, -8.5, -10.4, -8.5, -5.5, 1.5);
+  seg(c, -8.5, -9, -5.5 + a * 0.3, -14.5 - a * 0.4, 1.4);
+  seg(c, -8.5, -5.5, -9.7, -1, 1.4);
+  seg(c, -8.5, -5.5, -7.1, -1, 1.4);
+  rect(c, 25, -4, 6, 4, P.f2, 1.3);
+  apple(c, 27, -4.6, 1.2, 1);
+  apple(c, 29.5, -4.8, 1.2, 1);
   if (o.br[1] === 1) {
-    // 分支:温室 —— 玻璃屋顶
-    poly(c, [-30, -1, -30, -9, -22, -13, -14, -9, -14, -1], null, 1.2);
-    seg(c, -22, -13, -22, -1, 0.9, P.f3);
+    // 分支:温室 —— 玻璃罩住左侧一棵
+    poly(c, [-27, 0, -27, -9, -17, -14, -7, -9, -7, 0], null, 1);
+    seg(c, -17, -14, -17, 0, 0.8, P.f3);
   }
 }
 
-/* ---------- 2 果山 ---------- */
+/* ---------- 2 果山 = 三角苹果堆 ---------- */
 function tier2(c: C, o: SrcOpt): void {
-  poly(c, [-30, 0, -19, -17, -7, -43, 1, -31, 9, -35, 15, -27, 23, -11, 30, 0], P.f1, 1.8);
-  // 雪顶
-  poly(c, [-7, -43, -11.5, -34, -8.5, -35.5, -6, -32.5, -3.5, -35.5, 1, -31, -2.5, -37], P.f0, 1.3);
-  // 梯田
-  pen(c, 1.1, P.f3);
-  const levels = [-9, -18, -27];
-  const xs = [26, 19, 10];
-  for (let i = 0; i < 3; i++) {
-    c.beginPath();
-    c.moveTo(-xs[i] - i * 1.5, levels[i] + 2);
-    c.quadraticCurveTo(0, levels[i] + 7, xs[i], levels[i] + 2);
-    c.stroke();
-  }
-  const cnt = clamp(4 + o.n[2], 4, 20);
-  for (let i = 0; i < cnt; i++) {
-    const lv = i % 3;
-    const per = Math.ceil(cnt / 3);
-    const k = Math.floor(i / 3);
-    const span = xs[lv] - 3;
-    const px = -span + ((k + 0.5) / per) * span * 2;
-    const py = levels[lv] + 2 + 5 * (1 - Math.pow(px / (xs[lv] + 1), 2)) * 1 + 0.4;
-    seg(c, px, py, px, py - 2.3, 1);
-    circ(c, px, py - 3.5, 1.6, P.f2, 1);
-    if (i % 2 === 0) apple(c, px + 0.6, py - 3, 0.9, 0.8);
+  const R = 9; // 底行苹果数
+  const dx = 5.6;
+  const dy = 4.9;
+  // 淡三角底
+  poly(c, [-R * dx * 0.5 - 2, 0, 0, -R * dy - 3, R * dx * 0.5 + 2, 0], P.f1, 1.6);
+  const cnt = clamp(12 + o.n[2] * 3, 12, 45);
+  let k = 0;
+  for (let row = 0; row < R && k < cnt; row++) {
+    const per = R - row;
+    for (let i = 0; i < per && k < cnt; i++, k++) {
+      apple(c, (i - (per - 1) / 2) * dx, -2.8 - row * dy, 2.5, 0.9);
+    }
   }
   // 旗
-  seg(c, -7, -43, -7, -50 + 3, 1.3);
-  poly(c, [-7, -47, -2.5, -45.5, -7, -44], APPLE, 1);
-  // 山脚小屋 + 出口
-  poly(c, [18, 0, 18, -4, 22, -7, 26, -4, 26, 0], P.f0, 1.4);
-  rect(c, 21, -3.2, 2, 3.2, P.f2, 1);
+  const ty = -R * dy - 3;
+  seg(c, 0, ty, 0, ty - 8, 1.3);
+  poly(c, [0, ty - 8, 5, ty - 6.4, 0, ty - 4.8], APPLE, 1);
   if (o.br[2] === 1) {
     // 分支:缆车
-    seg(c, -24, -3, -7, -41, 1);
+    seg(c, -24, -2, -1, ty + 1, 1);
     const f = (o.t * 0.07) % 1;
-    const gx = -24 + 17 * f;
-    const gy = -3 - 38 * f;
+    const gx = -24 + 23 * f;
+    const gy = -2 + (ty + 3) * f;
     rect(c, gx - 1.8, gy + 0.5, 3.6, 3, P.f0, 1.1);
   } else if (o.br[2] === 0) {
     // 分支:隧道传送带
-    pen(c, 1.2, P.ink);
     c.beginPath();
-    c.arc(-1, -1, 4, Math.PI, 0);
+    c.arc(0, 0, 5.2, Math.PI, 0);
+    c.fillStyle = P.paper;
+    c.fill();
+    pen(c, 1.2, P.ink);
     c.stroke();
   }
 }
@@ -165,11 +158,11 @@ function tier3(c: C, o: SrcOpt): void {
   const order = [1, 4, 0, 3, 2, 5];
   for (let k = 0; k < nb; k++) {
     const [bx, bw, bh] = side[order[k]];
-    rect(c, bx - bw / 2, -bh, bw, bh, P.f1, 1.5);
+    rect(c, bx - bw / 2, -bh, bw, bh, null, 1.2);
     const nr = Math.floor(bh / 4.5);
     for (let r = 0; r < nr; r++) for (let q = 0; q < 2; q++) {
       const lit = ((r * 3 + q + k + Math.floor(o.t * 0.3)) % 4) !== 0;
-      rect(c, bx - 2.6 + q * 3.4, -bh + 2 + r * 4.4, 1.9, 2.2, lit ? P.f0 : P.f3, 0.8);
+      rect(c, bx - 2.6 + q * 3.4, -bh + 2 + r * 4.4, 1.9, 2.2, lit ? P.f2 : null, 0.8);
     }
     if (o.br[3] === 1) {
       circ(c, bx - 1.5, -bh - 1.2, 1.4, P.f2, 1);
@@ -373,25 +366,72 @@ export function drawPile(c: C, count: number, full: boolean, t: number): void {
  * 摇劲:树根下的一道细弧(空时不画);连摇≥2 时弧心写 ×N。
  * 原点 = 树根(地面线上),r = 弧半径(世界单位)
  */
-export function drawShakeMeter(c: C, v: number, combo: number, _hint: number, t: number, r = 15): void {
+export function drawShakeMeter(c: C, v: number, combo: number, _hint: number, t: number, r = 9): void {
   if (v < 0.02 && combo < 2) return;
   const a0 = Math.PI * 0.18;
   const a1 = Math.PI * 0.82;
-  const cy = 1.5 - r * Math.sin(a0) + 3.4;
+  const cy = 3.2 - r; // 弧最低点紧贴地面线下 3 单位
   c.save();
   c.lineCap = 'round';
   c.beginPath();
   c.arc(0, cy, r, a0, a1);
-  c.lineWidth = 2.2 * (c.getTransform().a ? 1 / Math.max(0.0001, c.getTransform().a) : 1);
-  c.strokeStyle = P.f2;
+  pen(c, 2, P.f2);
   c.stroke();
   if (v > 0.02) {
     c.beginPath();
     c.arc(0, cy, r, a0, a0 + (a1 - a0) * Math.min(1, v));
-    c.lineWidth = 2.2 * (c.getTransform().a ? 1 / Math.max(0.0001, c.getTransform().a) : 1);
-    c.strokeStyle = P.ink;
+    pen(c, 2, P.ink);
     c.stroke();
   }
   c.restore();
-  if (combo >= 2) text(c, `×${combo}`, 0, cy + r + 3 + Math.abs(Math.sin(t * 6)) * 0.6, 11, P.ink);
+  if (combo >= 2) text(c, `×${combo}`, 0, cy + r + 4 + Math.abs(Math.sin(t * 6)) * 0.6, 11, P.ink);
+}
+
+/* ---------- 礼物盒(进度象征):p 0..1 越大越大越亮;open = 满进度打开 ---------- */
+export function drawGift(c: C, p: number, open: boolean, t: number): void {
+  const w = 6 + 10 * p;
+  const h = w * 0.72;
+  // 光(进度 ≥ .35 开始出现,放射短线)
+  if (p > 0.35) {
+    const n = 8;
+    const L = (open ? 4 : 1.5) + p * 4;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI + (Math.PI * (i + 0.5)) / n;
+      const f = 0.6 + 0.4 * Math.sin(t * 1.4 + i * 1.7);
+      const r0 = w * 0.7 + 1.5;
+      seg(c, Math.cos(a) * r0, -h * 0.55 + Math.sin(a) * r0, Math.cos(a) * (r0 + L * f), -h * 0.55 + Math.sin(a) * (r0 + L * f), 0.9, P.f3);
+    }
+  }
+  // 盒身:灰 → 越亮越近纸色
+  rect(c, -w / 2, -h, w, h, P.f1, 1.3);
+  c.save();
+  c.globalAlpha = clamp(p, 0, 1);
+  rect(c, -w / 2, -h, w, h, P.f0, 0);
+  c.restore();
+  rect(c, -w / 2, -h, w, h, null, 1.3);
+  seg(c, 0, -h, 0, 0, 1.1);
+  // 盖
+  c.save();
+  if (open) {
+    c.translate(-w * 0.55, -h - 1);
+    c.rotate(-0.5);
+    rect(c, -w * 0.08, -h * 0.28, w * 1.16, h * 0.28, P.f0, 1.3);
+  } else {
+    rect(c, -w * 0.58, -h - h * 0.26, w * 1.16, h * 0.26, P.f0, 1.3);
+    seg(c, 0, -h - h * 0.26, 0, -h, 1.1);
+    // 结
+    c.beginPath();
+    c.ellipse(-w * 0.17, -h - h * 0.26 - w * 0.1, w * 0.15, w * 0.1, -0.5, 0, TAU);
+    c.ellipse(w * 0.17, -h - h * 0.26 - w * 0.1, w * 0.15, w * 0.1, 0.5, 0, TAU);
+    pen(c, 1.1);
+    c.stroke();
+  }
+  c.restore();
+  if (open) {
+    // 满:盒里升起一颗苹果 + 星光
+    const bob = Math.sin(t * 2.2) * 0.8;
+    apple(c, 0, -h - 4.5 + bob, 2.6, 1.1);
+    sparkle(c, -w * 0.55, -h - 9 + bob * 0.5, 2.2, P.ink, t * 1.5);
+    sparkle(c, w * 0.6, -h - 7, 1.6, P.ink, -t * 1.2);
+  }
 }

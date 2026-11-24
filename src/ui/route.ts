@@ -399,40 +399,41 @@ export function gateBadge(minR: number): { r: number; by: number } {
 }
 
 /** 关卡拱门,原点 = 路面中心。id=null 为空槽;minR=徽章最小半径(世界单位) */
-export function drawGate(c: C, id: string | null, flash: number, t: number, hint: boolean, minR = 4.4): void {
+export function drawGate(c: C, id: string | null, flash: number, t: number, hint: boolean, minR = 4.4, can = true): void {
   const empty = id === null;
-  c.save();
-  if (empty) c.globalAlpha = hint ? 0.95 : 0.6;
-  if (empty) c.setLineDash([2, 1.6]);
-  seg(c, -5.6, 0.5, -5.6, -9.6, 1.4);
-  seg(c, 5.6, 0.5, 5.6, -9.6, 1.4);
-  c.beginPath();
-  c.roundRect(-6.8, -11.6, 13.6, 2.6, 1);
-  c.fillStyle = empty ? 'rgba(0,0,0,0)' : P.f0;
-  if (!empty) c.fill();
-  pen(c, 1.3);
-  c.stroke();
-  c.restore();
-  // 徽章:空槽 = 放大的虚线圈
+  if (!empty) {
+    seg(c, -5.6, 0.5, -5.6, -9.6, 1.1);
+    seg(c, 5.6, 0.5, 5.6, -9.6, 1.1);
+    c.beginPath();
+    c.roundRect(-6.8, -11.6, 13.6, 2.6, 1);
+    c.fillStyle = P.f0;
+    c.fill();
+    pen(c, 1.1);
+    c.stroke();
+  }
+  // 徽章:空槽 = 淡虚线圈(买得起:44px + 呼吸;买不起:更淡,不呼吸)
   const { r, by } = gateBadge(empty ? minR : Math.max(3.9, minR * 0.85));
   c.save();
   if (empty) {
-    c.globalAlpha = hint ? 0.95 : 0.6;
+    c.globalAlpha = can ? 0.85 : 0.4;
     c.setLineDash([2.2, 1.8]);
-    if (hint) {
+    if (can) {
       c.beginPath();
-      c.arc(0, by, r + 0.8 + Math.sin(t * 3) * 0.7, 0, TAU);
-      pen(c, 1, P.f3);
+      c.arc(0, by, r + 0.9 + Math.sin(t * 2.6) * 0.8, 0, TAU);
+      pen(c, 0.7, P.f3);
+      c.globalAlpha = 0.55 + 0.3 * Math.sin(t * 2.6);
       c.stroke();
+      c.globalAlpha = 0.85;
     }
   }
-  circ(c, 0, by, r, empty ? null : flash > 0.05 ? P.f2 : P.f0, 1.3);
+  circ(c, by === by ? 0 : 0, by, r, empty ? null : flash > 0.05 ? P.f2 : P.f0, empty ? 0.8 : 1.2);
   c.restore();
-  if (empty) text(c, '+', 0, by, Math.round(r * 3.4), P.dim);
+  if (empty) text(c, '+', 0, by, Math.round(r * 3.2), can ? P.ink : P.dim);
   else gateIcon(c, id as string, 0, by, (r / 3.9) * 1.05);
   if (flash > 0.05) {
     sparkle(c, r + 1, by - r + 0.4, 1.6 + flash, P.ink, t * 4);
     sparkle(c, -r - 1, by - r + 1, 1.2 + flash * 0.7, P.ink, -t * 3);
   }
   void clamp;
+  void hint;
 }
