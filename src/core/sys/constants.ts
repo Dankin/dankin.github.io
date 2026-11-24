@@ -210,3 +210,25 @@ export const LAOXU = {
   qcTaps: 3,
   qcWindowS: 2,
 };
+
+/** 鸟(v6):点中给小额苹果(掉羽毛),不点啄走少量库存(不致命、不会清空)。 */
+export const BIRD = {
+  /** 点中:相当于多少秒的送达量(claimEvent 的 bird 档与此一致) */
+  hitSec: 6,
+  /** 点中掉几根羽毛(纯视觉) */
+  feathers: [2, 4] as [number, number],
+  /** 不点:啄走多少秒的送达量(取库存的上限比例以内) */
+  peckSec: 3,
+  /** 啄走不超过当前库存的这个比例 */
+  peckMaxShare: 0.04,
+  /** 啄的苹果数至少 0,最多这么多(一次) */
+  peckMaxApples: 40,
+};
+
+/** 彩蛋角色(牛顿等)点击收益:专属 1–2 秒动作 + 飘字 + 粒子 + 音效 + 图鉴记录。收益都很小,不是进度主力。 */
+export const CHARACTER_REWARD = {
+  /** 每次点击相当于多少秒送达量(见 sys/characters.ts 各角色的 rewardSec 倍率) */
+  baseSec: 5,
+  /** 同一角色再次可点的冷却(秒) */
+  cooldownS: 60,
+};
