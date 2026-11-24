@@ -3,6 +3,7 @@
 import { app } from './ctx.ts';
 import { panels } from './panels.ts';
 
+const AUTO_CLOSE_MS = 8000;
 const fired = new Set<string>();
 let lastAt = -1e9;
 function fire(id: 'src-0' | 'rt-0' | 'station', delayMs: number): void {
@@ -10,7 +11,11 @@ function fire(id: 'src-0' | 'rt-0' | 'station', delayMs: number): void {
   if (app.state.playSec - lastAt < 25) return; // 卡与卡至少隔 25 秒,别连弹打断摇树
   fired.add(id);
   lastAt = app.state.playSec;
-  setTimeout(() => panels()?.showStageCard(id), delayMs);
+  setTimeout(() => {
+    panels()?.showStageCard(id);
+    // 卡片的遮罩会拦截场景点击:没人理它就 8 秒后自动按"知道了"收起(面板自己有淡出)
+    setTimeout(() => (document.querySelector('#panel-stage .panel-stage-ok') as HTMLButtonElement | null)?.click(), AUTO_CLOSE_MS);
+  }, delayMs);
 }
 
 /** 约每 0.25 秒由主循环调用 */

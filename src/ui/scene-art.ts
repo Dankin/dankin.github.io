@@ -1,6 +1,6 @@
 // 果园新美术场景(v5):用 src/art 的 backdrop/tree/building/transport/dock/character/fx 画整个场景。
 // 与旧 orchard.ts 绘制并行:?art=0 回到旧路径。本文件自带布局(CSS 像素)与动画状态,Orchard 只做手势与公开 API 转发。
-import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
+import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, stockSize, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
 import type { FallItem, LeafP } from '../art/nature/index.ts';
 import { EGG_DURATION, Fireworks, Flights, birdFlight, drawBird, drawCharacter, drawCharacterEgg, drawFleet, drawLaoXuAt, drawGoldHalo, drawSantaDepot, runPhase, TRANSPORT8_FLIES, TRANSPORT8_W } from '../art/things/index.ts';
 import type { BirdKind, CharKind } from '../art/things/index.ts';
@@ -763,9 +763,16 @@ export class ArtScene {
 
   private drawPile(c: C): void {
     const g = this.g;
-    const lv = clamp(this.pileV / 22, 0, 1);
-    if (lv <= 0.01) return;
-    drawStockPile(c, g.pileX, g.pileY, g.treeS * 0.5, lv, { seed: 5 });
+    // 树脚旁的小堆:库存只决定"有多少",上限很低(level ≤ 0.5,对数映射),且整体缩放到不超过 树冠宽 0.5× / 树高 0.25×,不遮挡树和车队
+    const f = clamp(this.pileV / 22, 0, 1);
+    if (f <= 0.01) return;
+    const lv = Math.min(0.5, (Math.log1p(f * 9) / Math.log(10)) * 0.5);
+    const sz = stockSize(lv);
+    if (sz.w <= 0) return;
+    const cr = this.crown();
+    const treeH = Math.max(40, g.gyA - (cr.y - cr.ry));
+    const s = Math.min(g.treeS * 0.5, (cr.rx * 2 * 0.5) / sz.w, (treeH * 0.25) / sz.h);
+    drawStockPile(c, g.pileX, g.pileY, s, lv, { seed: 5 });
   }
 
   private drawDockAndVehicles(c: C): void {

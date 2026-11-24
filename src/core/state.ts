@@ -57,7 +57,6 @@ export interface State {
   playSec: number;
   source: Line;
   route: Line;
-  /** 3 个道具槽 */
   /** 堆场库存 */
   stock: number;
   /** 摇劲 0..1(摇树蓄的力,临时提高产出,不摇会衰减) */

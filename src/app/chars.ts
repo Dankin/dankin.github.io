@@ -55,8 +55,10 @@ export function onBirdHit(): number {
   grant(r.apples, r.coins);
   const o = app.orchard;
   const p = o.spot('crown');
-  o.floatText(fill(pick(BIRD_HIT.floats), r.apples), p?.x, p ? p.y - 4 : undefined);
-  o.floatText(pick(BIRD_HIT.bubbles), p ? p.x + 6 : undefined, p ? p.y - 26 : undefined);
+  // 飘字错开:奖励在树冠上方,气泡话晚 0.7 秒、往右挪一截,别糊在一起
+  o.floatText(fill(pick(BIRD_HIT.floats), r.apples), p ? p.x - 10 : undefined, p ? p.y - 66 : undefined);
+  const bub = pick(BIRD_HIT.bubbles);
+  setTimeout(() => app.orchard.floatText(bub, p ? p.x + 40 : undefined, p ? p.y - 96 : undefined), 700);
   const dec24 = new Date(Date.now()).getMonth() === 11;
   toast(app.state.helperLevel > 0 && Math.random() < 0.2 ? BIRD_SPECIAL.withLaoxu : dec24 && Math.random() < 0.5 ? BIRD_SPECIAL.hat : pick(BIRD_HIT.toasts), 3200);
   playSfx('bird-hit', 'goldenCatch');
@@ -80,7 +82,7 @@ export function onBirdMiss(): void {
   }
   toast(pick(BIRD_PECK.toasts), 3000);
   const p = app.orchard.spot('crown');
-  app.orchard.floatText(pick(BIRD_PECK.bubbles), p?.x, p ? p.y - 22 : undefined);
+  setTimeout(() => app.orchard.floatText(pick(BIRD_PECK.bubbles), p ? p.x + 40 : undefined, p ? p.y - 50 : undefined), 500);
   playSfx('bird-peck', 'bite');
   bus.emit({ t: 'event', kind: 'bird', phase: 'miss' });
   persist();

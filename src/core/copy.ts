@@ -99,6 +99,3 @@ export const WIN_LINES = ['最后一个苹果送到了。', '八十二亿。数�
 
 /** 82 亿到达后,没到 12/24 看到的话 */
 export const SEALED = ['树下多了一个盒子。', '盒子上写着:圣诞节再拆。'];
-
-/** 道具槽空着时的提示 */
-export const EMPTY_SLOT_TIP = '空槽。放一个道具进去,什么都不做就是浪费。';
