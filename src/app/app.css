@@ -14,7 +14,7 @@
 #handBar.pinned i { background: var(--red); }
 #handBar.full i { background: var(--red); animation: handFull 1.4s ease-in-out infinite; }
 #handBar.off { visibility: hidden; }
-#handGoal { position: absolute; left: 0; top: 100%; margin-top: 4px; z-index: 2; font-size: 11px; line-height: 1; color: var(--dim); white-space: nowrap; pointer-events: none; }
+#handGoal { display: none; /* 新闻条贴在顶栏下方,目标提示由底栏卡片的水位条承担 */ position: absolute; left: 0; top: 100%; margin-top: 4px; z-index: 2; font-size: 11px; line-height: 1; color: var(--dim); white-space: nowrap; pointer-events: none; }
 @keyframes handFull { 50% { opacity: 0.55; } }
 .hand .spend { position: absolute; left: 28px; top: 0; font-size: 12px; font-weight: 800; color: var(--red); pointer-events: none; animation: spendUp 0.9s ease-out forwards; }
 @keyframes spendUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(14px); } }

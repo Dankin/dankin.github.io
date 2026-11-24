@@ -4,7 +4,7 @@
 .act .pv.zero { color: var(--dim); }
 .act.bn::after { content: "瓶颈"; position: absolute; right: 8px; top: -8px; font-size: 11px; line-height: 15px; font-weight: 800; color: #fff; background: var(--red); border-radius: 8px; padding: 0 6px; }
 .act.bn { border-color: var(--red); }
-#btnHelper { position: absolute; left: 8px; bottom: 8px; z-index: 5; min-height: 44px; padding: 0 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#btnHelper { width: auto !important; max-width: calc(100vw - 24px); overflow: hidden; text-overflow: ellipsis; position: absolute; left: 8px; bottom: 8px; z-index: 5; min-height: 44px; padding: 0 12px; border: 1.5px solid var(--ink); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; }
 #btnHelper[hidden] { display: none; }
 #btnHelper.can { border-color: var(--red); animation: breathe 2.2s ease-in-out infinite; }
 #btnHelper.no { opacity: 0.6; }
