@@ -9,7 +9,7 @@ import { appleValue, era, eraMin, mods, stockFill, throughput, type ShakeResult,
 import { EGG_BY_ID, EGG_TEXT, SYS_EGG_ID_MAP } from '../content/eggs.ts';
 import { ACH_TEXT } from '../content/achievements.ts';
 import { NEWS_ITEMS } from '../content/news.ts';
-import { cleanRotSys, claimOrder, nextNews, offerSys, onEvent, onShakeRoll, snapshotOf, tapPestSys, tickSys, type SnapHost } from '../core/sys/state.ts';
+import { cleanRotSys, claimOrder, nextNews, offerSys, onEvent, tapLaoxuSys, onShakeRoll, snapshotOf, tapPestSys, tickSys, type SnapHost } from '../core/sys/state.ts';
 import type { EggEvent } from '../core/sys/types.ts';
 import type { EventKind } from '../core/events.ts';
 import { getGoal } from './bar.ts';
@@ -151,9 +151,13 @@ export function sysFrame(dt: number): void {
       targetCost: getGoal()?.cost ?? 0,
       coldStorage: s.gates.includes('cold'),
       progress: Math.min(1, s.delivered / GOAL),
+      helperLevel: s.helperLevel,
+      idleSec: (performance.now() - lastActAt) / 1000,
+      eventOnScreen: s.sys.pests.list.some((p) => s.playSec >= p.at) || s.sys.orders.list.length > 0,
     },
     rnd,
   );
+  s.helperAct = tk.helperAct; // 老徐此刻在不在干活(偷懒=0),throughput 用
   if (tk.coinsLoss > 0) s.coins = Math.max(0, s.coins - tk.coinsLoss);
   for (const e of tk.events) {
     switch (e.t) {
@@ -240,8 +244,24 @@ export function offerAct(W: number): { spent: number; apples: number } | null {
 /** 点了一个场景热点 */
 export function tapTargetAct(target: string): void {
   markActive();
+  if (target === 'xu') tapXuAct();
   bus.emit({ t: 'tap', target });
   emitSys({ t: 'tap', target: target as never, at: app.state.playSec });
+}
+
+/** 点老徐:偷懒时叫醒(可能顺出一瓶汽水,给收入×秒数的苹果) */
+function tapXuAct(): void {
+  const r = tapLaoxuSys(app.state.sys, nowTh().income, rnd);
+  if (r.reward > 0) {
+    app.state.coins += r.reward;
+    app.orchard.floatText(`+${fmt(r.reward)}`);
+  }
+  if (r.r !== 'none') app.audio.sfx.play('coin');
+}
+/** 按住老徐 ≥3 秒(给 sys 的 hold 彩蛋) */
+export function holdXuAct(sec: number): void {
+  markActive();
+  emitSys({ t: 'hold', target: 'xu', sec });
 }
 
 // ───── 离线 / 登录 ─────

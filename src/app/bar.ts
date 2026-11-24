@@ -1,6 +1,7 @@
 // 底栏四张卡 + 老徐按钮。
 import { buyExpand, buyHelper, buyUnit, canUpgradeTier, helperCost, nextHints, preview, tierCost, tiersOf, unitCost, type LineId, type Throughput } from '../core/game.ts';
 import { HELPER, UNIT_MAX } from '../core/content.ts';
+import { LAOXU_LEVELS } from '../content/laoxu.ts';
 import { HELPER_TEXT } from '../core/copy.ts';
 import { newState, type PinSlot } from '../core/state.ts';
 import { bus } from '../core/bus.ts';
@@ -234,7 +235,7 @@ export function mkHelperBtn(): void {
     if (buyHelper(app.state)) {
       bus.emit({ t: 'buy', line: null, what: 'helper', cost: c0 - app.state.coins });
       app.audio.sfx.buy();
-      toast(HELPER_TEXT.hired, 2600);
+      toast(LAOXU_LEVELS[app.state.helperLevel - 1]?.joke ?? HELPER_TEXT.hired, 2600);
       persist();
       hooks.render();
     } else {
@@ -251,7 +252,7 @@ export function renderHelper(hints: ReturnType<typeof nextHints>): void {
     return;
   }
   helperBtn.hidden = false;
-  const label = h ? (have === 0 ? `${HELPER.name}在树下打盹,叫醒他 ${fmt(h.cost)}` : `${HELPER.name} ×${have} · 再雇一位 ${fmt(h.cost)}`) : `${HELPER.name} ×${have} · 满员`;
+  const label = h ? `${LAOXU_LEVELS[have]?.card ?? HELPER.name} ${fmt(h.cost)}` : `${LAOXU_LEVELS[have - 1]?.name ?? HELPER.name} · 满级`;
   setText(helperBtn, label);
   setCls(helperBtn, { can: !!h && h.affordable, no: !h || !h.affordable });
   helperBtn.disabled = !h;

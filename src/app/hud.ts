@@ -1,4 +1,5 @@
 // 顶栏:手上苹果(图标+数量+水位条)、已送出、进度条;设置里的精确数字。
+import { LAOXU_LEVELS } from '../content/laoxu.ts';
 import { progress, type Throughput } from '../core/game.ts';
 import { GOAL } from '../core/constants.ts';
 import { fmt } from '../ui/format.ts';
@@ -21,7 +22,7 @@ function renderExact(th: Throughput): void {
   setText(exactRows[0], `已送出 ${n(s.delivered)} / ${n(GOAL)}`);
   setText(exactRows[1], `手上苹果(果钱) ${n(s.coins)} · 累计花掉 ${n(s.spent)}`);
   setText(exactRows[2], `每秒送达 ${fmt(th.flow)} · 每秒收入 ${fmt(th.income)}`);
-  setText(exactRows[3], `摇了 ${n(s.shakes)} 下 · 老徐 ${s.helperLevel} 位`);
+  setText(exactRows[3], `摇了 ${n(s.shakes)} 下 · 老徐 ${s.helperLevel > 0 ? `Lv${s.helperLevel} ${LAOXU_LEVELS[s.helperLevel - 1]?.name ?? ''}` : '未雇'}`);
 }
 
 let lastApples = '';

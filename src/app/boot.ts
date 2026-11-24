@@ -15,7 +15,7 @@ import { startTicker } from './ticker.ts';
 import { installContentNews, trackNewsSignals } from './news.ts';
 import { chooseBranch, openGate } from './dialogs.ts';
 import { applySound, applyTheme, afterStateReplaced, catchUp, DARK_MQ, persist, resetGame } from './session.ts';
-import { armAudioUnlock, doShake, routeStageTap, setupMotion } from './input.ts';
+import { armAudioUnlock, armXuHold, doShake, routeStageTap, setupMotion } from './input.ts';
 import { setupDebug } from './debug.ts';
 import { renderAll } from './render.ts';
 import { startLoop } from './loop.ts';
@@ -145,6 +145,7 @@ $('btnSettings').addEventListener('click', () => {
   }
 });
 $('stage').addEventListener('click', (e) => void routeStageTap(e.clientX, e.clientY));
+armXuHold();
 mountPanels();
 if (/[#&]g=/.test(location.hash)) setTimeout(() => panels()?.openGift(), 1200); // 收到礼物链接:直接打开礼物页
 initFtue(awayAtBoot);

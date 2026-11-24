@@ -1,4 +1,5 @@
 // 输入与手感:摇树、音频解锁、手机摇一摇。
+import { laoxuCrit } from '../core/sys/state.ts';
 import { shake, type ShakeResult } from '../core/game.ts';
 import { COMBO_TEXT, SHAKE_TEXT } from '../core/copy.ts';
 import { attachMotion, enableMotion, motionSupported } from '../input/motion.ts';
@@ -7,7 +8,7 @@ import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast } from './toasts.ts';
 import { bp, gp } from './dialogs.ts';
-import { claimOrderAct, cleanRotAct, rollShake, tapPestAct, tapTargetAct } from './sys.ts';
+import { claimOrderAct, cleanRotAct, holdXuAct, rollShake, tapPestAct, tapTargetAct } from './sys.ts';
 
 // ───────────── 手感:摇树 / 苹果噼里啪啦掉下来 ─────────────
 let lastShakeText = 0;
@@ -34,7 +35,7 @@ function onShakeResult(r: ShakeResult): void {
 }
 /** 摇一下树(点画布 / 空格 / 以后手机摇一摇都走这里) */
 export function doShake(strength = 1): void {
-  const r = shake(app.state);
+  const r = shake(app.state, laoxuCrit(app.state.sys));
   if (r.ok) {
     app.orchard.poke(Math.max(1, Math.round(1 + strength)));
     bus.emit({ t: 'shake', combo: r.combo, strength });
@@ -59,6 +60,24 @@ export function routeStageTap(clientX: number, clientY: number): boolean {
   } else if (id === 'rot') cleanRotAct();
   else tapTargetAct(id);
   return true;
+}
+
+/** 按住老徐 ≥3 秒:pointerdown 时命中 xu 就起计时,抬手/移走取消 */
+export function armXuHold(): void {
+  let timer = 0;
+  let t0 = 0;
+  const cancel = (): void => {
+    clearTimeout(timer);
+    timer = 0;
+  };
+  $('stage').addEventListener('pointerdown', (e) => {
+    const o = app.orchard as unknown as Tappable;
+    const r = $('stage').getBoundingClientRect();
+    if (o.tapTarget?.(e.clientX - r.left, e.clientY - r.top) !== 'xu') return;
+    t0 = performance.now();
+    timer = window.setTimeout(() => holdXuAct((performance.now() - t0) / 1000), 3000);
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) $('stage').addEventListener(ev, cancel);
 }
 
 // ───────────── 音频解锁:iOS 要在 pointerup/click 手势里 resume,一直试到 running 为止 ─────────────
