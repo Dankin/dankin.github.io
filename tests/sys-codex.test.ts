@@ -19,7 +19,7 @@ const tap = (target: string, at = 0): EggEvent => ({ t: 'tap', target: target as
 const rnd = mulberry32(1);
 
 test('egg ids line up 1:1 with writer content', () => {
-  assert.equal(EGG_COUNT, 47);
+  assert.equal(EGG_COUNT, 56);
   assert.deepEqual([...EGG_IDS].sort(), EGGS.map((e) => e.id).sort());
 });
 
@@ -145,23 +145,70 @@ test('achievements unlock once, codexProgress counts, normalizeCodex tolerates j
   discoverKind(c, 'fuji', 1);
   const p = codexProgress(c);
   assert.equal(p.kinds.found, 1);
-  assert.equal(p.all.total, 15 + 47);
+  assert.equal(p.all.total, 15 + 56);
   assert.deepEqual(normalizeCodex(null), newCodex());
   assert.equal(normalizeCodex({ lastLoginDay: 5, kinds: 3 }).lastLoginDay, '');
   assert.equal(normalizeCodex(JSON.parse(JSON.stringify(c))).kinds.fuji?.n, 1);
 });
 
-test('route eggs: trampoline-leak (5 fast taps, owns trampoline) and pole-snap (10 taps total, owns porter)', () => {
+test('route eggs: pole-snap (10 taps total, owns porter)', () => {
   const c = newCodex();
   const run = (s: Snapshot, target: string, n: number, dt: number): string[] => {
     const out: string[] = [];
     for (let i = 0; i < n; i++) out.push(...checkEggs(s, tap(target, i * dt), c, rnd).map((h) => h.id));
     return out;
   };
-  assert.deepEqual(run(snap({ routeTier: 2 }), 'trampoline', 5, 0.5), [], '没有蹦床不触发');
-  assert.deepEqual(run(snap({ routeTier: 3 }), 'trampoline', 5, 3), [], '点太慢不触发');
-  assert.deepEqual(run(snap({ routeTier: 3 }), 'trampoline', 5, 0.5), ['trampoline-leak']);
   assert.deepEqual(run(snap({ routeTier: 0 }), 'porter', 10, 1), [], '没有挑担工不触发');
   const ids = run(snap({ routeTier: 1 }), 'porter', 10, 1);
   assert.deepEqual(ids, ['pole-snap']);
+});
+
+const ids = (s: Snapshot, e: EggEvent, c: ReturnType<typeof newCodex>): string[] => checkEggs(s, e, c, rnd).map((h) => h.id);
+
+test('v6 route/station eggs: truck-horn, elf-wave, sleigh-bell, reindeer-nose', () => {
+  const c = newCodex();
+  const seq = (s: Snapshot, target: string, n: number, dt: number): string[] => {
+    const out: string[] = [];
+    for (let i = 0; i < n; i++) out.push(...ids(s, tap(target, i * dt), c));
+    return out;
+  };
+  assert.deepEqual(seq(snap({ routeTier: 2 }), 'truck', 5, 0.5), [], '没有卡车不触发');
+  assert.deepEqual(seq(snap({ routeTier: 3 }), 'truck', 5, 2), [], '点太慢不触发');
+  assert.deepEqual(seq(snap({ routeTier: 3 }), 'truck', 5, 0.5), ['truck-horn']);
+  assert.deepEqual(seq(snap(), 'elf', 5, 2.5), ['elf-wave']);
+  assert.deepEqual(ids(snap(), tap('sleigh-bell'), c), ['sleigh-bell']);
+  assert.deepEqual(seq(snap(), 'reindeer-nose', 3, 0.5), ['reindeer-nose']);
+});
+
+test('v6 gift-peek needs gift-rim event first; cloud-basket / star-lantern gated by source tier', () => {
+  const c = newCodex();
+  assert.deepEqual(ids(snap(), tap('gift-top'), c), []);
+  ids(snap(), { t: 'gift-rim' }, c);
+  assert.deepEqual(ids(snap(), tap('gift-top'), c), ['gift-peek']);
+  assert.deepEqual(ids(snap({ sourceTier: 2 }), tap('cloud-basket'), c), []);
+  assert.deepEqual(ids(snap({ sourceTier: 3 }), tap('cloud-basket'), c), ['cloud-basket']);
+  const d = newCodex();
+  const lanterns = (s: Snapshot, order: number[], dt: number): string[] => {
+    const out: string[] = [];
+    order.forEach((k, i) => out.push(...ids(s, tap(`star-lantern-${k}`, i * dt), d)));
+    return out;
+  };
+  assert.deepEqual(lanterns(snap({ sourceTier: 3 }), [1, 2, 3, 4, 5, 6, 7], 1), [], '星树前不触发');
+  assert.deepEqual(lanterns(snap({ sourceTier: 4 }), [1, 2, 4, 3, 5, 6, 7], 1), [], '顺序错不触发');
+  assert.deepEqual(lanterns(snap({ sourceTier: 4 }), [1, 2, 3, 4, 5, 6, 7], 5), [], '间隔 > 4 秒不触发');
+  assert.deepEqual(lanterns(snap({ sourceTier: 4 }), [1, 2, 3, 4, 5, 6, 7], 1), ['star-lantern']);
+});
+
+test('v6 bird eggs: feather (10 hits), ignore (5 pecks), hat (Dec 24 hit)', () => {
+  const c = newCodex();
+  const hit: EggEvent = { t: 'event', kind: 'bird', claimed: true };
+  const miss: EggEvent = { t: 'event', kind: 'bird', claimed: false };
+  const got: string[] = [];
+  for (let i = 0; i < 10; i++) got.push(...ids(snap(), hit, c));
+  assert.deepEqual(got, ['bird-feather']);
+  const got2: string[] = [];
+  for (let i = 0; i < 5; i++) got2.push(...ids(snap(), miss, c));
+  assert.deepEqual(got2, ['bird-ignore']);
+  const dec24 = snap({ wall: shanghai(Date.UTC(2026, 11, 24, 4)) });
+  assert.deepEqual(ids(dec24, hit, c), ['bird-hat']);
 });

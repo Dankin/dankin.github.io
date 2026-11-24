@@ -1,4 +1,4 @@
-// 彩蛋判定:43 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
+// 彩蛋判定:56 个,id/奖励/文案以 src/content/eggs.ts(writer)为准,这里只实现触发逻辑。
 // 奖励请用 EGG_BY_ID[id].reward(content)发放,hit 里不重复携带。
 import { ROUTE_ERA } from '../content.ts';
 import { CODEX, LAOXU } from './constants.ts';
@@ -63,7 +63,6 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['garage', (c) => routeEra(c.snap) >= 2 && tapIs(c, 'garage')],
   ['turtleneck', (c) => c.snap.sourceTier >= 3 && tapIs(c, 'window-silhouette')],
   ['einstein', (c) => routeEra(c.snap) >= 5 && tapIs(c, 'moon')],
-  ['trampoline-leak', (c) => c.snap.routeTier >= 3 && tapRun(c, 5, 1.25, 'trampoline')],
   ['pole-snap', (c) => c.snap.routeTier >= 1 && tapIs(c, 'porter') && bump(c, 'poleTaps') >= 10],
   ['core', (c) => tapIs(c, 'seed-core') && bump(c, 'coreTaps') >= 7],
   ['vinegar', (c) => eraMax(c.snap) >= 1 && tapIs(c, 'vinegar')],
@@ -82,6 +81,15 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['atalanta', (c) => c.ev.t === 'gold' && c.ev.kind === 'tap' && (c.ev.since ?? 99) <= 3 && tapRun2(c)],
   ['idunn', (c) => c.snap.night && eraMax(c.snap) >= 4 && tapIs(c, 'gold-basket')],
   ['sitting-under-tree', (c) => c.snap.night && tapIs(c, 'night-person')],
+  // ── v6:卡车 / 鸟 / 收货站 / 云树 / 星树 ──
+  ['truck-horn', (c) => c.snap.routeTier >= 3 && tapRun(c, 5, 1.25, 'truck')],
+  ['bird-feather', (c) => c.ev.t === 'event' && c.ev.kind === 'bird' && c.ev.claimed && bump(c, 'birdHits') >= 10],
+  ['bird-ignore', (c) => c.ev.t === 'event' && c.ev.kind === 'bird' && !c.ev.claimed && bump(c, 'birdPecks') >= 5],
+  ['elf-wave', (c) => tapRun(c, 5, 3, 'elf')],
+  ['sleigh-bell', (c) => tapIs(c, 'sleigh-bell')],
+  ['gift-peek', (c) => c.ev.t === 'gift-rim' ? ((c.codex.counters.giftRim = 1), false) : tapIs(c, 'gift-top') && !!c.codex.counters.giftRim],
+  ['cloud-basket', (c) => c.snap.sourceTier >= 3 && tapIs(c, 'cloud-basket')],
+  ['star-lantern', (c) => c.snap.sourceTier >= 4 && lanternSeq(c)],
   ['phone-pun', (c) => tapRun(c, 5, CODEX.tapGapLongS, 'version')],
 
   // ── 极稀有 ──
@@ -91,11 +99,30 @@ const ROWS: Array<[id: string, test: Test]> = [
   ['laoxu-spray', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && c.snap.laoxuMode === 'slack' && tapIs(c, 'xu') && c.rnd() < LAOXU.sprayP],
   ['laoxu-qc', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && tapRun(c, LAOXU.qcTaps, LAOXU.qcWindowS / (LAOXU.qcTaps - 1), 'xu-qc', 'xu')],
   ['laoxu-bubble', (c) => c.snap.helperLevel >= LAOXU.slackFromLv && c.snap.laoxuMode === 'slack' && c.ev.t === 'hold' && c.ev.target === 'xu' && c.ev.sec >= LAOXU.bubbleHoldS],
+  ['bird-hat', (c) => c.ev.t === 'event' && c.ev.kind === 'bird' && c.ev.claimed && c.snap.wall.m === 12 && c.snap.wall.d === 24],
+  ['reindeer-nose', (c) => tapRun(c, 3, CODEX.tapGapS, 'reindeer-nose')],
   ['laoxu-sleep', (c) => c.ev.t === 'away' && c.ev.ms >= CODEX.sleeperAwayMs],
   ['title-7', (c) => tapRun(c, 7, CODEX.tapGapLongS, 'title')],
   ['core-82', (c) => c.ev.t === 'win' || (c.ev.t === 'time' && c.snap.progress >= 1)],
   ['shake-5000', (c) => c.ev.t === 'shake' && c.snap.shakes >= 5000],
 ];
+
+/** 七盏星灯依次点(1→7),相邻间隔 ≤ 4 秒;点错序号从头(点到 1 号算第一盏) */
+function lanternSeq(c: Ctx): boolean {
+  if (c.ev.t !== 'tap') return false;
+  const m = /^star-lantern-(\d)$/.exec(c.ev.target);
+  if (!m) return false;
+  const k = +m[1];
+  const run = (c.codex.tapRun['lantern'] ??= { n: 0, last: -1e9 });
+  const inTime = c.ev.at - run.last <= 4;
+  run.n = k === run.n + 1 && (inTime || run.n === 0) ? k : k === 1 ? 1 : 0;
+  run.last = c.ev.at;
+  if (run.n >= 7) {
+    run.n = 0;
+    return true;
+  }
+  return false;
+}
 
 /** 金苹果追上:飘走前 3 秒内连点中 2 次 */
 function tapRun2(c: Ctx): boolean {

@@ -73,18 +73,24 @@ export interface Snapshot {
 export const TAP_TARGETS = [
   'treetop-fruit', 'newton', 'poison-stall', 'summit-gold', 'skyline', 'xu-head-apple', 'xu-throat', 'xu',
   'garage', 'window-silhouette', 'moon', 'seed-core', 'vinegar', 'jam', 'green-apple', 'orange', 'news',
-  'leaf-under', 'trampoline', 'porter', 'clock', 'stocking', 'gold-basket', 'night-person', 'version', 'title',
+  'leaf-under', 'porter', 'clock', 'stocking', 'gold-basket', 'night-person', 'version', 'title',
+  // v6:路上的卡车 / 圣诞收货站 / 云树吊篮 / 星树七盏灯
+  'truck', 'elf', 'sleigh-bell', 'reindeer-nose', 'gift-top', 'cloud-basket',
+  'star-lantern-1', 'star-lantern-2', 'star-lantern-3', 'star-lantern-4', 'star-lantern-5', 'star-lantern-6', 'star-lantern-7',
 ] as const;
 export type TapTarget = (typeof TAP_TARGETS)[number];
 
 /** eng-app 总线 → 彩蛋/成就的事件 */
 export type EggEvent =
   | { t: 'shake'; combo: number; apple?: { kind: AppleKind; state: AppleState } }
-  | { t: 'buy'; what: 'unit' | 'expand' | 'helper' | 'gate' | 'offer' | 'order'; line?: 'source' | 'route' }
+  | { t: 'buy'; what: 'unit' | 'expand' | 'helper' | 'offer' | 'order'; line?: 'source' | 'route' }
   | { t: 'tier'; line: 'source' | 'route'; tier: number; branch?: string }
   /** 金苹果:出现 / 被点(since = 距出现的秒数,at = playSec) */
   | { t: 'gold'; kind: 'appear' | 'tap'; at: number; since?: number }
+  /** 小鸟/牛顿/流星:claimed=true 点中领奖;false=没点就走(小鸟会啄走少量库存) */
   | { t: 'event'; kind: EventKind; claimed: boolean }
+  /** 收货站礼物堆第一次高过雪橇边沿(app 发一次;gift-peek 之后点最上面的包裹才算) */
+  | { t: 'gift-rim' }
   | { t: 'idle'; sec: number }
   /** 1Hz 心跳(wall clock/累计量检查都靠它) */
   | { t: 'time' }

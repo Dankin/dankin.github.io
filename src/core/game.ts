@@ -1,10 +1,10 @@
 // v4 核心玩法:产出 → 堆场 → 车 → 送达。所有函数都改传入的 State(除非注明纯函数)。
 import { GOAL, OFFLINE_CAP_MS, SHORT_AWAY_MS } from './constants.ts';
 import {
-  GATES, HELPER, helperOldTotal, MAX_CONVOYS, ROUTE_ERA, maxTier, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS, gateDef,
-  type BranchDef, type Effect, type GateId,
+  HELPER, helperOldTotal, MAX_CONVOYS, ROUTE_ERA, maxTier, ROUTE_TIERS, SOURCE_TIERS, SHAKE, STOCK_MIN, STOCK_SECONDS,
+  type BranchDef, type Effect,
 } from './content.ts';
-import { EXPAND, RED_EXP, TIER_START_UNITS, UNIT_MAX } from './content.ts';
+import { EXPAND, TIER_START_UNITS, UNIT_MAX } from './content.ts';
 import type { Line, State } from './state.ts';
 export type LineId = 'source' | 'route';
 
@@ -39,8 +39,8 @@ function addEffect(m: Mods, e: Effect, k = 1): void {
 
 export const tiersOf = (line: LineId) => (line === 'source' ? SOURCE_TIERS : ROUTE_TIERS);
 
-/** 当前所有分支 + 道具(含红绳相邻放大)合成的乘数 */
-export function mods(s: Pick<State, 'source' | 'route' | 'gates'> & { helperLevel?: number }): Mods {
+/** 当前所有分支(+老徐满级)合成的乘数 */
+export function mods(s: Pick<State, 'source' | 'route'> & { helperLevel?: number }): Mods {
   const m = unit1();
   // 老徐 8 级(退休顾问):运输指路 + 产出线整体小加成
   if ((s.helperLevel ?? 0) >= HELPER.max) addEffect(m, HELPER.bonus);
@@ -50,14 +50,6 @@ export function mods(s: Pick<State, 'source' | 'route' | 'gates'> & { helperLeve
       const b = L.branch[t];
       if (b === 0 || b === 1) addEffect(m, tiersOf(line)[t].branches![b].effect);
     }
-  }
-  for (let i = 0; i < s.gates.length; i++) {
-    const id = s.gates[i];
-    if (!id) continue;
-    const def = gateDef(id);
-    if (def.adjacent) continue;
-    const red = s.gates[i - 1] === 'red' || s.gates[i + 1] === 'red';
-    addEffect(m, def.effect, red ? RED_EXP : 1);
   }
   return m;
 }
@@ -138,7 +130,7 @@ export function bottleneckOf(produce: number, carry: number): Bottleneck {
   return r > 1.1 ? 'carry' : r < 0.9 ? 'produce' : 'balanced';
 }
 
-export function throughput(s: Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate'>): Throughput {
+export function throughput(s: Pick<State, 'source' | 'route' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate'>): Throughput {
   const m = mods(s);
   const bp = baseProduce(s.source) * m.produce;
   const fm = fwMax(s, m);
@@ -236,8 +228,6 @@ export interface UpgradeResult {
   line: LineId;
   tier: number;
   branch: 0 | 1;
-  /** 这次升档新解锁的道具 */
-  newGates: GateId[];
 }
 
 /** 升档:付 tierCost,选分支,赠送 1 个新档单位。成功返回结果,否则 null */
@@ -253,32 +243,7 @@ export function upgradeTier(s: State, line: LineId, branch: 0 | 1): UpgradeResul
   L.units[L.tier] = TIER_START_UNITS;
   if (line === 'route') for (let i = 0; i < TIER_START_UNITS; i++) addVehicle(s, L.tier);
   s.tierTimes[line][L.tier - 1] = s.playSec;
-  return { line, tier: L.tier, branch, newGates: unlockGates(s) };
-}
-
-export function unlockGates(s: State): GateId[] {
-  const sum = era(s);
-  const fresh: GateId[] = [];
-  for (const g of GATES) {
-    if (g.unlockAt <= sum && !s.gatesUnlocked.includes(g.id)) {
-      s.gatesUnlocked.push(g.id);
-      fresh.push(g.id);
-    }
-  }
-  return fresh;
-}
-
-/** 放入/拿出道具。免费。已在别的槽的道具会和目标槽互换。 */
-export function setGate(s: State, slot: number, id: GateId | null): boolean {
-  if (!Number.isInteger(slot) || slot < 0 || slot >= s.gates.length) return false;
-  if (id !== null) {
-    if (!s.gatesUnlocked.includes(id)) return false;
-    const other = s.gates.indexOf(id);
-    if (other === slot) return true;
-    if (other >= 0) s.gates[other] = s.gates[slot];
-  }
-  s.gates[slot] = id;
-  return true;
+  return { line, tier: L.tier, branch };
 }
 
 // ───────────────────────── 老徐(自动摇树) ─────────────────────────
@@ -306,8 +271,7 @@ export type Action =
   | { kind: 'unit'; line: LineId; tier?: number }
   | { kind: 'tier'; line: LineId; branch: 0 | 1 }
   | { kind: 'helper' }
-  | { kind: 'expand'; line: LineId; tier?: number }
-  | { kind: 'gate'; slot: number; id: GateId | null };
+  | { kind: 'expand'; line: LineId; tier?: number };
 
 export interface Preview {
   ok: boolean;
@@ -347,20 +311,18 @@ function plainOf(a: Action, ok: boolean, bm: Mods, am: Mods, before: Throughput,
   if (up(bm.fw, am.fw) || up(bm.floor + 1, am.floor + 1)) parts.push('摇劲更足');
   if (a.kind === 'unit' || a.kind === 'helper') {
     if (up(before.flow, after.flow)) parts.push(a.kind === 'unit' && a.line === 'route' ? '多运一些' : '多送一些');
-  } else if (a.kind === 'gate' && up(before.flow, after.flow, 0.03) && !parts.length) parts.push('多送一些');
+  }
   return parts.slice(0, 2).join('、');
 }
 
-type Lite = Pick<State, 'source' | 'route' | 'gates' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate' | 'gatesUnlocked'>;
+type Lite = Pick<State, 'source' | 'route' | 'charge' | 'combo' | 'helperLevel' | 'shakeRate'>;
 const lite = (s: State): Lite => ({
   source: { ...s.source, units: [...s.source.units], branch: [...s.source.branch], ext: [...s.source.ext] },
   route: { ...s.route, units: [...s.route.units], branch: [...s.route.branch], ext: [...s.route.ext] },
-  gates: [...s.gates],
   charge: s.charge,
   combo: s.combo,
   helperLevel: s.helperLevel,
   shakeRate: s.shakeRate,
-  gatesUnlocked: s.gatesUnlocked,
 });
 
 /** 模拟"如果做了这件事"吞吐/价值会怎样,不改 s。UI 用来画 "+x%"。 */
@@ -400,15 +362,6 @@ export function preview(s: State, a: Action): Preview {
       L.tier += 1;
       L.branch[L.tier] = a.branch;
       L.units[L.tier] = TIER_START_UNITS;
-    }
-  } else {
-    ok = a.slot >= 0 && a.slot < l.gates.length && (a.id === null || s.gatesUnlocked.includes(a.id));
-    if (ok) {
-      if (a.id !== null) {
-        const other = l.gates.indexOf(a.id);
-        if (other >= 0) l.gates[other] = l.gates[a.slot];
-      }
-      l.gates[a.slot] = a.id;
     }
   }
   const after = throughput(l);

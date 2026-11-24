@@ -26,7 +26,7 @@ function v3(): Record<string, unknown> {
   return s;
 }
 
-test('SAVE_VERSION 是 6', () => assert.equal(SAVE_VERSION, 6));
+test('SAVE_VERSION 是 7', () => assert.equal(SAVE_VERSION, 7));
 
 test('迁移 v3→v4:数值原样,spent=0,pin=null', () => {
   const r = parse(wrap(v3()))!;

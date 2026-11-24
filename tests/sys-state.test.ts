@@ -46,8 +46,8 @@ test('no loss without hoarding or pests when poor', () => {
 
 test('offer closed until both lines tier 3; open applies 15% discount', () => {
   const s = newSys();
-  assert.equal(offerSys(s, { sourceTier: 3, routeTier: 4 }, 1000, 1e6, 1), null);
-  const r = offerSys(s, { sourceTier: 3, routeTier: 5 }, 1000, 1e6, 1)!;
+  assert.equal(offerSys(s, { sourceTier: 3, routeTier: 3 }, 1000, 1e6, 1), null);
+  const r = offerSys(s, { sourceTier: 3, routeTier: 4 }, 1000, 1e6, 1)!;
   assert.ok(r && Math.abs(r.apples - 150) < 1e-6);
 });
 

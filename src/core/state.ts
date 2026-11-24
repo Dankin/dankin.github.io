@@ -1,6 +1,5 @@
 import { SAVE_VERSION } from './constants.ts';
-import type { GateId } from './content.ts';
-import { GATE_SLOTS, TIER_COUNTS } from './content.ts';
+import { TIER_COUNTS } from './content.ts';
 import { newSys, type SysState } from './sys/state.ts';
 
 /** 一个"车"。n > 24 时多辆车合并成一个车队,w 是它代表几辆。 */
@@ -59,8 +58,6 @@ export interface State {
   source: Line;
   route: Line;
   /** 3 个道具槽 */
-  gates: (GateId | null)[];
-  gatesUnlocked: GateId[];
   /** 堆场库存 */
   stock: number;
   /** 摇劲 0..1(摇树蓄的力,临时提高产出,不摇会衰减) */
@@ -108,8 +105,6 @@ export function newState(now: number): State {
     playSec: 0,
     source: newLine(),
     route: newLine('route'),
-    gates: Array(GATE_SLOTS).fill(null) as (GateId | null)[],
-    gatesUnlocked: ['wash', 'wax', 'rush'],
     stock: 0,
     charge: 0,
     combo: 0,

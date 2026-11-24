@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GOAL, OFFLINE_CAP_MS, SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from '../src/core/constants.ts';
-import { GATES, HELPER, SHAKE, GATE_SLOTS, MAX_CONVOYS, RED_EXP, ROUTE_TIERS, SOURCE_TIERS, TIER_START_UNITS, UNIT_MAX, EXPAND, describeEffect } from '../src/core/content.ts';
+import { HELPER, SHAKE, MAX_CONVOYS, ROUTE_TIERS, SOURCE_TIERS, TIER_START_UNITS, UNIT_MAX, EXPAND, describeEffect } from '../src/core/content.ts';
 import { EVENT_GAP_S, EVENT_GAP_SHARE, EVENT_MAX_S, EVENT_REWARD_S, NEWTON_S, claimEvent, nextEventGap, pickEvent } from '../src/core/events.ts';
 import {
   appleValue, baseProduce, buyHelper, buyUnit, canBuyHelper, canBuyUnit, canUpgradeTier, click, comboMult, era, helperCost, shake, fleetView, isWon, mods,
-  buyExpand, canExpand, expandCost, nextBranches, nextHints, preview, progress, setGate, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
+  buyExpand, canExpand, expandCost, nextBranches, nextHints, preview, progress, settle, stockFill, stockMax, throughput, tick, tierCost, unitCost,
   upgradeTier,
 } from '../src/core/game.ts';
 import { GIFT_DATE, giftOpen } from '../src/core/gift.ts';
@@ -36,11 +36,9 @@ function atTiers(src: number, rt: number): State {
 test('初始状态', () => {
   const s = fresh();
   assert.equal(s.version, SAVE_VERSION);
-  assert.deepEqual(s.source.units, [1, 0, 0, 0, 0, 0]);
+  assert.deepEqual(s.source.units, [1, 0, 0, 0, 0]);
   assert.equal(s.vehicles.length, 1);
   assert.equal(s.vehicles[0].tier, 0);
-  assert.equal(s.gates.length, GATE_SLOTS);
-  assert.ok(s.gates.every((g) => g === null));
   assert.equal(throughput(s).produce, 1);
 });
 
@@ -72,7 +70,7 @@ test('买车:每买一辆多一辆;单位数封顶 UNIT_MAX', () => {
   assert.equal(fleetView(s)[0].count, s.route.units[0]);
 });
 
-test('升档:要钱、要选分支、送起步单位、记录时间、解锁道具', () => {
+test('升档:要钱、要选分支、送起步单位、记录时间', () => {
   const s = fresh();
   assert.equal(canUpgradeTier(s, 'source'), false);
   assert.equal(upgradeTier(s, 'source', 0), null, '没钱');
@@ -94,24 +92,17 @@ test('升档:要钱、要选分支、送起步单位、记录时间、解锁道�
   assert.equal(s.tierTimes.source[0], 42);
   // 分支效果生效
   assert.deepEqual(mods(s).value, br[1].effect.value ?? 1);
-  // 时代(产出档 + ROUTE_ERA[运输档])到 2 解锁第四个道具:挑扁担工(ROUTE_ERA 0)不算,小推车(1)才算
-  assert.ok(!s.gatesUnlocked.includes('pack'));
   upgradeTier(s, 'route', 0)!;
   assert.equal(s.vehicles.filter((v) => v.tier === 1).length, TIER_START_UNITS, '升运输档送起步车辆');
-  assert.ok(!s.gatesUnlocked.includes('pack'));
-  const r2 = upgradeTier(s, 'route', 0)!;
-  assert.ok(r2.newGates.includes('pack'));
-  assert.ok(s.gatesUnlocked.includes('pack'));
 });
 
 test('升到最高档后不能再升', () => {
-  const s = atTiers(5, 8);
+  const s = atTiers(4, 7);
   s.coins = 1e30;
   assert.equal(tierCost(s, 'source'), null);
   assert.equal(nextBranches(s, 'route'), null);
   assert.equal(upgradeTier(s, 'source', 0), null);
-  assert.equal(era(s), 10);
-  assert.equal(s.gatesUnlocked.length, GATES.length);
+  assert.equal(era(s), 9);
 });
 
 test('吞吐 = min(产出, 运力),瓶颈标签', () => {
@@ -172,51 +163,8 @@ test('确定性:同样的输入同样的结果', () => {
   assert.equal(run(), run());
 });
 
-test('道具:换槽改变价值,互换,未解锁不能放,可清空', () => {
-  const s = fresh();
-  const v0 = throughput(s).value;
-  assert.equal(v0, 1);
-  assert.ok(setGate(s, 0, 'wash'));
-  const v1 = throughput(s).value;
-  const wash = GATES.find((g) => g.id === 'wash')!.effect.value!;
-  assert.ok(Math.abs(v1 - wash) < 1e-9);
-  assert.equal(setGate(s, 1, 'brand'), false, '没解锁');
-  assert.equal(setGate(s, 5, 'wash'), false);
-  assert.ok(setGate(s, 2, 'wash'));
-  assert.deepEqual(s.gates, [null, null, 'wash'], '同一道具只占一个槽,从原槽拿走');
-  assert.ok(setGate(s, 1, 'wax'));
-  assert.ok(setGate(s, 1, 'wash'));
-  assert.deepEqual(s.gates, [null, 'wash', 'wax'], '互换');
-  assert.ok(setGate(s, 1, null));
-  assert.equal(s.gates[1], null);
+test('describeEffect', () => {
   assert.equal(describeEffect({ value: 1.25 }), '价值 ×1.25');
-});
-
-test('道具改变运力:打蜡 +价值 但更慢,加急更快', () => {
-  const s = fresh();
-  const c0 = throughput(s).carry;
-  setGate(s, 0, 'wax');
-  assert.ok(throughput(s).carry < c0);
-  setGate(s, 0, 'rush');
-  assert.ok(throughput(s).carry > c0);
-});
-
-test('红绳:放大相邻槽的道具,不相邻没用', () => {
-  const s = fresh();
-  s.gatesUnlocked.push('red');
-  setGate(s, 0, 'wash');
-  setGate(s, 1, 'red');
-  const wash = GATES.find((g) => g.id === 'wash')!.effect.value!;
-  const waxV = GATES.find((g) => g.id === 'wax')!.effect.value!;
-  assert.ok(Math.abs(mods(s).value - Math.pow(wash, RED_EXP)) < 1e-9);
-  setGate(s, 1, null);
-  setGate(s, 2, 'red');
-  assert.ok(Math.abs(mods(s).value - wash) < 1e-9, '槽 0 与槽 2 不相邻');
-  setGate(s, 1, 'wax');
-  setGate(s, 0, 'wash');
-  // 槽 1 的 wax 被红绳(槽 2)放大,槽 0 的 wash 没有
-  const expect = wash * Math.pow(waxV, RED_EXP);
-  assert.ok(Math.abs(mods(s).value - expect) < 1e-9);
 });
 
 test('preview:不改状态,数字与真正执行一致', () => {
@@ -230,12 +178,9 @@ test('preview:不改状态,数字与真正执行一致', () => {
   const before = throughput(s).flow;
   buyUnit(s, 'route');
   assert.ok(Math.abs(throughput(s).flow - before - p.flowDelta) < 1e-9);
-  const g = preview(s, { kind: 'gate', slot: 0, id: 'wash' });
-  assert.ok(g.valueDelta > 1.2);
-  assert.equal(g.cost, 0);
   const t = preview(s, { kind: 'tier', line: 'source', branch: 0 });
   assert.equal(t.cost, tierCost(s, 'source'));
-  assert.equal(preview(atTiers(5, 8), { kind: 'tier', line: 'source', branch: 0 }).ok, false);
+  assert.equal(preview(atTiers(4, 7), { kind: 'tier', line: 'source', branch: 0 }).ok, false);
 });
 
 test('nextHints:价格、等待秒数、建议', () => {
@@ -248,7 +193,7 @@ test('nextHints:价格、等待秒数、建议', () => {
   assert.ok(h.route.unit.waitSec > 0);
   s.coins = 1e9;
   assert.equal(nextHints(s).route.unit.waitSec, 0);
-  assert.equal(nextHints(atTiers(5, 8)).source.tier, null);
+  assert.equal(nextHints(atTiers(4, 7)).source.tier, null);
 });
 
 test('摇树:苹果直接掉进堆场,蓄摇劲,计数', () => {
@@ -380,12 +325,11 @@ test('老徐:价格涨、有解锁和上限、自动摇出苹果和摇劲', () =
   assert.ok(nextHints(atTiers(1, 0)).helper);
 });
 
-test('分支:铁砂掌、号子、摇树手套让摇一下掉得更多', () => {
+test('分支:铁砂掌式的分支让摇一下掉得更多', () => {
   const s = atTiers(0, 0);
   s.source.units[0] = 20;
   const base = throughput(s).shakeDrop;
-  s.gatesUnlocked.push('glove', 'chant');
-  s.gates[0] = 'glove';
+  s.source.units[0] = 40;
   assert.ok(throughput(s).shakeDrop > base);
   const iron = SOURCE_TIERS[1].branches!.findIndex((b) => (b.effect.shake ?? 1) > 1);
   assert.ok(iron >= 0);
@@ -470,7 +414,6 @@ test('存档:往返、备份、损坏回落、新版只读、旧版重开', () =
   const s = atTiers(2, 1);
   s.coins = 12345;
   s.delivered = 777;
-  s.gates[0] = 'wash';
   assert.ok(save(kv, s, 5000));
   assert.equal(s.lastSeen, 5000);
   const r = load(kv, 9000);
@@ -479,7 +422,6 @@ test('存档:往返、备份、损坏回落、新版只读、旧版重开', () =
     assert.equal(r.state.coins, 12345);
     assert.equal(r.state.delivered, 777);
     assert.equal(r.state.source.tier, 2);
-    assert.deepEqual(r.state.gates, ['wash', null, null]);
     assert.equal(r.fromBackup, false);
   }
   // 第二次存:上一份进备份
@@ -524,14 +466,12 @@ test('存档:校验和、新版只读、旧版(v1/v2)直接重开', () => {
   const kv4 = mem();
   const partial: any = { ...s };
   delete partial.vehicles;
-  delete partial.gates;
   delete partial.settings;
   kv4.setItem(SAVE_KEY, wrap(partial));
   const l = load(kv4, 1);
   assert.equal(l.kind, 'ok');
   if (l.kind === 'ok') {
     assert.equal(l.state.vehicles.length, 1);
-    assert.equal(l.state.gates.length, GATE_SLOTS);
     assert.equal(l.state.settings.sound, false);
   }
 });

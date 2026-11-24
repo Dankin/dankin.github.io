@@ -1,9 +1,8 @@
 // v4 全部内容与数值。想调平衡,只改这个文件(再跑 node scripts/sim.ts 看结果)。
 //
-// 模型:产出线(6 档)把苹果放进堆场,运输线(9 档)的车从堆场装货、开到终点、送达才结算。
-// 吞吐 = min(产出, 运力)。每次升档要选 2 个分支之一;3 个道具槽可随时免费更换。
+// 模型:产出线(5 档:树原地进化)把苹果放进堆场,运输线(8 档)的车从堆场装货、开到终点、送达才结算。
+// 吞吐 = min(产出, 运力)。每次升档要选 2 个分支之一。(v6:道具槽/关卡系统已删除)
 
-export type GateId = 'wash' | 'wax' | 'rush' | 'pack' | 'juice' | 'cold' | 'red' | 'belt' | 'brand' | 'glove' | 'chant';
 export type Line = 'source' | 'route';
 
 /** 一组乘数。全部是"乘";没写的当 1。floor 是摇劲保底(取最大),不是乘数。 */
@@ -72,21 +71,10 @@ export interface RouteTierDef {
   joke: string;
 }
 
-export interface GateDef {
-  id: GateId;
-  name: string;
-  joke: string;
-  /** 产出档 + 运输档 之和 ≥ 此值时解锁 */
-  unlockAt: number;
-  effect: Effect;
-  /** 红绳:相邻槽的道具效果以 1.x 次方放大 */
-  adjacent?: number;
-}
-
 // ───────────────────────── 手动:摇树 ─────────────────────────
 export const SHAKE = {
   /** 一下摇掉的苹果 = 1 + 当前产出(个/秒) × dropSec[产出档] × 手劲加成。后期手动只是调味。 */
-  dropSec: [0.8, 0.59, 0.46, 0.37, 0.3, 0.25],
+  dropSec: [0.8, 0.59, 0.46, 0.37, 0.25],
   /** 每次有效摇树给摇劲的增量(0..1) */
   perShake: 0.08,
   /** 摇劲每秒指数衰减 */
@@ -104,7 +92,7 @@ export const SHAKE = {
   comboStep: 0.008,
   comboMax: 30,
   /** 摇劲产生的产出加成上限(摇满时 produce × (1+x)),按产出档递减 */
-  maxByTier: [2.19, 1.89, 1.6, 1.3, 1.01, 0.81],
+  maxByTier: [2.19, 1.89, 1.6, 1.3, 0.81],
 };
 
 /** 升到新一档时白送的单位数(不然手摇掉量随档下降,升档会越升越亏) */
@@ -161,50 +149,48 @@ const withPair = <T extends { branches: [BranchDef, BranchDef] | null }>(defs: O
 
 export const SOURCE_TIERS: SourceTierDef[] = withPair<SourceTierDef>([
   {
-    name: '一棵树', unit: '棵树', rate: 1, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
+    name: '小树', unit: '棵树', rate: 1, baseCost: 10, growth: 1.12, tierCost: 0, branches: null,
     joke: '一棵树,一个你,一点耐心。',
   },
   {
-    name: '小果园', unit: '片果园', rate: 14, baseCost: 6400, growth: 1.12, tierCost: 6400,
-    joke: '邻居家的树也加入了,没人通知邻居。',
+    name: '老树', unit: '棵老树', rate: 14, baseCost: 6400, growth: 1.12, tierCost: 6400,
+    joke: '粗了,老了,木牌上写着"请勿攀爬"。',
     branches: [
-      { name: '密植', joke: '树挨着树,谁也别想偷懒。', effect: { produce: 1.3 } },
-      { name: '铁砂掌', joke: '手劲大了,一摇掉得满地都是。树表示压力很大。', effect: { shake: 2.5, fw: 1.2 } },
+      { name: '密植', joke: '枝多果小,挤挤挨挨,谁也别想偷懒。', effect: { produce: 1.3 } },
+      { name: '粗壮', joke: '枝少果大,一摇就掉个大的。树表示压力很大。', effect: { shake: 2.5, fw: 1.2 } },
     ],
   },
   {
-    name: '果山', unit: '座果山', rate: 170, baseCost: 60000, growth: 1.12, tierCost: 60000,
-    joke: '整座山头都是苹果树。山表示:我是山,不是果园。',
+    name: '巨树', unit: '棵巨树', rate: 170, baseCost: 60000, growth: 1.12, tierCost: 60000,
+    joke: '软梯挂下来,树屋亮着灯。老徐已经上去了。',
     branches: [
-      { name: '梯田', joke: '山坡分层种,连云都分到一块地。', effect: { produce: 1.3 } },
-      { name: '老徐的徒弟', joke: '老徐收了徒弟,徒弟也收了徒弟。摇得更勤了。', effect: { auto: 2, produce: 1.05 } },
+      { name: '密植', joke: '树屋住满了,枝也长满了,果子小但是多。', effect: { produce: 1.3 } },
+      { name: '粗壮', joke: '枝少,果大,老徐在树屋里也摇得更勤了。', effect: { auto: 2, produce: 1.05 } },
     ],
   },
   {
-    name: '果城', unit: '座果城', rate: 1700, baseCost: 5000000, growth: 1.12, tierCost: 5000000,
-    joke: '城里没有人,只有苹果和写字楼。',
+    name: '云树', unit: '棵云树', rate: 1700, baseCost: 5000000, growth: 1.12, tierCost: 5000000,
+    joke: '树冠进了云里。吊篮缆绳一晃一晃,云表示:别蹭我。',
     branches: [
-      { name: '苹果大厦', joke: '一百层,每层一个苹果,电梯里全是果香。', effect: { value: 1.4, produce: 0.9 } },
-      { name: '垂直农场', joke: '苹果不用晒太阳了,有灯。电费不在账上。', effect: { produce: 1.35 } },
+      { name: '密植', joke: '云里全是枝,苹果多得像下雨。', effect: { produce: 1.35 } },
+      { name: '粗壮', joke: '云里只有几根粗枝,每个苹果都跟云一样大。', effect: { value: 1.4, produce: 0.9 } },
     ],
   },
   {
-    name: '果星', unit: '颗果星', rate: 6800, baseCost: 61000000, growth: 1.12, tierCost: 61000000,
-    joke: '一整颗星球只种苹果。外星人路过,表示看不懂。',
+    name: '星树', unit: '棵星树', rate: 20400, baseCost: 1000000000, growth: 1.12, tierCost: 1000000000,
+    joke: '树顶挂着星星彩灯,苹果夜里自己发光。',
     branches: [
-      { name: '自转摇柄', joke: '整颗星球在替你摇。你可以歇会儿。', effect: { floor: 0.3, produce: 1.1 } },
-      { name: '引力井', joke: '引力把苹果吸在一起,整整齐齐。', effect: { stock: 3, produce: 1.2 } },
-    ],
-  },
-  {
-    name: '苹果之门', unit: '道门', rate: 20400, baseCost: 1000000000, growth: 1.12, tierCost: 1000000000,
-    joke: '推开门,里面还是苹果。再推开一道,还是。',
-    branches: [
-      { name: '双生门', joke: '一个苹果进去,两个出来。海关没发现。', effect: { produce: 1.5 } },
-      { name: '苹果税', joke: '每个苹果过门都要交"路费"。苹果自己认的。', effect: { value: 1.6 } },
+      { name: '密植', joke: '满树彩灯,果多光多,电费算星星的。', effect: { floor: 0.3, produce: 1.25 } },
+      { name: '粗壮', joke: '几个大果各占一颗星,谁也不让谁。', effect: { value: 1.6, stock: 3 } },
     ],
   },
 ]);
+
+/** 产出档 id(树 5 档原地进化,与 src/art/nature 对应) */
+export const SOURCE_IDS = ['sapling', 'old', 'giant', 'cloud', 'star'] as const;
+export type SourceId = (typeof SOURCE_IDS)[number];
+/** 产出分支 id:branch 0 = 密植(枝多果小),1 = 粗壮(枝少果大);美术变体 = `${SourceId}-${dense|thick}` */
+export const SOURCE_BRANCH_IDS = ['dense', 'thick'] as const;
 
 // ───────────────────────── 运输线 ─────────────────────────
 export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
@@ -229,19 +215,11 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
     ],
   },
   {
-    name: '蹦床', unit: '张蹦床', cap: 600, trip: 6.5, baseCost: 160000, growth: 1.12, tierCost: 180000,
-    joke: '一蹦老远。落地总少一两个苹果,没人问去哪了。',
-    branches: [
-      { name: '高弹网', joke: '弹得又高又远,有的直接弹进了邻居家。', effect: { time: 0.7, cap: 0.9 } },
-      { name: '兜底网', joke: '底下兜了张网,稳了,就是没那么高。', effect: { cap: 1.4, time: 1.1 } },
-    ],
-  },
-  {
     name: '卡车', unit: '辆卡车', cap: 2261, trip: 7, baseCost: 490000, growth: 1.12, tierCost: 540000,
     joke: '突突突。喇叭比苹果先到。',
     branches: [
-      { name: '重卡', joke: '轮胎比你高两个头,喇叭是首交响乐。', effect: { cap: 1.5, stock: 1.5 } },
-      { name: '高速通行证', joke: '过路费苹果出,收费站很满意。', effect: { time: 0.72 } },
+      { name: '重卡', joke: '大板车壮汉,轮胎比你高两个头。', effect: { cap: 1.5, stock: 1.5 } },
+      { name: '小皮卡', joke: '小皮卡骑手,过路费苹果出,收费站很满意。', effect: { time: 0.72 } },
     ],
   },
   {
@@ -278,36 +256,26 @@ export const ROUTE_TIERS: RouteTierDef[] = withPair<RouteTierDef>([
   },
 ]);
 
-// ───────────────────────── 道具(关卡) ─────────────────────────
-export const GATE_SLOTS = 3;
-/** 红绳放大相邻道具效果用的指数 */
-export const RED_EXP = 1.3;
-
-export const GATES: GateDef[] = [
-  { id: 'wash', name: '洗果', joke: '洗了一遍,看着确实贵了点。', unlockAt: 0, effect: { value: 1.3 } },
-  { id: 'wax', name: '打蜡', joke: '亮得能照镜子。就是得等蜡干。', unlockAt: 0, effect: { value: 1.5, time: 1.2 } },
-  { id: 'rush', name: '加急', joke: '快递小哥:今天的今天送。苹果:能不能慢点。', unlockAt: 0, effect: { time: 0.7, value: 0.95 } },
-  { id: 'pack', name: '包装', joke: '一个苹果一层泡沫网,排面拉满。', unlockAt: 2, effect: { cap: 1.35 } },
-  { id: 'juice', name: '榨汁', joke: '一个苹果榨两杯,另一杯是兑水的。', unlockAt: 3, effect: { produce: 2.4, value: 0.65 } },
-  { id: 'cold', name: '冷链', joke: '凉快,而且堆场能多放五倍。苹果不闹了,摇劲也不容易散。', unlockAt: 4, effect: { stock: 5, floor: 0.2, produce: 1.2 } },
-  { id: 'red', name: '红绳', joke: '邻居有福了。自己没什么用,就是好看。', unlockAt: 5, effect: {}, adjacent: RED_EXP },
-  { id: 'belt', name: '流水线', joke: '排好队,苹果们。别挤,别插队。', unlockAt: 6, effect: { produce: 1.45, time: 0.85 } },
-  { id: 'glove', name: '摇树手套', joke: '防滑,防刺,防手疼。就是看着有点傻。', unlockAt: 1, effect: { shake: 1.5, fw: 1.1 } },
-  { id: 'chant', name: '号子', joke: '嘿哟嘿哟,一起摇。邻居以为村里在办节。', unlockAt: 3, effect: { combo: 2, shake: 1.2 } },
-  { id: 'brand', name: '品牌', joke: '贴一个小标,价格翻一倍,苹果没变。', unlockAt: 7, effect: { value: 2.4, cap: 0.85 } },
-];
-
-export const gateDef = (id: GateId): GateDef => GATES.find((g) => g.id === id)!;
-
-/** 每条线的档数:产出 6 档,运输 9 档(挑扁担工/蹦床/直升机是 v5 加的中间档) */
+/** 每条线的档数:产出 5 档(树原地进化),运输 8 档 */
 export const TIER_COUNTS: Record<Line, number> = { source: SOURCE_TIERS.length, route: ROUTE_TIERS.length };
 export const maxTier = (line: Line): number => TIER_COUNTS[line] - 1;
-/** 运输档 → 旧 6 档"时代"刻度(basket0 cart1 truck2 ship3 plane4 portal5),
- *  era / 道具解锁 / 新闻时代 / sys 的 era 一律用 source.tier + ROUTE_ERA[route.tier],不随新增中间档漂移。 */
-export const ROUTE_ERA: readonly number[] = [0, 0, 1, 1, 2, 3, 3, 4, 5];
+/** 运输档 → "时代"刻度(basket0 cart1 truck2 ship3 plane4 portal5),
+ *  era / 新闻时代 / sys 的 era 一律用 source.tier + ROUTE_ERA[route.tier]。era 范围 0..9。 */
+export const ROUTE_ERA: readonly number[] = [0, 0, 1, 2, 3, 3, 4, 5];
 /** 运输档 id(与 src/art/things 的运输档对应) */
-export const ROUTE_IDS = ['basket', 'porter', 'cart', 'trampoline', 'truck', 'ship', 'helicopter', 'plane', 'portal'] as const;
+export const ROUTE_IDS = ['basket', 'porter', 'cart', 'truck', 'ship', 'helicopter', 'plane', 'portal'] as const;
 export type RouteId = (typeof ROUTE_IDS)[number];
+/** 运输分支美术变体 id:ROUTE_VARIANTS[routeId][branch](basket 无分支) */
+export const ROUTE_VARIANTS: Record<RouteId, readonly [string, string] | null> = {
+  basket: null,
+  porter: ['broad-pole', 'quick-step'],
+  cart: ['heavy-cart', 'light-wheel'],
+  truck: ['heavy-truck', 'pickup'],
+  ship: ['container', 'speedboat'],
+  helicopter: ['basket-lift', 'twin-rotor'],
+  plane: ['cargo', 'supersonic'],
+  portal: ['wide', 'zero-lag'],
+};
 /** 每条线每档最多画多少辆车/个单位(多的合并成"车队",权重 > 1) */
 export const MAX_CONVOYS = 24;
 
@@ -326,9 +294,4 @@ export function describeEffect(e: Effect): string {
   if (e.auto) parts.push(`老徐摇速 ${x(e.auto)}`);
   if (e.combo) parts.push(`连摇加成 ${x(e.combo)}`);
   return parts.join(' · ');
-}
-
-export function describeGate(g: GateDef): string {
-  const d = describeEffect(g.effect);
-  return g.adjacent ? `相邻道具效果放大(指数 ${g.adjacent})` : d;
 }

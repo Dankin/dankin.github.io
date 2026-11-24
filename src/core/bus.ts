@@ -8,8 +8,8 @@ export type Ev =
   | { t: 'shake'; combo: number; strength: number }
   /** 送达数变化(app 每 0.25 秒按差值发一次;n>0)。total = 累计送出 */
   | { t: 'delivered'; n: number; total: number }
-  /** 花苹果买东西。what: unit=+1 单位,expand=扩建,helper=雇老徐,gate=放关卡道具(cost=0)。cost 为扣掉的"手上苹果"(coins) */
-  | { t: 'buy'; line: LineId | null; what: 'unit' | 'expand' | 'helper' | 'gate'; cost: number }
+  /** 花苹果买东西。what: unit=+1 单位,expand=扩建,helper=雇老徐。cost 为扣掉的"手上苹果"(coins) */
+  | { t: 'buy'; line: LineId | null; what: 'unit' | 'expand' | 'helper' ; cost: number }
   /** 升档(含分支选择)。tier = 升到的新档 */
   | { t: 'tier'; line: LineId; tier: number; branch: 0 | 1 }
   /** 事件(小鸟/牛顿/流星)。appear=出现,hit=被点中领了奖,miss=没点就走了 */

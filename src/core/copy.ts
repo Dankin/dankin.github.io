@@ -1,6 +1,5 @@
 // 文案:提示条、升档 toast、事件、离线、封存。名字和分支笑话在 content.ts。
 import type { EventKind } from './events.ts';
-import type { GateId } from './content.ts';
 
 /** 升档瞬间的一句话(索引 = 新档 1..5;[0] 不用) */
 export const ERA_TOAST = {
@@ -32,7 +31,6 @@ export const ERA_SWITCH_TOAST: readonly string[] = [
   '那扇门,你从传送门送苹果进去。里面的人说谢谢,没说收到多少。',
 ];
 
-export const GATE_UNLOCK_TOAST = (name: string): string => `新道具:${name}。槽里换一换,试试看。`;
 
 /** 产出追不上运力 / 运力追不上产出时的一句话提示 */
 export const BOTTLENECK_TIP = {
@@ -105,4 +103,3 @@ export const SEALED = ['树下多了一个盒子。', '盒子上写着:圣诞节
 
 /** 道具槽空着时的提示 */
 export const EMPTY_SLOT_TIP = '空槽。放一个道具进去,什么都不做就是浪费。';
-export type { GateId };

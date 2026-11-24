@@ -1,7 +1,7 @@
 import { SAVE_BAK_KEY, SAVE_KEY, SAVE_VERSION } from './constants.ts';
 import { HELPER, helperOldTotal } from './content.ts';
 import { newState, PIN_SLOTS, type State } from './state.ts';
-import { migrateRouteTiers } from './sys/migrate.ts';
+import { migrateRouteTiers, migrateV6Redesign } from './sys/migrate.ts';
 import { newSys, normalizeSys } from './sys/state.ts';
 
 /** 只用到这三个方法,便于测试时传入内存实现 */
@@ -45,6 +45,9 @@ migrations[5] = (s) => {
   const { helpers: _drop, ...rest } = s;
   return { ...rest, helperLevel: lv, helperAct: 1, coins: (Number(s.coins) || 0) + Math.max(0, refund) };
 };
+
+/** v6 → v7(v6 重设计):产出线 6→5 档、运输线 9→8 档(蹦床删除)、删槽位。见 sys/migrate.ts。 */
+migrations[6] = (s) => migrateV6Redesign(s);
 
 /** 迁移前备份的 key:每个旧版本一份,不覆盖已有的 */
 export const migrationBackupKey = (fromVersion: number): string => `${SAVE_KEY}.v${fromVersion}.bak`;
@@ -144,8 +147,6 @@ function fillDefaults(s: State, now: number): State {
     helperAct: Math.min(1, Math.max(0, num(legacy.helperAct, 1))),
     source: line(s.source, d.source),
     route: line(s.route, d.route),
-    gates: d.gates.map((_, i) => s.gates?.[i] ?? null),
-    gatesUnlocked: Array.isArray(s.gatesUnlocked) ? s.gatesUnlocked : d.gatesUnlocked,
     vehicles: Array.isArray(s.vehicles) && s.vehicles.length ? s.vehicles : d.vehicles,
     tierTimes: { source: s.tierTimes?.source ?? [], route: s.tierTimes?.route ?? [] },
     settings: { ...d.settings, ...s.settings },

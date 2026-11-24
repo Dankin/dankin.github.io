@@ -33,8 +33,8 @@ export function trackMilestone(ns: NewsState, progress: number, playSec: number)
   }
 }
 
-/** route 档下标 → 升档新闻标签(writer: tier-porter / tier-trampoline / tier-helicopter) */
-const ROUTE_TIER_TAG: Record<number, string> = { 1: 'tier-porter', 3: 'tier-trampoline', 6: 'tier-helicopter' };
+/** route 档下标 → 升档新闻标签(writer: tier-porter / tier-helicopter) */
+const ROUTE_TIER_TAG: Record<number, string> = { 1: 'tier-porter', 5: 'tier-helicopter' };
 
 /** milestone 标签窗口(秒) */
 export const MILESTONE_WINDOW_S = 60;
