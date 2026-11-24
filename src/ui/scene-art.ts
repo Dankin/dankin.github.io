@@ -6,7 +6,6 @@ import { Fireworks, Flights, appleHeap, drawCharacter, drawDock, drawGiftBox, dr
 import type { CharKind } from '../art/things/index.ts';
 import { fmt } from './format.ts';
 import { APPLE, P, TAU, apple as penApple, circ, clamp, ease, lerp, setUnit, sparkle, text } from './pen.ts';
-import { drawGate, gateBadge } from './route.ts';
 import type { EventKind, Hit, WorldView } from './orchard.ts';
 
 type C = CanvasRenderingContext2D;
@@ -33,10 +32,9 @@ interface Geo {
   treeX: number; treeS: number; bldX: number; bldS: number;
   pileX: number; pileY: number; boxX: number; boxY: number;
   r0: number; r1: number; dockX: number; dockS: number; vs: number; kc: number; gs: number;
-  gateU: number[];
 }
 
-const EMPTY_GEO: Geo = { land: true, U: 1, gyA: 200, gyR: 215, treeX: 150, treeS: 0.7, bldX: 380, bldS: 0.5, pileX: 250, pileY: 205, boxX: 50, boxY: 210, r0: 300, r1: 650, dockX: 740, dockS: 1.1, vs: 1.1, kc: 1.1, gs: 3.4, gateU: [0.28, 0.52, 0.76] };
+const EMPTY_GEO: Geo = { land: true, U: 1, gyA: 200, gyR: 215, treeX: 150, treeS: 0.7, bldX: 380, bldS: 0.5, pileX: 250, pileY: 205, boxX: 50, boxY: 210, r0: 300, r1: 650, dockX: 740, dockS: 1.1, vs: 1.1, kc: 1.1, gs: 3.4 };
 
 export class ArtScene {
   w = 0; h = 0; dpr = 1; insL = 0; insR = 0;
@@ -57,7 +55,6 @@ export class ArtScene {
   private ev: Ev | null = null;
   private fwV = 0; private pileV = 0; private progT = 0; private progV = 0; private progFull = false;
   private giftPop = 0; private srcPop = 0; private rtPop = 0; private dockPop = 0; private emitAcc = 0;
-  private gatePop = [0, 0, 0]; private gateFlash = [0, 0, 0];
   private crates = 0; private crateT = 0; private xuPose = 0; private firstW = true;
   private sprFly = appleSprite('fuji', 'fresh', 32);
   private bgBuf: HTMLCanvasElement | null = null;
@@ -178,13 +175,6 @@ export class ArtScene {
         this.rtPop = 0.7;
         this.ring(g.r0, g.gyR - 14 * g.vs, false);
       }
-      for (let i = 0; i < 3; i++) {
-        if (wv.gates[i] !== o.gates[i]) {
-          this.gatePop[i] = 1;
-          const q = this.at(g.gateU[i]);
-          this.ring(q.x, q.y - 22 * g.U, wv.gates[i] !== null);
-        }
-      }
     }
     this.wv = wv;
     this.syncVehs();
@@ -273,16 +263,6 @@ export class ArtScene {
     for (let i = 0; i < 8; i++) this.part(e.x, e.y, (Math.random() - 0.5) * 120, -50 - Math.random() * 50, 0.7, 3, 1, true);
     e.cb(true);
   }
-  gateAt(x: number, y: number): number {
-    const g = this.g;
-    const { r, by } = gateBadge(22 / g.gs);
-    const rp = r * g.gs;
-    for (let i = 0; i < Math.min(3, this.wv.gatesUnlocked); i++) {
-      const q = this.at(g.gateU[i]);
-      if (Math.abs(x - q.x) < rp + 3 && y > q.y + by * g.gs - rp - 3 && y < q.y + 8) return i;
-    }
-    return -1;
-  }
   private inTree(x: number, y: number): boolean {
     const g = this.g;
     const c = this.crown();
@@ -290,7 +270,6 @@ export class ArtScene {
   }
   hit(x: number, y: number): Hit {
     if (this.ev && this.evHit(x, y)) return 'event';
-    if (this.gateAt(x, y) >= 0) return 'gate';
     if (this.inTree(x, y)) return 'source';
     const g = this.g;
     const dw = DOCK_W[DOCK_OF[this.wv.rtTier] ?? 0] * g.dockS;
@@ -361,13 +340,9 @@ export class ArtScene {
     return null;
   }
 
-  worldPos(): { src: [number, number]; dock: [number, number]; gates: Array<[number, number]> } {
+  worldPos(): { src: [number, number]; dock: [number, number] } {
     const g = this.g;
-    return { src: [g.treeX, g.gyA], dock: [g.dockX, g.gyR], gates: g.gateU.map((u) => { const q = this.at(u); return [q.x, q.y] as [number, number]; }) };
-  }
-  gateScreen(slot: number): { x: number; y: number } {
-    const q = this.at(this.g.gateU[slot] ?? 0.5);
-    return { x: q.x, y: q.y - 34 * this.g.U };
+    return { src: [g.treeX, g.gyA], dock: [g.dockX, g.gyR] };
   }
 
   /* ───────── 状态同步 ───────── */
@@ -438,7 +413,6 @@ export class ArtScene {
     this.progV += (this.progT - this.progV) * Math.min(1, dt * 3);
     this.pileV += (clamp(wv.stock01, 0, 1) * 22 - this.pileV) * Math.min(1, dt * 4);
     for (const k of ['giftPop', 'srcPop', 'rtPop', 'dockPop'] as const) this[k] = Math.max(0, this[k] - dt * 2.2);
-    for (let i = 0; i < 3; i++) { this.gatePop[i] = Math.max(0, this.gatePop[i] - dt * 2.2); this.gateFlash[i] = Math.max(0, this.gateFlash[i] - dt * 2); }
     this.crateT -= dt;
     if (this.crateT <= 0) { this.crateT = 1.1; if (this.crates > 0) this.crates--; }
 
@@ -484,7 +458,6 @@ export class ArtScene {
       if (v.full && kind >= 0 && !STILL.has(kind) && v.ph < 0.44) {
         const u0 = ease(p0 / 0.44);
         const u1 = ease(v.ph / 0.44);
-        for (let k = 0; k < 3; k++) if (u0 < g.gateU[k] && u1 >= g.gateU[k]) this.gateFlash[k] = 1;
       }
     }
 
@@ -594,7 +567,6 @@ export class ArtScene {
     else if (wv.stock01 < 0.03 && wv.carry > wv.produce * 1.6) text(c, '货不够', g.pileX, g.pileY - 30 * g.U, 11 * Math.max(1, g.U), P.dim);
 
     // 关卡
-    this.drawGates(c);
     // 码头
     this.drawDockAndVehicles(c);
     // 烂果
@@ -656,32 +628,6 @@ export class ArtScene {
     if (n <= 0) return;
     const r = 5.4 * g.U;
     appleHeap(c, g.pileX, g.pileY, n, r, 78 * g.U, 3);
-  }
-
-  private drawGates(c: C): void {
-    const g = this.g;
-    const wv = this.wv;
-    const dpr = this.dpr;
-    for (let i = 0; i < 3; i++) {
-      const q = this.at(g.gateU[i]);
-      const locked = i >= wv.gatesUnlocked;
-      const s = g.gs * (1 + 0.1 * Math.sin(this.gatePop[i] * Math.PI));
-      c.save();
-      c.setTransform(dpr * s, 0, 0, dpr * s, dpr * q.x, dpr * q.y);
-      setUnit(s);
-      if (locked) {
-        const r = 17 / s;
-        c.globalAlpha = 0.35;
-        c.setLineDash([2, 1.8]);
-        circ(c, 0, -(r + 5), r, null, 0.7);
-        c.setLineDash([]);
-        c.globalAlpha = 1;
-      } else {
-        drawGate(c, wv.gates[i], this.gateFlash[i], this.t, wv.gates.filter((x) => x).length === 0 && i === 0, 22 / s, wv.gateCan ? wv.gateCan[i] !== false : true);
-      }
-      c.restore();
-    }
-    setUnit(1);
   }
 
   private drawDockAndVehicles(c: C): void {

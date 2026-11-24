@@ -1,14 +1,14 @@
 /** v4 场景引擎:左 生产 → 中 路线(3 个关卡) → 右 码头。一块画布,一条连续的线。 */
 import { APPLE, GOLDC, P, TAU, apple, circ, clamp, ease, lerp, pen, poly, rect, rs, seg, setTheme, setUnit, sparkle, sv, text } from './pen.ts';
 import { EMIT, PILE_MAX, SRC_NAMES, drawGift, drawPile, drawSource, drawShakeMeter } from './sources.ts';
-import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawGate, drawPortalRing, drawVehicle, gateBadge } from './route.ts';
+import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawPortalRing, drawVehicle } from './route.ts';
 import { fmt } from './format.ts';
 import { ArtScene } from './scene-art.ts';
 
 type C = CanvasRenderingContext2D;
 
 export type EventKind = 'bird' | 'newton' | 'meteor';
-export type Hit = 'event' | 'gate' | 'source' | 'dock' | 'none';
+export type Hit = 'event' | 'source' | 'dock' | 'none';
 
 /** 核心状态 → 画面的薄映射。所有字段都可选地按默认值处理,由 main.ts 在状态变化时调用 setWorld。 */
 export interface WorldView {
@@ -20,9 +20,6 @@ export interface WorldView {
   rtTier: number;
   rtVehicles: number;
   rtBranch: number;
-  /** 3 个关卡槽:关卡 id 或 null;gatesUnlocked 已解锁的槽数 0..3 */
-  gates: Array<string | null>;
-  gatesUnlocked: number;
   /** 库存占上限比 0..1 */
   stock01: number;
   /** 每秒产出 / 每秒运力(任意同单位,只用比值与对数) */
@@ -34,7 +31,6 @@ export interface WorldView {
   /** 每趟运送苹果数(显示 +N 用,可选) */
   perTrip?: number;
   /** 各槽当前是否买得起(可选;缺省视为买得起 → 圈会呼吸) */
-  gateCan?: boolean[];
   /** —— v5 新美术字段(全部可选) —— */
   /** 世界时钟 0..24:驱动天空昼夜;缺省按 dark 取 23/12 */
   hour?: number;
@@ -63,8 +59,6 @@ export const EMPTY_WORLD: WorldView = {
   rtTier: 0,
   rtVehicles: 1,
   rtBranch: -1,
-  gates: [null, null, null],
-  gatesUnlocked: 0,
   stock01: 0,
   produce: 1,
   carry: 1,
@@ -74,7 +68,6 @@ export const EMPTY_WORLD: WorldView = {
   rot: 0,
 };
 
-const GATE_NAME: Record<string, string> = { wash: '洗果', wax: '打蜡', juice: '榨汁', pack: '包装', cold: '冷链', rush: '加急', string: '红绳', belt: '传送带', glove: '手套', chant: '号子', brand: '吊牌' };
 /** 同屏最多画几辆(其余以 ×N 表示) */
 /** rtTier 0..8(9 档运输);旧画法只有 0..5 档,>5 时按 5 画 */
 const VIS_MAX = [3, 3, 3, 3, 3, 10, 3, 3, 3];
@@ -147,7 +140,6 @@ interface Lay {
   total: number;
   dockX: number;
   dockY: number;
-  gateU: number[];
   /** 礼物盒位置(世界坐标,底部中心) */
   boxX: number;
   boxY: number;
@@ -159,7 +151,6 @@ export class Orchard {
   /** 回调:main.ts 赋值 */
   /** 点树/生产区(或空格)摇一摇;strength 恒为 1(预留给手机摇晃) */
   onShake: (strength?: number) => void = () => {};
-  onGate: (slot: number) => void = () => {};
   reducedMotion = false;
 
   private cv: HTMLCanvasElement;
@@ -197,8 +188,6 @@ export class Orchard {
   private srcPop = 0;
   private rtPop = 0;
   private dockPop = 0;
-  private gatePop = [0, 0, 0];
-  private gateFlash = [0, 0, 0];
   private crates = 0;
   private emitFlash = 0;
 
@@ -216,7 +205,6 @@ export class Orchard {
   private downY = 0;
   private moved = 0;
   private tapKind = 0; // 0 无 1 事件 2 关卡圈
-  private tapGate = -1;
   private everShook = false;
   private nudgeT = 1.2;
   private insL = 0;
@@ -341,13 +329,6 @@ export class Orchard {
         const q = this.at(0.02);
         this.ring(q.x, q.y - 4, false);
       }
-      for (let i = 0; i < 3; i++) {
-        if (wv.gates[i] !== o.gates[i]) {
-          this.gatePop[i] = 1;
-          const q = this.at(this.lay.gateU[i]);
-          this.ring(q.x, q.y - 14, wv.gates[i] !== null);
-        }
-      }
     }
     this.wv = { ...EMPTY_WORLD, ...wv, rtTier: Math.min(5, wv.rtTier ?? 0), srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
     this.syncVehs();
@@ -429,35 +410,16 @@ export class Orchard {
     const [x, y] = this.toWorld(px, py);
     if (this.ev && this.evHit(x, y)) return 'event';
     const L = this.lay;
-    if (this.gateAt(x, y) >= 0) return 'gate';
     if (Math.abs(x - L.srcX) < 36 * L.ss && y < L.srcY + 4 && y > L.srcY - 52 * L.ss) return 'source';
     if (Math.abs(x - L.dockX) < 22 && y < L.dockY + 4 && y > L.dockY - 30) return 'dock';
     return 'none';
   }
 
-  /** 命中哪个关卡圈(世界坐标)。圈 ≥44px:半径取 max(徽章半径, 23/s)+余量 */
-  private gateAt(x: number, y: number): number {
-    if (this.art) return this.art.gateAt(x, y);
-    const L = this.lay;
-    const { r, by } = gateBadge(22 / L.s);
-    for (let i = 0; i < Math.min(3, this.wv.gatesUnlocked); i++) {
-      const q = this.at(L.gateU[i]);
-      if (Math.abs(x - q.x) < r + 2 && y > q.y + by - r - 2 && y < q.y + 4) return i;
-    }
-    return -1;
-  }
-
   /** 世界坐标(用于 float 位置) */
-  worldPos(): { src: [number, number]; dock: [number, number]; gates: Array<[number, number]> } {
+  worldPos(): { src: [number, number]; dock: [number, number] } {
     if (this.art) return this.art.worldPos();
     const L = this.lay;
-    return { src: [L.srcX, L.srcY], dock: [L.dockX, L.dockY], gates: L.gateU.map((u) => { const q = this.at(u); return [q.x, q.y] as [number, number]; }) };
-  }
-  /** 门槛槽的屏幕坐标(CSS px),供 DOM 抽屉定位 */
-  gateScreen(slot: number): { x: number; y: number } {
-    if (this.art) return this.art.gateScreen(slot);
-    const q = this.at(this.lay.gateU[slot]);
-    return { x: q.x * this.lay.s + this.lay.ox, y: (q.y - 12) * this.lay.s + this.lay.oy };
+    return { src: [L.srcX, L.srcY], dock: [L.dockX, L.dockY] };
   }
 
   frame(dtRaw: number): void {
@@ -504,7 +466,6 @@ export class Orchard {
       L.boxX = 12;
       L.boxY = L.srcY;
       L.Hs = Hu;
-      L.gateU = [0.25, 0.5, 0.75];
     } else {
       Wu = 126;
       s = Math.max(1, (w - this.insL - this.insR - mg * 2) / Wu);
@@ -519,7 +480,6 @@ export class Orchard {
       L.dockX = 24;
       L.dockY = gb;
       L.pts = [110, ga, 115, ga, 120, ga + 5, 120, gb - 6, 113, gb, 50, gb];
-      L.gateU = [0.58, 0.72, 0.86];
       L.boxX = 44;
       L.boxY = ga + 24;
       L.Hs = Hu;
@@ -583,13 +543,11 @@ export class Orchard {
     this.lastInput = this.t;
     const [wx, wy] = this.toWorld(x, y);
     const evh = this.art ? this.art.evHit(wx, wy) : !!this.ev && this.evHit(wx, wy);
-    const g = evh ? -1 : this.gateAt(wx, wy);
-    if (evh || g >= 0) {
+    if (evh) {
       // 事件/关卡圈:抬起时才生效(只跟踪一根手指)
       if (this.pid !== -1) return;
       this.pid = e.pointerId;
-      this.tapKind = evh ? 1 : 2;
-      this.tapGate = g;
+      this.tapKind = 1;
       try {
         this.cv.setPointerCapture(e.pointerId);
       } catch {
@@ -622,7 +580,6 @@ export class Orchard {
     if (kind === 1 && this.art) {
       if (this.art.evHit(wx, wy)) this.art.catchEv();
     } else if (kind === 1 && this.ev && this.evHit(wx, wy)) this.catchEv(wx, wy);
-    else if (kind === 2 && this.gateAt(wx, wy) === this.tapGate && this.tapGate >= 0) this.onGate(this.tapGate);
   }
 
   /** 摇一下:树轻晃 + 回调(苹果由 main 调 poke 弹出) */
@@ -700,10 +657,6 @@ export class Orchard {
     this.rtPop = Math.max(0, this.rtPop - dt * 1.4);
     this.dockPop = Math.max(0, this.dockPop - dt * 2.2);
     this.emitFlash = Math.max(0, this.emitFlash - dt * 3);
-    for (let i = 0; i < 3; i++) {
-      this.gatePop[i] = Math.max(0, this.gatePop[i] - dt * 1.4);
-      this.gateFlash[i] = Math.max(0, this.gateFlash[i] - dt * 2.2);
-    }
     this.fwV += (wv.shake - this.fwV) * Math.min(1, dt * 6);
     this.progV += (this.progT - this.progV) * Math.min(1, dt * 2.5);
     if (this.giftPop > 0) this.giftPop = Math.max(0, this.giftPop - dt * 1.6);
@@ -747,11 +700,6 @@ export class Orchard {
         }
       } else if (v.state === 1) {
         v.p += dt / (trip * 0.46);
-        // 经过关卡 → 闪光
-        for (let i = 0; i < 3; i++) {
-          const gu = L.gateU[i];
-          if (wv.gates[i] && v.full && v.p * 0.46 > gu * 0.46 - dt / trip && v.p * 0.46 <= gu * 0.46 + dt / trip + 1e-4 && v.p >= gu * 0.9) this.gateFlash[i] = 1;
-        }
         if (v.p >= 1) {
           v.state = 2;
           v.p = 0;
@@ -1070,23 +1018,6 @@ export class Orchard {
     rs(c);
     // 等待装货的"车队列":第一辆为实车,其余为点
     this.drawQueue(c);
-
-    // 关卡
-    for (let i = 0; i < 3; i++) {
-      const q = this.at(L.gateU[i]);
-      const locked = i >= wv.gatesUnlocked;
-      sv(c, q.x, q.y, 1 + 0.1 * Math.sin(this.gatePop[i] * Math.PI));
-      if (locked) {
-        // 未解锁:34px 的细虚线圈,α0.35,无台座
-        const r = 17 / L.s;
-        c.globalAlpha = 0.35;
-        c.setLineDash([2, 1.8]);
-        circ(c, 0, -(r + 5), r, null, 0.7);
-        c.setLineDash([]);
-        c.globalAlpha = 1;
-      } else drawGate(c, wv.gates[i], this.gateFlash[i], t, wv.gates.filter((g) => g).length === 0 && i === 0, 22 / L.s, wv.gateCan ? wv.gateCan[i] !== false : true);
-      rs(c);
-    }
 
     // 车辆
     this.drawVehicles(c);
