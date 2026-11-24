@@ -515,3 +515,35 @@ export const EGG_BY_ID: Record<string, Egg> = Object.fromEntries(EGGS.map((e) =>
 
 /** 点击后需要附带声明的彩蛋 id */
 export const DISCLAIMER_EGG_IDS: readonly string[] = ['garage', 'turtleneck', 'phone-pun', 'title-7'];
+/** 同上,按 systems 的 id */
+export const DISCLAIMER_SYS_EGG_IDS: readonly string[] = ['jobs', 'title7'];
+
+// ───────────── 与 src/core/sys/eggs.ts 对齐的文案表 ─────────────
+// systems 的彩蛋 id(31 个)与本文件 id 不完全同名,下面是映射。EGG_TEXT 按 systems 的 id 给出
+// {title 图鉴名, text 触发文案, hint 未发现灰字}。reward 以 systems 的实现为准,这里的 reward 仅作参考。
+export const SYS_EGG_ID_MAP: Record<string, string> = {
+  eve: 'eve', newton: 'newton', snowwhite: 'snow-white', paris: 'paris', bigapple: 'big-apple',
+  daily: 'daily', tell: 'tell', snake: 'snake', adam: 'adam', pearl: 'apple-of-eye', pie: 'pie',
+  johnny: 'johnny', jobs: 'turtleneck', einstein: 'einstein', kimura: 'kimura', xmaseve: 'xmas-eve',
+  moneytree: 'money-tree', am3: 'three-am', sleeper: 'laoxu-sleep', title7: 'title-7',
+  triple: 'triple-event', core82: 'core-82', seedcore: 'core', vinegar: 'vinegar', jam: 'jam',
+  granny: 'green', orange: 'orange', newsfront: 'daily-news', caterpillar: 'caterpillar',
+  clock: 'clock', stocking: 'xmas-sock',
+};
+
+export interface EggText { title: string; text: string; hint: string }
+
+export const EGG_TEXT: Record<string, EggText> = Object.fromEntries(
+  Object.entries(SYS_EGG_ID_MAP).map(([sysId, myId]) => {
+    const e = EGG_BY_ID[myId];
+    // jobs = 车库 + 高领剪影合并:一句话带两层梗,声明保留
+    const text = sysId === 'jobs' ? '咬一口才完整。保持饥饿,保持愚蠢。(与苹果公司无关)' : e.text;
+    const title = sysId === 'jobs' ? '高领先生' : e.name;
+    return [sysId, { title, text, hint: EGG_TRIGGER_HINTS[myId] ?? '' }];
+  }),
+);
+
+/** systems 暂未接入的额外彩蛋(本文件有文案和触发描述,要不要做由 lead 定) */
+export const EXTRA_EGG_IDS: string[] = EGGS.map((e) => e.id).filter(
+  (id) => !Object.values(SYS_EGG_ID_MAP).includes(id),
+);
