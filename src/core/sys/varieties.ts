@@ -65,9 +65,55 @@ export interface AppleCtx {
   stateMul?: Partial<Record<AppleState, number>>;
 }
 
+/**
+ * 品种特性(v6):只是落地时的视觉/音效 tag,无点击压力(不要求抓虫蛀、避毒)。
+ * 数值影响只有 VarietyDef.value(已归一的价值倍率)。UI 按 trait 查 TRAIT_FX 得到动画参数。
+ */
+export const TRAITS = ['glow', 'fastFall', 'bounce', 'quake', 'rollAway', 'smoke'] as const;
+export type AppleTrait = (typeof TRAITS)[number];
+export const KIND_TRAIT: Partial<Record<AppleKind, AppleTrait>> = {
+  golden: 'glow', granny: 'fastFall', redStreak: 'bounce', giant: 'quake', worm: 'rollAway', poison: 'smoke',
+};
+export interface TraitFx {
+  /** 下落时间倍率(<1 更快) */
+  fallMul: number;
+  /** 落地弹跳次数 */
+  bounces: number;
+  /** 落地震屏幅度(0..1,0 = 不震) */
+  quake: number;
+  /** 落地后滚走的像素(0 = 不滚) */
+  rollPx: number;
+  /** 发光强度(0..1) */
+  glow: number;
+  /** 落地灰烟(0/1) */
+  smoke: number;
+  /** 专属音效 id(audio 用) */
+  sfx: string;
+}
+const FX0: TraitFx = { fallMul: 1, bounces: 0, quake: 0, rollPx: 0, glow: 0, smoke: 0, sfx: 'apple-land' };
+export const TRAIT_FX: Record<AppleTrait, TraitFx> = {
+  glow: { ...FX0, glow: 1, sfx: 'apple-golden' },
+  fastFall: { ...FX0, fallMul: 0.6, sfx: 'apple-fast' },
+  bounce: { ...FX0, bounces: 2, sfx: 'apple-bounce' },
+  quake: { ...FX0, quake: 0.6, sfx: 'apple-quake' },
+  rollAway: { ...FX0, rollPx: 60, sfx: 'apple-roll' },
+  smoke: { ...FX0, smoke: 1, sfx: 'apple-poof' },
+};
+/** 品种(含虫蛀状态)的特性;没有特性返回 null */
+export function traitOf(kind: AppleKind, state: AppleState = 'fresh'): AppleTrait | null {
+  return KIND_TRAIT[kind] ?? (state === 'wormy' ? 'rollAway' : null);
+}
+/** UI 一步到位:品种/状态 → 动画参数(无特性给默认落地) */
+export const fxOf = (kind: AppleKind, state: AppleState = 'fresh'): TraitFx => {
+  const k = traitOf(kind, state);
+  return k ? TRAIT_FX[k] : FX0;
+};
+
 export interface Apple {
   kind: AppleKind;
   state: AppleState;
+  /** 品种特性 tag(v6,UI 用);无则 null */
+  trait: AppleTrait | null;
   /** 价值乘数,已归一(情境内期望 = 1) */
   value: number;
   noStock: boolean;
@@ -124,7 +170,7 @@ export function expectedValue(ctx: AppleCtx): number {
 function make(kind: AppleKind, state: AppleState, ctx: AppleCtx): Apple {
   const v = VARIETIES[kind];
   const raw = v.value * APPLE_STATE.mult[state];
-  return { kind, state, value: raw * normScale(ctx), noStock: !!v.noStock };
+  return { kind, state, trait: traitOf(kind, state), value: raw * normScale(ctx), noStock: !!v.noStock };
 }
 
 /** 摇树/自然掉落抽样一个样本苹果 */

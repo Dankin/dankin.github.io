@@ -84,3 +84,19 @@ test('season: four-season price mean = 1, links to worldAt', () => {
   assert.equal(seasonAt(300 * 4 + 10).season, 0);
   assert.ok(seasonAt(300 * 1 + 10).pest > seasonAt(300 * 3 + 10).pest, 'summer bugs > winter bugs');
 });
+
+test('v6 traits: golden glow, granny fastFall, redStreak bounce, giant quake, worm rollAway, poison smoke', async () => {
+  const { traitOf, fxOf, rollApple, TRAITS, TRAIT_FX } = await import('../src/core/sys/varieties.ts');
+  assert.equal(traitOf('golden'), 'glow');
+  assert.equal(traitOf('granny'), 'fastFall');
+  assert.equal(traitOf('redStreak'), 'bounce');
+  assert.equal(traitOf('giant'), 'quake');
+  assert.equal(traitOf('worm', 'wormy'), 'rollAway');
+  assert.equal(traitOf('fuji', 'wormy'), 'rollAway');
+  assert.equal(traitOf('poison'), 'smoke');
+  assert.equal(traitOf('fuji'), null);
+  assert.ok(fxOf('granny').fallMul < 1 && fxOf('redStreak').bounces > 0 && fxOf('giant').quake > 0);
+  assert.equal(fxOf('fuji').sfx, 'apple-land');
+  assert.equal(Object.keys(TRAIT_FX).length, TRAITS.length);
+  assert.equal(rollApple(() => 0.5, { era: 3, force: 'golden' }).trait, 'glow');
+});
