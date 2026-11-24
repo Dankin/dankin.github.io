@@ -22,5 +22,5 @@ export function stageCardTick(): void {
   // 篮子:树脚有苹果、运输线还在最早一档
   if (s.route.tier === 0 && s.stock >= 1 && s.playSec < 900) fire('rt-0', 1000);
   // 终点:第一次有苹果被送到
-  if (s.delivered > 0 && s.playSec >= 6) fire('station', 1000);
+  if (s.delivered > 0 && s.delivered < 3000 && s.playSec >= 6) fire('station', 1000); // 老存档不补弹
 }

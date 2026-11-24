@@ -51,6 +51,7 @@ for (const [vn, w, h] of [['land', 844, 390], ['port', 390, 844]]) {
     await send('Page.navigate', { url: BASE + '?debug=1' + (sc.q || '') });
     await sleep(sc.boot ?? 1200);
     if (sc.js) { const r = await ev(sc.js); if (r !== undefined) console.log(sc.name, vn, 'js→', JSON.stringify(r)); await sleep(sc.wait ?? 1200); }
+    if (sc.clickJs) sc.click = [await ev(sc.clickJs)]; // 点击坐标由页内表达式现算(如小鸟栖枝位置)
     if (sc.click) {
       for (const [x, y] of sc.click) {
         await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
