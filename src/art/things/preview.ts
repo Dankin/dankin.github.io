@@ -1,9 +1,11 @@
 // preview-art-things.html 的入口:分区展示全部 things。URL 参数:?t=秒(冻结时间) &sec=transport,docks,...
 import { drawTransport, TRANSPORT_W } from './transport.ts';
 import { drawDock } from './docks.ts';
-import type { ThingOpt } from './types.ts';
+import { CHAR_KINDS, CHAR_NAMES, drawCharacter } from './characters.ts';
+import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
+const INKC = '#1b1410';
 interface Sec {
   id: string;
   title: string;
@@ -43,6 +45,25 @@ addSection({
     const xs = [48, 130, 235, 345, 460, 575];
     for (let row = 0; row < 2; row++)
       for (let i = 0; i < 6; i++) drawDock(c, i, xs[i], 100 + row * 100, 0.8, { ...o, t, crates: row ? 6 : 0, pulse: (t * 0.5) % 1 });
+  },
+});
+
+addSection({
+  id: 'chars',
+  title: '角色 12 种 × 姿态(idle / shake / catch / cheer / hit)',
+  w: 760,
+  h: 320,
+  draw(c, t, o) {
+    const poses: Pose[] = ['idle', 'shake', 'catch', 'cheer', 'hit'];
+    c.fillStyle = INKC;
+    c.font = '9px sans-serif';
+    for (let r = 0; r < 5; r++) {
+      c.fillText(poses[r], 2, 50 + r * 60);
+      CHAR_KINDS.forEach((k, i) => {
+        drawCharacter(c, k, 70 + i * 56, 60 + r * 60, 1, { ...o, t, pose: poses[r], seed: 3, n: 3, p: (o.unload ?? 0) > 0 ? o.unload : undefined, bite: r === 4 && k === 'manman' });
+        if (r === 0) c.fillText(CHAR_NAMES[k], 50 + i * 56, 8);
+      });
+    }
   },
 });
 

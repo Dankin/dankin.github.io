@@ -22,6 +22,7 @@ export const F = {
   waterDark: '#a9cbd3',
   leaf: '#9bc65a',
   skin: '#f6dcc0',
+  gold: '#d9a521',
 } as const;
 export const INK = PAL.ink;
 export const TAU = Math.PI * 2;
