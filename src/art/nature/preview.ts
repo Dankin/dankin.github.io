@@ -22,21 +22,28 @@ function apples() {
     });
   });
 }
+const qs0 = new URLSearchParams(location.search);
 const anims: ((t: number, dt: number) => void)[] = [];
 const shakeEl = document.getElementById('shake') as HTMLInputElement, animEl = document.getElementById('anim') as HTMLInputElement;
 function trees() {
-  const d = sec('树 5 档 (256×320) — 拖动 shake / 勾选动画');
-  const [c, x] = mk(5 * 262, 330, '#bfe3f2'); d.appendChild(c);
+  const night = +(qs0.get('night') || 0), bg = night ? '#1d2a4a' : '#bfe3f2', cols = 5, CW = 340, H = 610;
+  const d = sec('树 5 档 × 2 变体(上=密植 v0,下=粗壮 v1) — ?night=1 夜景;shake 滑块/动画');
   const leaves: LeafP[] = [];
-  const draw = (t: number, dt: number) => {
-    x.clearRect(0, 0, c.width, c.height); x.fillStyle = '#bfe3f2'; x.fillRect(0, 0, 5 * 262, 330);
-    const sh = animEl.checked ? Math.abs(Math.sin(t * 0.8)) : +shakeEl.value;
-    for (let i = 0; i < 5; i++) drawTree(x, i * 262 + 131, 312, 1, { tier: (i + 1) as 1, shake: sh, t, seed: 1 });
-    if (sh > 0.5 && Math.random() < 0.3) spawnLeaves(leaves, 4 * 262 + 131, 150, 2, 90);
-    stepLeaves(leaves, dt); drawLeaves(x, leaves);
-    x.fillStyle = '#1b1410'; x.font = '12px sans-serif'; TREE_TIER_NAMES.forEach((n, i) => x.fillText(`${i + 1} ${n}`, i * 262 + 6, 322));
-  };
-  draw(0, 0.016); anims.push(draw);
+  for (let v = 0; v < 2; v++) {
+    const [c, x] = mk(cols * CW, H, bg); d.appendChild(c); d.appendChild(document.createElement('br'));
+    const draw = (t: number, dt: number) => {
+      x.clearRect(0, 0, c.width, c.height); x.fillStyle = bg; x.fillRect(0, 0, cols * CW, H);
+      const sh = animEl.checked ? Math.abs(Math.sin(t * 0.8)) : +shakeEl.value;
+      for (let i = 0; i < cols; i++) {
+        const ox = i * CW + CW / 2;
+        drawTree(x, ox, H - 20, 1, { tier: (i + 1) as 1, variant: v as 0, shake: sh, t, seed: 1, night });
+        if (i === 4 && v === 0) { if (sh > 0.5 && Math.random() < 0.3) spawnLeaves(leaves, ox, H - 200, 2, 90); }
+      }
+      stepLeaves(leaves, dt); drawLeaves(x, leaves);
+      x.fillStyle = night ? '#fff' : '#1b1410'; x.font = '13px sans-serif'; TREE_TIER_NAMES.forEach((n, i) => x.fillText(`${i + 1} ${n} v${v}`, i * CW + 6, H - 4));
+    };
+    draw(0, 0.016); anims.push(draw);
+  }
 }
 function backdrop() {
   const d = sec('背景 白天/黄昏/夜晚 横屏 844×390 + 竖屏 390×844(树5/树3 放置示意)');
@@ -47,7 +54,7 @@ function backdrop() {
     const [c, x] = mk(w, h); wrap.appendChild(c);
     anims.push((t) => {
       drawBackdrop(x, w, h, t, { mode: m, layers: 'back' });
-      drawTree(x, w * 0.5, h * 0.9, h > w ? 0.9 : 0.8, { tier: 4, seed: 2 });
+      drawTree(x, w * 0.5, h * 0.9, h > w ? 0.9 : 0.8, { tier: 3, seed: 2 });
       drawBackdrop(x, w, h, t, { mode: m, layers: 'front' });
     });
   }
