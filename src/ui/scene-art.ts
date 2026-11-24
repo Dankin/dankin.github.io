@@ -1,6 +1,6 @@
 // 果园新美术场景(v5):用 src/art 的 backdrop/tree/building/transport/dock/character/fx 画整个场景。
 // 与旧 orchard.ts 绘制并行:?art=0 回到旧路径。本文件自带布局(CSS 像素)与动画状态,Orchard 只做手势与公开 API 转发。
-import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawBuilding, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, stockSize, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
+import { appleSprite, backdropForHour, drawAppleAt, drawBackdrop, drawLeaves, appleFxFor, appleLandFx, drawFall, drawLandFx, drawStockPile, stockSize, drawTree, fallDone, spawnShakeFall, stepFall, treeAnchors, spawnLeaves, stepLeaves, treeAnchorsIdx, treeCrown } from '../art/nature/index.ts';
 import type { FallItem, LeafP } from '../art/nature/index.ts';
 import { EGG_DURATION, Fireworks, Flights, birdFlight, drawBird, drawCharacter, drawCharacterEgg, drawFleet, drawLaoXuAt, drawGoldHalo, drawSantaDepot, runPhase, TRANSPORT8_FLIES, TRANSPORT8_W } from '../art/things/index.ts';
 import type { BirdKind, CharKind } from '../art/things/index.ts';
@@ -35,12 +35,12 @@ interface Visitor { id: string; t: number; ttl: number; x: number; y: number; fr
 interface Geo {
   land: boolean; U: number;
   gyA: number; gyR: number;
-  treeX: number; treeS: number; bldX: number; bldS: number;
+  treeX: number; treeS: number;
   pileX: number; pileY: number; boxX: number; boxY: number;
   r0: number; r1: number; dockX: number; dockS: number; vs: number; kc: number; gs: number;
 }
 
-const EMPTY_GEO: Geo = { land: true, U: 1, gyA: 200, gyR: 215, treeX: 150, treeS: 0.7, bldX: 380, bldS: 0.5, pileX: 250, pileY: 205, boxX: 50, boxY: 210, r0: 300, r1: 650, dockX: 740, dockS: 1.1, vs: 1.1, kc: 1.1, gs: 3.4 };
+const EMPTY_GEO: Geo = { land: true, U: 1, gyA: 200, gyR: 215, treeX: 150, treeS: 0.7, pileX: 250, pileY: 205, boxX: 50, boxY: 210, r0: 300, r1: 650, dockX: 740, dockS: 1.1, vs: 1.1, kc: 1.1, gs: 3.4 };
 
 export class ArtScene {
   w = 0; h = 0; dpr = 1; insL = 0; insR = 0;
@@ -99,8 +99,6 @@ export class ArtScene {
       g.gyR = Math.round(h * 0.85);
       g.treeS = Math.min((g.gyA - 6) / 300, aw * 0.34 / 256);
       g.treeX = insL + aw * 0.19;
-      g.bldS = Math.min((g.gyA * 0.78) / 300, aw * 0.3 / 480);
-      g.bldX = insL + aw * 0.5;
       g.pileX = g.treeX + g.treeS * 100;
       g.pileY = g.gyA + 8 * U;
       g.boxX = Math.max(insL + 26 * U, g.treeX - g.treeS * 112);
@@ -119,8 +117,6 @@ export class ArtScene {
       g.gyR = Math.round(h * 0.87);
       g.treeS = Math.min((g.gyA - 10) / 300, aw * 0.84 / 256);
       g.treeX = insL + aw * 0.38;
-      g.bldS = Math.min(aw * 0.5 / 480, (g.gyA * 0.5) / 300);
-      g.bldX = insL + aw * 0.8;
       g.pileX = g.treeX + g.treeS * 100;
       g.pileY = g.gyA + 10 * U;
       g.boxX = insL + aw * 0.1;
@@ -382,16 +378,14 @@ export class ArtScene {
     }
     // 月亮(夜间右上)
     if (this.isNight() && x > this.w * 0.68 && y < g.gyA * 0.3) return 'moon';
-    // 建筑
-    const tier = this.bldTier();
-    if (tier > 0) {
-      const bw = 480 * g.bldS * 0.5;
-      const bh = 300 * g.bldS;
-      if (Math.abs(x - g.bldX) < bw && y < g.gyA && y > g.gyA - bh) {
-        if (tier === 3) return y < g.gyA - bh * 0.5 ? 'skyline' : x < g.bldX - bw * 0.4 ? 'garage' : null;
-        if (tier === 2 && y < g.gyA - bh * 0.7) return 'summit-gold';
-      }
+    // 旧"建筑"热点已随果山一起取消;三个彩蛋热点改放在树上(命中区很小,当隐藏彩蛋)
+    const cr0 = this.crown();
+    const dxr = (x - cr0.x) / cr0.rx;
+    if (Math.abs(y - (cr0.y - cr0.ry * 0.1)) < cr0.ry * 0.28) {
+      if (dxr < -0.72 && dxr > -1.0) return 'summit-gold';
+      if (dxr > 0.72 && dxr < 1.0) return 'skyline';
     }
+    if (Math.abs(x - g.treeX) < 9 * g.U && y > g.gyA - 26 * g.U && y < g.gyA - 4 * g.U) return 'garage';
     // 树冠顶的果 / 树下落叶
     const c = this.crown();
     if (Math.abs(x - c.x) < c.rx * 0.5 && y < c.y - c.ry * 0.45 && y > c.y - c.ry * 1.1) return 'treetop-fruit';
@@ -483,7 +477,6 @@ export class ArtScene {
     const h = this.wv?.hour;
     return typeof h === 'number' && isFinite(h) ? ((h % 24) + 24) % 24 : this.dark ? 23 : 12;
   }
-  private bldTier(): number { return clamp(Math.round(this.wv?.srcTier ?? 0), 0, 5); }
 
   private ring(x: number, y: number, big: boolean): void { this.part(x, y, 0, 0, big ? 0.7 : 0.5, big ? 26 * this.g.U : 15 * this.g.U, 2, big); }
   private part(x: number, y: number, vx: number, vy: number, life: number, size: number, kind: 0 | 1 | 2, gold: boolean): void {
@@ -681,13 +674,6 @@ export class ArtScene {
     this.paintBack(t);
     c.drawImage(this.bgBuf!, 0, 0, w, h);
 
-    // 建筑(生产档)
-    const bt = this.bldTier();
-    if (bt > 0) {
-      const pop = 1 + 0.06 * Math.sin(this.srcPop * Math.PI);
-      drawBuilding(c, g.bldX, g.gyA, g.bldS * pop, { tier: bt as 1, variant: ((wv.srcVariant ?? 0) & 1) as 0 | 1 });
-    }
-
     // 树
     const shake = rm ? 0 : clamp(this.sway * 1.1 + this.fwV * 0.45, 0, 1);
     const tpop = 1 + 0.08 * Math.sin(this.srcPop * Math.PI) * (this.srcPop > 0 ? 1 : 0);
@@ -783,18 +769,37 @@ export class ArtScene {
     if (kind === 4) this.drawWater(c);
     // 终点:圣诞老人收货站(礼物堆=送达进度;最终档雪橇升空)
     drawSantaDepot(c, g.dockX, g.gyR, g.dockS * 0.55 * pop, { level: clamp(this.progV, 0, 1), receive: this.recvT, takeoff: this.takeoff, t: this.t });
-    // 车队:四段匀速;竖屏 r0>r1 时镜像
-    const n = Math.min(4, Math.max(1, wv.rtVehicles));
+    // 车队:最多画 4 辆,逻辑数量再多也只多一个 ×N 角标;竖屏 r0>r1 时镜像
+    // 每辆错开装货/卸货位(队列式内缩),相位均分,避免相邻车叠在一起
+    const shown = Math.min(4, Math.max(1, wv.rtVehicles));
     const vpop = 1 + 0.08 * Math.sin(this.rtPop * Math.PI);
-    c.save();
     const flip = g.r1 < g.r0;
+    const W = (TRANSPORT8_W[kind]?.[wv.rtBranch > 0 ? 1 : 0] ?? 40) * g.vs;
+    const L = Math.abs(g.r1 - g.r0);
+    const gap = Math.min(W * 0.62, (L * 0.3) / Math.max(1, shown - 1));
+    const cyc = this.fleetCycle();
+    const dirx = flip ? -1 : 1;
+    c.save();
     if (flip) c.scale(-1, 1);
-    drawFleet(c, kind, g.gyR, g.vs * vpop, { n, cycle: this.fleetCycle(), x0: flip ? -g.r0 : g.r0, x1: flip ? -g.r1 : g.r1, branch: (wv.rtBranch > 0 ? 1 : 0), t: this.fleetT, seed: 3 });
+    for (let i = 0; i < shown; i++) {
+      const x0 = g.r0 + dirx * i * gap, x1 = g.r1 - dirx * i * gap;
+      drawFleet(c, kind, g.gyR, g.vs * vpop, { n: 1, cycle: cyc, x0: flip ? -x0 : x0, x1: flip ? -x1 : x1, branch: (wv.rtBranch > 0 ? 1 : 0), t: this.fleetT + (i / shown) * cyc, seed: 3 + i * 7 });
+    }
     c.restore();
-    if (wv.rtVehicles > 4) {
-      const W = (TRANSPORT8_W[kind]?.[wv.rtBranch > 0 ? 1 : 0] ?? 40) * g.vs;
-      const dir = flip ? 1 : -1;
-      text(c, `×${wv.rtVehicles}`, g.r0 + dir * (W / 2 + 14 * g.U), g.gyR - 6, 12 * Math.max(1, g.U), P.ink);
+    if (wv.rtVehicles > shown) {
+      // ×N 角标:贴在轨道起点上方,带描边,不再被堆场/镜像吃掉
+      const bx = g.r0 + (g.r1 - g.r0) * 0.12;
+      const by = g.gyR - 26 * g.vs - 6 * g.U;
+      const fs = 13 * Math.max(1, g.U);
+      c.save();
+      c.font = `bold ${fs}px sans-serif`;
+      c.textAlign = 'center';
+      c.lineWidth = 3.5;
+      c.strokeStyle = '#fffaf0';
+      c.strokeText(`×${wv.rtVehicles}`, bx, by);
+      c.fillStyle = P.ink;
+      c.fillText(`×${wv.rtVehicles}`, bx, by);
+      c.restore();
     }
   }
 

@@ -39,6 +39,11 @@ function wire(): void {
 
   // 声音:默认关;第一次触摸/按键时解锁 AudioContext
   armAudioUnlock();
+  // 首次手势里才建 AudioContext 会卡一下(低端机 ~1.5s 长任务):空闲时先把它建好(suspended),手势里只剩 resume
+  const idle = (window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+  const prewarm = (): void => app.audio.unlock();
+  if (idle) idle(prewarm, { timeout: 4000 });
+  else setTimeout(prewarm, 2500);
   $('btnSound').addEventListener('click', () => {
     app.state.settings.sound = !app.state.settings.sound;
     app.audio.unlock();
@@ -134,7 +139,7 @@ $('btnSettings').addEventListener('click', () => {
     b.type = 'button';
     b.id = 'btnMoreSettings';
     b.className = 'panel-btn';
-    b.textContent = '更多:主题 / 摇一摇 / 精确数字';
+    b.textContent = '精确数字 · 主题 · 摇一摇';
     b.style.cssText = 'margin-top:10px;width:100%';
     b.addEventListener('click', () => {
       p.closeAll();
