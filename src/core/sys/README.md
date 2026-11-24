@@ -13,10 +13,11 @@ sys 不直接改 State 的数值字段:需要加/扣果钱时返回数字,由 en
 | `pests.ts` | 虫眼简版:`tickPests`(每 3–4 分钟一波)、`tapPest`;不点最多咬走少量库存(单波 ≤4%,不致命) |
 | `offer.ts` | 献果:`offerOpen(sourceTier, routeTier)`(产出线 ≥3 且运输线 `ROUTE_ERA` ≥3,即货船起)、`doOffer`:送出 += W×0.15/v |
 | `decay.ts` | 防囤:库存超 `decayLimit(目标价,收入)=max(1.5×目标价, 300×收入)` 的部分指数腐烂,冷库道具免疫,可点清烂果 |
-| `codex.ts` / `eggs.ts` | 图鉴(15 品种 + 47 彩蛋)、成就 26 个。`checkEggs(snap, ev, codex, rnd)→[{id,reward,first}]`;彩蛋 id 与 `src/content/eggs.ts` 一一对应(测试校验) |
+| `codex.ts` / `eggs.ts` | 图鉴(15 品种 + 56 彩蛋)、成就 26 个。`checkEggs(snap, ev, codex, rnd)→[{id,reward,first}]`;彩蛋 id 与 `src/content/eggs.ts` 一一对应(测试校验) |
 | `newsRules.ts` | `pickNews(snap, recent, items, rnd)`:标签匹配(night/rain/low-stock/new-tier/idle…)+ 里程碑 1/10/25/50/75/90/99% 优先,同条冷却 |
 | `state.ts` | 接线层:`SysState`、`newSys/normalizeSys`、`tickSys`、`onShakeRoll`、`claimOrder`、`tapPestSys`、`cleanRotSys`、`offerSys`、`snapshotOf`、`onEvent`、`nextNews` |
-| `migrate.ts` | 存档 v4→v5:运输线 6 档 → 9 档(`migrateRouteTiers`) |
+| `migrate.ts` | 存档 v4→v5 `migrateRouteTiers`、v6→v7 `migrateV6Redesign`(产出 6→5、运输 9→8、删槽位) |
+| `characters.ts` | 鸟 `birdHit/birdPeck`、彩蛋角色 `characterClick` |
 | `laoxu.ts` | 老徐 8 级行为状态机(见下「老徐」) |
 
 ## eng-app 接线
@@ -24,7 +25,7 @@ sys 不直接改 State 的数值字段:需要加/扣果钱时返回数字,由 en
 ```ts
 // 每帧(dt 任意;>5s 视为离线,只做安全部分)
 const tk = tickSys(s.sys, dt, { playSec, era: eraMin(s), sourceTier: s.source.tier, routeTier: s.route.tier,
-  coins: s.coins, income: th.income, targetCost, coldStorage: s.gates.includes('cold'), progress: s.delivered / GOAL }, rnd);
+  coins: s.coins, income: th.income, targetCost, coldStorage: s.source.tier >= 4 && s.source.branch[4] === 1, progress: s.delivered / GOAL }, rnd);
 s.coins = Math.max(0, s.coins - tk.coinsLoss);               // 腐烂 + 虫咬
 for (const e of tk.events) { /* order-new/order-expire/pest-wave/pest-bite/rot/bag → UI */ }
 
@@ -55,39 +56,39 @@ const news = nextNews(s.sys, snap, NEWS_ITEMS, rnd);          // 8 秒一条
 - 彩蛋奖励(`incomeSec` 按"收入秒数"发果钱 = `reward × th.income`)、`buff`、`skin` 由 eng-app 兑现,奖励表在 `src/content/eggs.ts`。
 - 离线结算(`settle`)后发一次 `{t:'away',ms}`;启动/回前台发 `{t:'login'}`。
 
-## 运输线 9 档(2026-11-24 用户新需求)
+## v6 重设计(2026-11-24,plan/80-v6-redesign.md)
 
-内部 id(`content.ts` 的 `ROUTE_IDS`)与美术(`art/things` 的 transport id)完全一致,下标即 `route.tier` / `Vehicle.tier`:
+### 产出线 5 档(树原地进化)· 运输线 8 档
+`content.ts` 导出 id,美术/文案/app 全部按这些 id 对:
 
-| idx | id | 名称 | `ROUTE_ERA` | 备注 |
-|---|---|---|---|---|
-| 0 | basket | 篮子 | 0 | 起点 |
-| 1 | porter | 挑扁担工 | 0 | 新:"两头挑,走得慢,但不占路"。分支 加粗扁担 / 小碎步 |
-| 2 | cart | 小推车 | 1 | |
-| 3 | trampoline | 蹦床 | 1 | 新:弹射距离长,会漏一点苹果。分支 高弹网 / 兜底网 |
-| 4 | truck | 卡车 | 2 | |
-| 5 | ship | 货船 | 3 | 献果开放档 |
-| 6 | helicopter | 直升机 | 3 | 新:吊运不怕堵路。分支 吊篮 / 双旋翼 |
-| 7 | plane | 飞机 | 4 | |
-| 8 | portal | 传送门 | 5 | |
+- `SOURCE_IDS = ['sapling','old','giant','cloud','star']`(小树/老树/巨树/云树/星树),下标 = `source.tier`。
+- `SOURCE_BRANCH_IDS = ['dense','thick']`(密植:枝多果小 / 粗壮:枝少果大),下标 = `source.branch[tier]`(0/1)。美术变体 id = `${SOURCE_IDS[t]}-${SOURCE_BRANCH_IDS[b]}`,共 8 个(小树无分支)。
+- `ROUTE_IDS = ['basket','porter','cart','truck','ship','helicopter','plane','portal']`,下标 = `route.tier` = `Vehicle.tier`;蹦床已删。
+- `ROUTE_VARIANTS[routeId] = [分支0, 分支1]`(basket 为 null):porter `broad-pole`/`quick-step`,cart `heavy-cart`/`light-wheel`,truck `heavy-truck`/`pickup`,ship `container`/`speedboat`,helicopter `basket-lift`/`twin-rotor`,plane `cargo`/`supersonic`,portal `wide`/`zero-lag`。同档两分支共用底盘,换车身/司机。
+- **era 口径**:`era(s) = source.tier + ROUTE_ERA[route.tier]`(0..9),`ROUTE_ERA = [0,0,1,2,3,3,4,5]`;`eraMin = min(source.tier, ROUTE_ERA[route.tier])`(0..4)。品种/订单/虫眼/献果(`offerOpen`:eraMin ≥3,即云树+货船)/彩蛋 `minEra` 用 eraMin。
+- 槽位(gate)整套删除:`State.gates/gatesUnlocked`、`setGate`、`Action 'gate'`、`GATES`、`describeGate`、`newGates`、bus `buy.what='gate'`。效果直接删除(不并入),经济已重调(见平衡)。
+- 存档:`SAVE_VERSION=7`,`migrations[6]=migrateV6Redesign`(`sys/migrate.ts`):旧果星→云树、苹果之门→星树,蹦床→小推车(合并档取当前所在旧档的单位/扩建/分支),`tierTimes`、`Vehicle.tier` 同步映射,删 `gates`。旧信箱无 state。
+- **State 无新增字段**。鸟/角色相关计数在 `s.sys.codex.counters`(`birdHits`/`birdPecks`)。
 
-- **era 口径不变**:`era(s) = source.tier + ROUTE_ERA[route.tier]`(0..10),`eraMin = min(source.tier, ROUTE_ERA[route.tier])`。
-  道具解锁(`GATES[].unlockAt`)、新闻 era、季节/品种 `minEra`、献果 `offerOpen`、彩蛋 `garage(≥2)/einstein(≥5)` 都用 era 口径,所以原有文案表仍按 0..5 的 era 索引。
-  **只有"按路线档逐档显示"的地方需要 9 项**:路线升档卡、ERA 切换 toast 若按路线档触发。
-- 数值(`content.ts`,`node scripts/sim.ts` 可复核):运力 cap 6/31/160/600/2261/29070/65000/144500/510000;升档价约 0/1.6k/58k/180k/540k/44M/160M/540M/8.9B。
-- app 侧待办(eng-app 区域):`src/app/dialogs.ts:62` 用 `source.tier + route.tier` 判断道具解锁,应改成 `era(state)`;`src/app/world.ts` 的 `ROUTE_TIERS[rt.tier]` 已按 9 项工作。
-- 存档:`SAVE_VERSION=5`,旧档运输线下标 0..5 映射到 0,2,4,5,7,8(`ROUTE_OLD_TO_NEW`),新中间档为"未拥有"。
+### 品种特性(只有视觉 tag + 价值倍率,无点击压力)
+`varieties.ts`:`rollApple` 返回的 Apple 多了 `trait`。`traitOf(kind,state)`、`fxOf(kind,state)→{fallMul,bounces,quake,rollPx,glow,smoke,sfx}`:
+金苹果 `glow`(发光)/ 青苹果 `fastFall`(fallMul<1,快落)/ 红斑 `bounce`(落地弹 `bounces` 次)/ 巨无霸 `quake`(落地震)/ 虫蛀 `rollAway`(滚走 `rollPx`)/ 毒苹果 `smoke`(灰烟),音效 id `apple-golden/apple-fast/apple-bounce/apple-quake/apple-roll/apple-poof`(其余 `apple-land`)。
 
-### 需 writer 补/润色的文案(目前 `content.ts` 里是占位,可直接改字,id 不变)
+### 鸟与彩蛋角色(`sys/characters.ts`,常量 `BIRD`/`CHARACTER_REWARD`)
+- 鸟:点中 `birdHit(flow,value,rnd)→{apples,coins,feathers}`(≈6 秒送达量 + 2–4 根羽毛;app 发 `{t:'event',kind:'bird',phase:'hit'}` 与 `claimed:true`);不点飞走 `birdPeck(stock,flow)→被啄走苹果数`(≤库存 4%、≤40、≤flow×3s,永远不致命;app 从 stock 扣,发 `claimed:false`)。`events.ts` 的 `claimEvent('bird')`(10 秒量)保留作"事件奖励";要用小额请调 `birdHit`。
+- 角色:`CHARACTER_IDS`(newton/snow-white/snake/seed-sower/turtleneck/einstein/archer/farmer/runner/merchant/elf/reindeer),`characterClick(id,flow,value)→{apples,coins,eggId,actionS(1–2s),sfx,particle,buff}`;牛顿给 buff 不给苹果,其余给 ≈5 秒送达量的小额苹果。冷却 `CHARACTER_REWARD.cooldownS`(app 管)。点击后仍发 `{t:'tap',target}` 触发彩蛋/图鉴。
+- 新 `TAP_TARGETS`:truck、elf、sleigh-bell、reindeer-nose、gift-top、cloud-basket、star-lantern-1..7;新 `EggEvent {t:'gift-rim'}`(礼物堆第一次高过雪橇边沿时发一次)。彩蛋共 56 条(新 10:truck-horn/bird-feather/bird-ignore/bird-hat/elf-wave/sleigh-bell/reindeer-nose/gift-peek/cloud-basket/star-lantern)。trampoline-leak 已删。
 
-- 档名/单位/玩笑:`ROUTE_TIERS[1]` 挑扁担工(位挑担工)、`[3]` 蹦床(张蹦床)、`[6]` 直升机(架直升机),各一句 `joke`。
-- 6 个新分支的 `name` + `joke`:挑扁担工(加粗扁担/小碎步)、蹦床(高弹网/兜底网)、直升机(吊篮/双旋翼);另有各档 `pair`(升档点二选一短标题)。
-- 升到这三档时的新闻/toast 各 2–3 条(tag `new-tier`);可选彩蛋:蹦床漏果(点蹦床)、扁担断了(点扁担工)。
+### app/ui 仍引用已删接口(eng-app/ui-v5 负责,`tsc` 目前在这些文件报错)
+- gate:`src/app/{boot,dialogs,ftue,render,session,sys,world}.ts`(`GATE_SLOTS/setGate/GATES/describeGate/gateDef/GateId/GATE_UNLOCK_TOAST/s.gates/s.gatesUnlocked/newGates/buy 'gate'`;`app/sys.ts` 的 `coldStorage` 改成 `s.source.tier>=4 && s.source.branch[4]===1`),`src/ui/{orchard,scene-art,preview}.ts`、`src/ui/panels/*`、`src/art/things/ui.ts:231`。
+- 信箱:`src/ui/panels/{types,postcards,index,preview}.ts`(明信片已由 writer 并入旁白)。
+- `src/ui/scene-art.ts:337` 的 `'trampoline'` 点击目标;`src/app/news.ts:46` 的 `Math.min(5,era)` era 现为 0..9;`src/app/dialogs.ts:62` 用 `era(state)`。
+- 6→5 档产出线、9→8 档运输线:凡按 `SOURCE_TIERS`/`ROUTE_TIERS` 长度写死的数组都要核对。
 
 ## 平衡(`scripts/sim-v5.ts`)
 
 `node scripts/sim-v5.ts --all`:cps0/1/4 × 种子 1–3,验收按三种子均值(单局随事件 ±2 分)。
-当前(老徐 8 级后):cps0 均值 71.5 分(≤75),cps1 56.0(55–65),cps4 42.9(≥42)。cps1 的"最长无事可买"约 100–115 秒,有意义购买间隔最长约 300 秒(第 29 分钟前后,卡车→货船)。
+当前(v6,槽位删除后重调:老树起各档产出/运力 ×2.7,HELPER.rate 0.3,SHAKE.dropSec [0.7,0.5,0.39,0.31,0.21],comboStep 0.004):cps0 均值 73.4 分(≤75),cps1 55.7(55–65),cps4 45.8(≥42)。最长无事可买:cps0 200–240s,cps1 140–190s,cps4 150–215s;有意义购买间隔最长 340–440s。
 sys 带来:订单奖励约 2.2% 收入(≤3%)、献果送出约 8% 目标、虫咬在机器人点虫时为 0、季节修正均值 ≈ 0。
 `scripts/sim-route.ts '<ROUTE_TIERS 覆盖 JSON>' [cps...]`:不含 sys 的运输线调参(`SCALE=k` 同比放大价格)。
 

@@ -5,6 +5,7 @@
 //   node scripts/sim-v5.ts --all        (cps 0/1/4 × 3 个种子,附验收判定)
 import { GOAL } from '../src/core/constants.ts';
 import { shake, throughput } from '../src/core/game.ts';
+import { ROUTE_ERA } from '../src/core/content.ts';
 import { SIM } from '../src/core/sys/constants.ts';
 import { claimOrder, canFulfill, laoxuCrit, newSys, offerSys, onShakeRoll, tapLaoxuSys, tapPestSys, tickSys } from '../src/core/sys/state.ts';
 import { seasonAt } from '../src/core/sys/season.ts';
@@ -26,7 +27,7 @@ function makeHook(noSlack = false): SimHook & { sys: ReturnType<typeof newSys> }
     },
     step(s, dt, c) {
       const th = throughput(s);
-      const era = Math.min(s.source.tier, s.route.tier);
+      const era = Math.min(s.source.tier, ROUTE_ERA[s.route.tier] ?? s.route.tier);
       x.income += c.res.coinsNow;
 
       // 季节价值(均值 1):对本步收入做 ±10% 修正
