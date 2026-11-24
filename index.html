@@ -43,16 +43,6 @@
   </section>
 </footer>
 
-<div id="gates" hidden aria-hidden="true">
-  <button class="slot" id="gate0" type="button" tabindex="-1"><b class="nm">+</b></button>
-  <button class="slot" id="gate1" type="button" tabindex="-1"><b class="nm">+</b></button>
-  <button class="slot" id="gate2" type="button" tabindex="-1"><b class="nm">+</b></button>
-</div>
-
-<div id="gatePick" hidden role="dialog" aria-label="选择关卡">
-  <div class="gp-head"><b id="gatePickTitle">选择关卡</b><button id="gatePickClose" class="ib sm" type="button" aria-label="关闭">✕</button></div>
-  <div id="gateOpts" class="opts"></div>
-</div>
 
 <div id="branchPick" hidden role="dialog" aria-label="选择分支">
   <div class="bp-box">
@@ -91,17 +81,12 @@
 // 仅处理:设置抽屉开关、关卡/分支弹层的关闭(点空白/Esc)。不依赖 main.ts。
 (function(){
   var $=function(i){return document.getElementById(i)};
-  var s=$('settings'),gp=$('gatePick'),bp=$('branchPick');
-  function closeAll(){s.hidden=true;gp.hidden=true;bp.hidden=true}
+  var s=$('settings'),bp=$('branchPick');
+  function closeAll(){s.hidden=true;bp.hidden=true}
   $('btnCloseSettings').addEventListener('click',function(){s.hidden=true});
-  $('gatePickClose').addEventListener('click',function(){gp.hidden=true});
   $('branchCancel').addEventListener('click',function(){bp.hidden=true});
   s.addEventListener('pointerdown',function(e){if(e.target===s)s.hidden=true});
   bp.addEventListener('pointerdown',function(e){if(e.target===bp)bp.hidden=true});
-  document.addEventListener('pointerdown',function(e){
-    if(gp.hidden||gp.contains(e.target)||e.target.closest&&e.target.closest('.slot'))return;
-    gp.hidden=true;
-  },true);
   addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
 })();
 </script>

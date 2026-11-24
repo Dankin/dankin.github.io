@@ -7,7 +7,7 @@ import { bus } from '../core/bus.ts';
 import { fmt } from '../ui/format.ts';
 import { app, hooks } from './ctx.ts';
 import { toast, toastIdle } from './toasts.ts';
-import { bp, gp } from './dialogs.ts';
+import { bp } from './dialogs.ts';
 import { persist } from './session.ts';
 
 /** 换档/重开后重置计时 */
@@ -30,7 +30,7 @@ export function bottleneckTip(th: Throughput): void {
     return;
   }
   if (bnKind === 'balanced' || app.state.delivered < 20) return;
-  if (t - bnSince >= 20 && t - bnTipAt >= 90 && toastIdle() && bp.hidden && gp.hidden) {
+  if (t - bnSince >= 20 && t - bnTipAt >= 90 && toastIdle() && bp.hidden) {
     bnTipAt = t;
     toast(BOTTLENECK_TIP[bnKind], 4200);
   }

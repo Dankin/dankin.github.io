@@ -7,7 +7,7 @@ import { $, $o } from './dom.ts';
 import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast } from './toasts.ts';
-import { bp, gp } from './dialogs.ts';
+import { bp } from './dialogs.ts';
 import { claimOrderAct, cleanRotAct, holdXuAct, rollShake, tapPestAct, tapTargetAct } from './sys.ts';
 
 // ───────────── 手感:摇树 / 苹果噼里啪啦掉下来 ─────────────
@@ -126,7 +126,7 @@ function renderMotionBtn(): void {
 }
 function motionShake(strength: number): void {
   // 结局、设置、弹层打开时不响应
-  if (document.getElementById('ending') || !$('settings').hidden || !bp.hidden || !gp.hidden) return;
+  if (document.getElementById('ending') || !$('settings').hidden || !bp.hidden) return;
   // 一次真实的摇动 ≈ 三下:按间隔摇,让令牌桶和音效都有喘息
   for (let i = 0; i < 3; i++) setTimeout(() => doShake(strength), i * 110);
 }

@@ -149,7 +149,7 @@ export function sysFrame(dt: number): void {
       coins: s.coins,
       income: t.income,
       targetCost: getGoal()?.cost ?? 0,
-      coldStorage: s.gates.includes('cold'),
+      coldStorage: s.source.tier >= 4 && s.source.branch[4] === 1,
       progress: Math.min(1, s.delivered / GOAL),
       helperLevel: s.helperLevel,
       idleSec: (performance.now() - lastActAt) / 1000,

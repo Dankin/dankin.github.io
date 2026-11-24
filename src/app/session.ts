@@ -111,7 +111,7 @@ export function afterStateReplaced(): void {
   app.won = isWon(s);
   resetHud();
   resetRender();
-  resetGateSeen(s);
+  resetGateSeen();
   resetTips(s.playSec, nextEventGap());
   applyTheme();
   applySound();

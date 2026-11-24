@@ -2,7 +2,6 @@
 import { bus } from '../core/bus.ts';
 import { GOAL, SAVE_KEY } from '../core/constants.ts';
 import { exportSave, importSave, load, storageWritable } from '../core/save.ts';
-import { GATE_SLOTS } from '../core/content.ts';
 import { Orchard } from '../ui/orchard.ts';
 import '../ui/glue.css';
 import './app.css';
@@ -13,7 +12,7 @@ import { initBar, wireBar } from './bar.ts';
 import { initHud } from './hud.ts';
 import { startTicker } from './ticker.ts';
 import { installContentNews, trackNewsSignals } from './news.ts';
-import { chooseBranch, openGate } from './dialogs.ts';
+import { chooseBranch } from './dialogs.ts';
 import { applySound, applyTheme, afterStateReplaced, catchUp, DARK_MQ, persist, resetGame } from './session.ts';
 import { armAudioUnlock, armXuHold, doShake, routeStageTap, setupMotion } from './input.ts';
 import { setupDebug } from './debug.ts';
@@ -26,9 +25,7 @@ import { initFtue } from './ftue.ts';
 
 function wire(): void {
   app.orchard.onShake = (st) => doShake(st ?? 1);
-  app.orchard.onGate = (slot) => openGate(slot);
   wireBar();
-  for (let i = 0; i < GATE_SLOTS; i++) $o(`gate${i}`)?.addEventListener('click', () => openGate(i));
   $('branch0').addEventListener('click', () => chooseBranch(0));
   $('branch1').addEventListener('click', () => chooseBranch(1));
 

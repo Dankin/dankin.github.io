@@ -1,6 +1,6 @@
 // 画面所需数据:把 State 翻成 Orchard 认得的 WorldView。
 import { mods, stockFill, chargeLevel, type Throughput } from '../core/game.ts';
-import { GATE_SLOTS, ROUTE_TIERS } from '../core/content.ts';
+import { ROUTE_TIERS } from '../core/content.ts';
 import { EMPTY_WORLD, type WorldView } from '../ui/orchard.ts';
 import { worldAt } from '../core/world.ts';
 import { app } from './ctx.ts';
@@ -19,9 +19,6 @@ export function buildWorld(th: Throughput): WorldView {
     rtTier: rt.tier,
     rtVehicles: Math.max(1, Math.round(rt.units[rt.tier])),
     rtBranch: rt.branch[rt.tier],
-    gates: s.gates.map((g) => (g === 'red' ? 'string' : g)),
-    gateCan: s.gates.map((g) => g === null && s.gatesUnlocked.some((u) => !s.gates.includes(u))),
-    gatesUnlocked: GATE_SLOTS,
     stock01: stockFill(s),
     produce: th.produce,
     carry: th.carry,

@@ -1,13 +1,13 @@
 // 渲染(每 0.25 秒一次,以及操作后立即)。
 import { eraMin, era, isWon, nextHints, progress, throughput } from '../core/game.ts';
-import { EMPTY_SLOT_TIP, ERA_SWITCH_TOAST } from '../core/copy.ts';
+import { ERA_SWITCH_TOAST } from '../core/copy.ts';
 import { bus } from '../core/bus.ts';
 import { app } from './ctx.ts';
 import { toast, toastIdle } from './toasts.ts';
 import { renderHud } from './hud.ts';
 import { feedTicker } from './ticker.ts';
 import { btn, getGoal, renderAct, renderFocus, renderHelper } from './bar.ts';
-import { bp, fillBranch, renderGates } from './dialogs.ts';
+import { bp, fillBranch } from './dialogs.ts';
 import { buildWorld } from './world.ts';
 import { ambient, bottleneckTip, maybeEvent } from './events.ts';
 import { renderDebugInfo } from './debug.ts';
@@ -17,7 +17,6 @@ import { feedSys } from './sys.ts';
 let lastEra = -1;
 let lastDelivered = -1;
 let lastEraMin = -1;
-let tipEmptyShown = false;
 export function resetRender(): void {
   lastEra = -1;
   lastEraMin = -1;
@@ -39,7 +38,6 @@ export function renderAll(): void {
   renderHud(th, getGoal());
   feedTicker(th);
   feedSys(th);
-  renderGates();
   renderHelper(hints);
   if (!bp.hidden) fillBranch();
 
@@ -51,10 +49,6 @@ export function renderAll(): void {
     app.audio.setIntensity(Math.min(5, Math.round(e / 2)));
   }
   if (app.DEBUG) renderDebugInfo(th);
-  if (!tipEmptyShown && s.delivered >= 60 && s.gates.every((g) => g === null) && toastIdle()) {
-    tipEmptyShown = true;
-    toast(EMPTY_SLOT_TIP, 4200);
-  }
   const em = eraMin(s);
   if (lastEraMin >= 0 && em > lastEraMin) {
     bus.emit({ t: 'era', era: em });

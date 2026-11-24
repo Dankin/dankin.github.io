@@ -86,7 +86,7 @@ export function initFtue(awayMs = 0): void {
   bus.on('order', (e) => e.phase === 'new' && say('ftue-order'));
   bus.on('egg', () => say('ftue-egg'));
   bus.on('buy', (e) => {
-    if (e.what !== 'gate') clear();
+    clear();
   });
 
   setTimeout(() => {
@@ -115,11 +115,6 @@ export function initFtue(awayMs = 0): void {
     if (s.spent > 0) {
       if (boughtAt < 0) boughtAt = s.playSec;
       if (s.playSec - boughtAt > 20) say('ftue-water');
-    }
-    if (s.playSec >= 90 && s.gatesUnlocked.includes('wash') && s.gates[0] === null && !done.has('ftue-wash')) {
-      mark('ftue-wash');
-      glow(document.getElementById('gate0'), 7000);
-      toast(step('ftue-wash')!.text, 3600);
     }
     if (s.helperLevel > 0 || document.getElementById('btnHelper')?.hidden === false) if (s.playSec >= 120) say('ftue-laoxu');
     if (s.playSec >= 300 && !done.has('ftue-pin')) {
