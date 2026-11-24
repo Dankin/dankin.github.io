@@ -31,6 +31,26 @@ export const NEWS_TAGS = {
   xmas: '12/20 之后(或圣诞主题日)',
   gold: '金苹果刚出现过/图鉴已有金苹果',
   combo: '连摇 ≥20 击',
+  // ── 以下标签由 systems 额外支持(见 src/core/sys) ──
+  spring: '春(季节系统)',
+  summer: '夏',
+  autumn: '秋',
+  winter: '冬',
+  wasted: '堆场满,苹果在往外掉',
+  rot: '有苹果快烂/已烂',
+  order: '场上有订单',
+  pest: '有虫眼/害虫',
+  offer: '献果已开放/刚献过',
+  'post-event': '事件刚结束',
+  'bottleneck-produce': '产出追不上运力',
+  'bottleneck-carry': '运力追不上产出',
+  'milestone-1': '进度刚过 1%(命中窗口约 60 秒,下同)',
+  'milestone-10': '进度刚过 10%',
+  'milestone-25': '进度刚过 25%',
+  'milestone-50': '进度刚过 50%',
+  'milestone-75': '进度刚过 75%',
+  'milestone-90': '进度刚过 90%',
+  'milestone-99': '进度刚过 99%',
 } as const;
 export type NewsTag = keyof typeof NEWS_TAGS;
 
@@ -266,7 +286,42 @@ const GENERIC = build('n-g-', undefined, [
   ['另一颗说:不知道,但车来了。', undefined, 1],
 ]);
 
-export const NEWS_ITEMS: NewsItem[] = [...E0, ...E1, ...E2, ...E3, ...E4, ...E5, ...COND, ...GENERIC];
+// 系统标签专属条(季节/堆场/腐烂/订单/虫/献果/事件后/瓶颈/进度里程碑)。追加在末尾,不动旧 id。
+const SYS = build('n-s-', undefined, [
+  ['春天到了,苹果树开花,蜜蜂排队上岗。', ['spring'], 3],
+  ['花瓣落了一地,树说这叫春装。', ['spring'], 3],
+  ['夏日炎炎,苹果在树上晒出了红脸。', ['summer'], 3],
+  ['蝉在树上开演唱会,苹果当听众。', ['summer'], 3],
+  ['秋天,苹果的主场。树笑得很满。', ['autumn'], 3],
+  ['落叶铺了一地,老徐说这叫地毯。', ['autumn'], 3],
+  ['冬天,树光了。苹果在仓库里取暖。', ['winter'], 3],
+  ['雪落在树杈上,像戴了一顶帽子。', ['winter'], 3],
+  ['果堆满了,苹果开始往外溜达。', ['wasted'], 3],
+  ['堆场告急:再满就要上房顶了。', ['wasted'], 3],
+  ['有个苹果开始发软,请尽快处理。', ['rot'], 3],
+  ['烂苹果在悄悄传染,请及时清理。', ['rot'], 3],
+  ['有人下单,说要几个不烂的。', ['order'], 3],
+  ['订单快讯:对方说,不赶,但别拖。', ['order'], 3],
+  ['虫子联合会表示:这是自助餐。', ['pest'], 3],
+  ['一只虫探出头:我只是路过。', ['pest'], 3],
+  ['献果成功,今日买东西打八五折。', ['offer'], 3],
+  ['献出去的苹果,在路上收到了道谢。', ['offer'], 3],
+  ['刚才那位客人,已经不见了。', ['post-event'], 3],
+  ['事件过后,树下留下一个脚印。', ['post-event'], 3],
+  ['车队在原地等苹果,司机开始打牌。', ['bottleneck-produce'], 3],
+  ['空车来回跑,油钱烧得慌。', ['bottleneck-produce'], 3],
+  ['苹果堆在场里,车队在路上堵着。', ['bottleneck-carry'], 3],
+  ['货太多,车太少。老徐在数车轮。', ['bottleneck-carry'], 3],
+  ['开张大吉:百分之一的苹果上路了。', ['milestone-1'], 4],
+  ['十分之一!圣诞老人在电话里叫了一声。', ['milestone-10'], 4],
+  ['四分之一达成,日历默默记了一笔。', ['milestone-25'], 4],
+  ['过半了。本报今天只写这一件事。', ['milestone-50'], 4],
+  ['四分之三!老徐头一次没有嘴硬。', ['milestone-75'], 4],
+  ['九成了。雪橇的铃声隐约可闻。', ['milestone-90'], 4],
+  ['百分之九十九。最后一步,最长。', ['milestone-99'], 4],
+] as Row[]);
+
+export const NEWS_ITEMS: NewsItem[] = [...E0, ...E1, ...E2, ...E3, ...E4, ...E5, ...COND, ...GENERIC, ...SYS];
 
 /** 含"与苹果公司无关"自嘲的条目 id 清单(全局 ≤6;验收脚本按文本含"与苹果公司无关"统计) */
 export const DISCLAIMER_NEWS_IDS: string[] = NEWS_ITEMS.filter((n) => n.text.includes('与苹果公司无关')).map((n) => n.id);
