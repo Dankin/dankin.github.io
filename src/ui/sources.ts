@@ -1,4 +1,4 @@
-/** 生产线 6 档:树 / 果园 / 果山 / 果城 / 果星 / 苹果之门。原点 = 底部中心,x∈[-30,30],高 ≤46 单位。 */
+/** 生产线 6 档:旧版树/果园/大树/云树/星树/树顶星(v6 场景在 scene-art.ts,此文件仅 ?art=0 回退)。原点 = 底部中心,x∈[-30,30],高 ≤46 单位。 */
 import { APPLE, P, TAU, apple, applePath, blob, circ, clamp, pen, poly, rect, rs, seg, sparkle, sv, text } from './pen.ts';
 
 type C = CanvasRenderingContext2D;
@@ -25,7 +25,7 @@ export const EMIT: Array<[number, number]> = [
   [8, -2],
   [14, -18],
 ];
-export const SRC_NAMES = ['老树', '果园', '果山', '果城', '果星', '苹果之门'];
+export const SRC_NAMES = ['小树', '老树', '大树', '云树', '星树', '树顶星'];
 
 const TREE_APPLES: number[] = [-7, -22, 6, -21, 0, -28, -3, -34, 8, -29, -10, -27, 3, -23, -6, -30, 10, -23];
 

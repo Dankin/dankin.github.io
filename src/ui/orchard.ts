@@ -30,7 +30,7 @@ export interface WorldView {
   combo: number;
   /** 每趟运送苹果数(显示 +N 用,可选) */
   perTrip?: number;
-  /** 各槽当前是否买得起(可选;缺省视为买得起 → 圈会呼吸) */
+  /** 各卡当前是否买得起(可选;缺省视为买得起 → 圈会呼吸) */
   /** —— v5 新美术字段(全部可选) —— */
   /** 世界时钟 0..24:驱动天空昼夜;缺省按 dark 取 23/12 */
   hour?: number;
@@ -520,7 +520,7 @@ export class Orchard {
     this.syncSS();
   }
 
-  /** 每档生产线的绘制倍率:竖屏按目标像素高(树150/果园190/果山240…)放大 */
+  /** 每档生产线的绘制倍率:竖屏按目标像素高(按档位目标高度)放大 */
   private syncSS(): void {
     const L = this.lay;
     const t = Math.max(0, Math.min(5, this.wv.srcTier | 0));

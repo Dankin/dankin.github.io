@@ -153,24 +153,11 @@ check('选分支后升档生效', (await num('g.state.source.tier')) === 1 && (a
 await click('#btnRtUp'); await sleep(300); await click('#branch1'); await sleep(400);
 check('运输线也能升档', (await num('g.state.route.tier')) === 1, `(tier ${await num('g.state.route.tier')})`);
 
-// 关卡槽
-{
-  const gp0 = await J('(()=>{const b=document.getElementById("stage").getBoundingClientRect();const p=window.__game.orchard.gateScreen(0);return {x:b.left+p.x,y:b.top+p.y}})()');
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: gp0.x, y: gp0.y, button: 'left', clickCount: 1 });
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: gp0.x, y: gp0.y, button: 'left', clickCount: 1 });
-}
-await sleep(300);
-check('点场景里的关卡圈打开选择', (await ev('!document.getElementById("gatePick").hidden')) === true && (await ev('document.querySelectorAll("#gateOpts .opt").length')) >= 2, `(${await ev('document.querySelectorAll("#gateOpts .opt").length')} 项)`);
-const opt = await ev('(()=>{const o=[...document.querySelectorAll("#gateOpts .opt")].find(b=>!b.disabled&&!b.classList.contains("none"));if(!o)return null;const t=o.querySelector("b").textContent;o.click();return t})()');
-await sleep(300);
-check('选一个关卡放入槽 0', opt && (await G('g.state.gates[0]')) !== null, `(${opt} → ${await G('g.state.gates[0]')})`);
-check('选择后弹层关闭', (await ev('document.getElementById("gatePick").hidden')) === true);
-
 // 存档/刷新
-const snap = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier,g.state.gates])');
+const snap = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier])');
 await ev('dispatchEvent(new Event("pagehide"))');
 await send('Page.navigate', { url: BASE + '?speed=60' }); await sleep(900);
-const snap2 = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier,g.state.gates])');
+const snap2 = await G('JSON.stringify([g.state.source.units,g.state.route.units,g.state.source.tier,g.state.route.tier])');
 check('刷新后进度保留', snap === snap2, snap === snap2 ? '' : `\n  ${snap}\n  ${snap2}`);
 
 // 中期截图:加钱 +1小时

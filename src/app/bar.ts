@@ -5,7 +5,7 @@ import { LAOXU_LEVELS } from '../content/laoxu.ts';
 import { newState, type PinSlot } from '../core/state.ts';
 import { bus } from '../core/bus.ts';
 import { fmt } from '../ui/format.ts';
-import { $, $o, setText, setCls, fmtWait } from './dom.ts';
+import { $, $o, setText, setCls } from './dom.ts';
 import { app, hooks, LINE_NAME } from './ctx.ts';
 import { toast } from './toasts.ts';
 import { persist } from './session.ts';
@@ -145,10 +145,10 @@ export interface Goal {
 let goal: Goal | null = null;
 export const getGoal = (): Goal | null => goal;
 
-/** 秒 → "约 N 秒回本"文案与档位(<60 绿、<300 黄、其余红"长线") */
+/** 秒 → 抽象回本描述与档位(<60 绿"回本很快"、<300 黄"回本一阵子"、其余红"长线");精确数字只在设置/统计页 */
 export function paybackText(sec: number): { text: string; tone: 'g' | 'y' | 'r' } {
-  if (sec < 60) return { text: `约${fmtWait(sec)}回本`, tone: 'g' };
-  if (sec < 300) return { text: `约${fmtWait(sec)}回本`, tone: 'y' };
+  if (sec < 60) return { text: '回本很快', tone: 'g' };
+  if (sec < 300) return { text: '回本要一阵', tone: 'y' };
   return { text: '长线', tone: 'r' };
 }
 /** 买 cost 会让 target 价的目标晚几秒(按当前每秒收入;买它自己带来的增收忽略) */
@@ -200,7 +200,7 @@ export function renderFocus(th: Throughput): void {
     if (goal?.pinned && goal.act !== a && here && !a.el.classList.contains('dim')) {
       const d = goalDelaySec(s.coins, th.income, a.cost, goal.cost);
       if (d >= 1) {
-        setText(a.gain, `买它,目标晚${fmtWait(d)}`);
+        setText(a.gain, d < 30 ? '买它,目标晚一点' : '买它,目标晚不少');
         setCls(a.gain, { up: false, zero: false });
         a.gain.classList.add('late');
         continue;
@@ -239,7 +239,7 @@ export function mkHelperBtn(): void {
       hooks.render();
     } else {
       const c = helperCost(app.state);
-      if (c !== null) toast(`手上的苹果还差 ${fmt(Math.ceil(c - app.state.coins))}。`, 2000);
+      if (c !== null) toast('手上的苹果还不够。', 2000);
     }
   });
 }
@@ -280,8 +280,8 @@ function nudge(line: LineId, what: 'unit' | 'tier' | 'expand'): void {
   const h = nextHints(app.state)[line];
   const x = what === 'unit' ? h.unit : what === 'expand' ? h.expand : h.tier;
   if (!x) return;
-  const lack = Math.ceil(x.cost - app.state.coins);
-  toast(`手上的苹果还差 ${fmt(lack)}${isFinite(x.waitSec) ? `,约 ${fmtWait(x.waitSec)}` : ''}。`, 2400);
+  const w = x.waitSec;
+  toast(!isFinite(w) ? '手上的苹果还不够。' : w < 20 ? '手上的苹果差一点,再摇几下。' : w < 120 ? '手上的苹果还不够,让它们多送一会儿。' : '手上的苹果差得多,先去攒一攒。', 2400);
 }
 export function wireBar(): void {
   for (const a of [btn.sb, btn.su, btn.rb, btn.ru]) {

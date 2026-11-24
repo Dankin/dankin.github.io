@@ -20,7 +20,7 @@ export function resetTips(playSec: number, gap: number): void {
   nextEventAt = playSec + gap;
 }
 
-// ───────────── 提示:瓶颈 / 空槽 ─────────────
+// ───────────── 提示:瓶颈 ─────────────
 let bnKind: Throughput['bottleneck'] = 'balanced';
 let bnSince = 0;
 let bnTipAt = -1e9;

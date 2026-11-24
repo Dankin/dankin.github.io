@@ -1,5 +1,5 @@
 import { showEnding } from './ending.ts';
-/** v4 预览:假状态驱动 Orchard + 底栏 DOM。参数:?src=0..5&rt=0..5&dark=1&veh=4&stock=.5&shake=.6&unit=3&br=0|1&carry&prod&event=bird&dev=0&reduced=1&pick=gate|branch */
+/** v4 预览:假状态驱动 Orchard + 底栏 DOM。参数:?src=0..5&rt=0..5&dark=1&veh=4&stock=.5&shake=.6&unit=3&br=0|1&carry&prod&event=bird&dev=0&reduced=1&pick=branch */
 import { Orchard, EMPTY_WORLD, type WorldView } from './orchard.ts';
 import { SRC_NAMES } from './sources.ts';
 import { RT_NAMES } from './route.ts';
@@ -8,7 +8,6 @@ import { fmt } from './format.ts';
 const q = new URLSearchParams(location.search);
 const num = (k: string, d: number): number => (q.has(k) ? Number(q.get(k)) : d);
 const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
-const GN: Record<string, string> = { wash: '洗果', wax: '打蜡', juice: '榨汁', pack: '包装', cold: '冷链', rush: '加急', string: '红绳' };
 
 const dark = q.get('dark') === '1' || (!q.has('dark') && matchMedia('(prefers-color-scheme: dark)').matches);
 document.documentElement.classList.toggle('dark', dark);
@@ -130,7 +129,7 @@ function dev(): void {
   d.append(r);
 }
 
-// 假的 gatePick / branchPick 内容
+// 假的 branchPick 内容
 function fill(): void {
   const bs = [
     ['温室', '全年结果,产出 ×2'],
