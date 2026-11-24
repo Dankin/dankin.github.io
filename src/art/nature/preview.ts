@@ -1,4 +1,4 @@
-import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES, drawBackdrop, BackdropMode, drawBuilding, BUILDING_NAMES } from './index';
+import { APPLE_DEFS, APPLE_STATES, appleSprite, bakeStats, drawTree, spawnLeaves, stepLeaves, drawLeaves, LeafP, TREE_TIER_NAMES, treeAnchors, dropPattern, spawnShakeFall, stepFall, drawFall, drawStockPile, appleLandFx, drawLandFx, drawAppleAt, drawBackdrop, BackdropMode, drawBuilding, BUILDING_NAMES } from './index';
 
 const root = document.getElementById('root')!;
 const DPR = Math.min(2, devicePixelRatio || 1);
@@ -44,6 +44,40 @@ function trees() {
     };
     draw(0, 0.016); anims.push(draw);
   }
+}
+function fx() {
+  const d = sec('落果形态(每档)/ 苹果堆 level 0..1 / 落地小动画 — ?ft=秒 冻结周期内时刻');
+  const CW = 330, W = 5 * CW, H = 360, [c, x] = mk(W, H + 470, '#bfe3f2'); d.appendChild(c);
+  const ft = qs0.get('ft');
+  const draw = (t: number) => {
+    x.fillStyle = '#bfe3f2'; x.fillRect(0, 0, W, H + 470);
+    const cyc = ft ? +ft : t % 3.6;
+    for (let i = 0; i < 5; i++) {
+      const tier = i + 1, ox = i * CW + CW / 2, oy = H - 26, S = 0.5 + (i < 3 ? 0.12 : 0);
+      const an = treeAnchors(tier, i % 2);
+      drawTree(x, ox, oy, S, { tier: tier as 1, variant: (i % 2) as 0, seed: 1, shake: cyc < 0.6 ? 1 : 0, t: cyc, night: 0 });
+      let k = 0, sd = 5 + i; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+      const items = spawnShakeFall(tier, an, rnd);
+      for (let tt = 0; tt < cyc - 0.3; tt += 1 / 60) { stepFall(items, 1 / 60); k++; }
+      drawFall(x, items, ox, oy, S);
+      x.fillStyle = '#1b1410'; x.font = '13px sans-serif'; x.fillText(`${tier} ${dropPattern(tier).name} (${dropPattern(tier).kind})`, i * CW + 8, 18);
+    }
+    // 苹果堆
+    const by = H + 170;
+    [0, 0.1, 0.25, 0.5, 0.75, 1].forEach((lv, i) => { x.fillStyle = '#7bb83d'; x.fillRect(i * 150 + 4, by - 6, 140, 12); drawStockPile(x, i * 150 + 74, by, 1, lv, { seed: 1 }); x.fillStyle = '#1b1410'; x.font = '12px sans-serif'; x.fillText('level ' + lv, i * 150 + 40, by + 26); });
+    // 落地 fx
+    const kinds = ['golden', 'green', 'spotted', 'giant', 'wormy', 'poison'];
+    const gy = H + 400, lt = ft ? +ft : t % 2.4;
+    kinds.forEach((k, i) => {
+      const ox = i * 150 + 80, o = appleLandFx(k, lt);
+      x.fillStyle = '#7bb83d'; x.fillRect(i * 150 + 4, gy, 140, 8);
+      drawLandFx(x, k, lt, ox, gy, 1);
+      x.save(); x.globalAlpha = o.alpha; x.translate(ox + o.dx + (o.shake || 0), gy + o.dy - 19); x.rotate(o.rot); x.translate(0, 19); x.scale(o.sx, o.sy); x.translate(0, -19);
+      drawAppleAt(x, appleSprite(k, 'fresh', 64), 0, 0, 1); x.restore();
+      x.fillStyle = '#1b1410'; x.font = '12px sans-serif'; x.fillText(k + ' t=' + lt.toFixed(2), i * 150 + 20, gy + 24);
+    });
+  };
+  draw(0); anims.push(draw);
 }
 function backdrop() {
   const d = sec('背景 白天/黄昏/夜晚 横屏 844×390 + 竖屏 390×844(树5/树3 放置示意)');
@@ -96,7 +130,7 @@ function bench() {
   const d = document.createElement('pre'); d.id = 'bench'; d.textContent = `bench full-frame draw: ${ms.toFixed(3)} ms/frame; ` + JSON.stringify(bakeStats()); root.appendChild(d);
 }
 const qs = new URLSearchParams(location.search); if (qs.get('shake')) shakeEl.value = qs.get('shake')!;
-const secs: Record<string, () => void> = { apples, trees, backdrop, buildings, scene, bench };
+const secs: Record<string, () => void> = { apples, trees, fx, backdrop, buildings, scene, bench };
 const q = new URLSearchParams(location.search).get('sec');
 for (const k of Object.keys(secs)) if (!q || q === k) secs[k]();
 document.getElementById('info')!.textContent = JSON.stringify(bakeStats());

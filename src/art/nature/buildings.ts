@@ -1,3 +1,4 @@
+// @deprecated 整文件:v6 树 5 档原地进化取代果园/果山/果城/果星/苹果之门(保留以免旧引用断);新代码请用 tree.ts。
 // 生产建筑"生产档"主视觉 480×320:果园 / 果山 / 果城 / 果星 / 苹果之门。每档 2 个分支变体(variant 0|1)。
 // 风格:参考 truck.webp——粗均匀黑描边+轻微抖线+大量留白(米白/暖灰),只有苹果和少量点缀是彩色(红)。果园因为是树,保持彩色卡通。
 // 每件预渲染成一张 480×320 离屏图(锚点=底部中心),之后只 drawImage。
@@ -6,6 +7,7 @@ import { appleSprite, drawAppleAt } from './apple';
 import { drawTree, grassPatch } from './tree';
 
 export const BUILDING_W = 480, BUILDING_H = 320, BUILDING_GROUND = 300;
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const BUILDING_NAMES = ['果园', '果山', '果城', '果星', '苹果之门'] as const;
 export type BuildingTier = 1 | 2 | 3 | 4 | 5;
 export interface BuildingOpts {
@@ -278,6 +280,7 @@ function paintGate(c: Ctx, o: BuildingOpts) {
 
 // ================= 统一入口 =================
 /** 统一签名:(x,y)=底部中心(地面线),s=缩放(1 = 480×320 世界单位)。静态预渲染,一次 drawImage。 */
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export function drawBuilding(ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) {
   const tier = Math.max(1, Math.min(5, Math.round(o.tier ?? 1))) as BuildingTier, v = (o.variant ?? 0) ? 1 : 0, seed = o.seed ?? 1;
   const extra = tier === 1 ? `|${o.front ?? 3}|${o.back ?? 4}` : '';
@@ -285,9 +288,14 @@ export function drawBuilding(ctx: Ctx, x: number, y: number, s = 1, o: BuildingO
   const fn = [paintOrchard, paintMountain, paintCity, paintStar, paintGate][tier - 1];
   bake(`bld|${tier}|${v}|${seed}|${o.ground === false ? 0 : 1}${extra}`, BUILDING_W, BUILDING_H, (c) => fn(c, oo), { ax: BUILDING_W / 2, ay: 312 }).draw(ctx, x, y, s);
 }
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const drawOrchard = (ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) => drawBuilding(ctx, x, y, s, { ...o, tier: 1 });
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const drawAppleMountain = (ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) => drawBuilding(ctx, x, y, s, { ...o, tier: 2 });
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const drawAppleCity = (ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) => drawBuilding(ctx, x, y, s, { ...o, tier: 3 });
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const drawAppleStar = (ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) => drawBuilding(ctx, x, y, s, { ...o, tier: 4 });
+/** @deprecated v6 起不再使用生产建筑(树 5 档原地进化取代);仅为旧引用保留。 */
 export const drawAppleGate = (ctx: Ctx, x: number, y: number, s = 1, o: BuildingOpts = {}) => drawBuilding(ctx, x, y, s, { ...o, tier: 5 });
 export const _bm = mix;
