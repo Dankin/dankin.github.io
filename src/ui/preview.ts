@@ -111,7 +111,6 @@ function dev(): void {
   mk('库存', ['空', '半', '满'], () => 1, (i) => (st.stock = [0, 0.5, 1][i]));
   mk('分支', ['无', 'A', 'B'], () => st.br + 1, (i) => (st.br = i - 1));
   mk('摇劲', ['0', '.5', '1'], () => 0, (i) => (st.fw = [0, 0.5, 1][i]));
-  mk('门', ['0', '1', '2', '3'], () => st.gu, (i) => (st.gu = i));
   const r = document.createElement('div');
   for (const [n, f] of [
     ['暗', () => { o.dark = !o.dark; document.documentElement.classList.toggle('dark', o.dark); }],
