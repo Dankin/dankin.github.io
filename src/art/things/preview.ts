@@ -2,6 +2,7 @@
 import { drawTransport, TRANSPORT_W } from './transport.ts';
 import { drawDock } from './docks.ts';
 import { CHAR_KINDS, CHAR_NAMES, drawCharacter } from './characters.ts';
+import { drawPanel, drawButton, drawPin, drawIcon, PANEL_KINDS, PANEL_NAMES, ICON_IDS, ICON_NAMES } from './ui.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -64,6 +65,59 @@ addSection({
         if (r === 0) c.fillText(CHAR_NAMES[k], 50 + i * 56, 8);
       });
     }
+  },
+});
+
+addSection({
+  id: 'ui',
+  title: 'UI 框(九宫格拉伸)/ 按钮 / 图钉 / 11 关卡图标',
+  w: 760,
+  h: 430,
+  draw(c, t) {
+    c.fillStyle = '#9ec7a0';
+    c.fillRect(0, 0, 760, 430);
+    c.fillStyle = INKC;
+    c.font = '9px sans-serif';
+    // 面板:两种尺寸
+    let x = 10;
+    for (const k of PANEL_KINDS) {
+      c.fillStyle = INKC;
+      c.fillText(PANEL_NAMES[k], x, 10);
+      const r = drawPanel(c, k, x, 14, 140, k === 'top' ? 30 : 56);
+      c.fillStyle = INKC;
+      c.font = '12px "Kaiti SC",serif';
+      c.fillText('苹果 128', r[0] + 2, r[1] + 14);
+      c.font = '9px sans-serif';
+      x += 150;
+    }
+    drawPanel(c, 'card', 10, 84, 350, 74);
+    const r2 = drawPanel(c, 'narr', 380, 84, 360, 74);
+    c.fillStyle = INKC;
+    c.font = '13px "Kaiti SC",serif';
+    c.fillText('老徐:「树不会骗人,摇一摇就知道。」', r2[0], r2[1] + 22);
+    drawPanel(c, 'top', 10, 168, 740, 32);
+    drawPanel(c, 'inv', 10, 206, 360, 36);
+    drawPanel(c, 'news', 380, 206, 360, 36);
+    // 按钮
+    const tones = ['cream', 'leaf', 'wood', 'apple'] as const;
+    tones.forEach((tn, i) => {
+      drawButton(c, 10 + i * 100, 252, 88, 32, '摇一摇', { tone: tn });
+      drawButton(c, 10 + i * 100, 290, 88, 32, '按下', { tone: tn, pressed: true });
+    });
+    drawButton(c, 410, 252, 88, 32, '禁用', { disabled: true });
+    drawButton(c, 510, 252, 150, 40, '开始运苹果', { tone: 'apple', font: 16 });
+    drawPin(c, 430, 330, 1.4, {});
+    drawPin(c, 470, 330, 1.4, { col: '#4c7ec9' });
+    drawPin(c, 510, 330, 1, {});
+    // 图标
+    ICON_IDS.forEach((id, i) => {
+      drawIcon(c, id, 36 + i * 64, 380 + Math.sin(t * 2 + i) * 0, 1, { lit: i % 2 === 0, locked: i === 10 });
+      c.fillStyle = INKC;
+      c.font = '9px sans-serif';
+      c.textAlign = 'center';
+      c.fillText(ICON_NAMES[id], 36 + i * 64, 424);
+      c.textAlign = 'left';
+    });
   },
 });
 
