@@ -124,8 +124,29 @@ if (loaded.kind === 'new') sysAway(0);
 $('saveWarn').textContent = app.canSave ? '' : '当前无法保存(隐私模式?),请定期导出存档。';
 wire();
 setupMotion();
+// ⚙ → 新设置面板;旧抽屉(主题/摇一摇/精确数字)留作「更多」入口
+$('btnSettings').addEventListener('click', () => {
+  const p = panels();
+  if (!p) return void ($('settings').hidden = !$('settings').hidden);
+  p.openSettings();
+  const sheet = document.querySelector('#panel-settings .panel-body');
+  if (sheet && !sheet.querySelector('#btnMoreSettings')) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'btnMoreSettings';
+    b.className = 'panel-btn';
+    b.textContent = '更多:主题 / 摇一摇 / 精确数字';
+    b.style.cssText = 'margin-top:10px;width:100%';
+    b.addEventListener('click', () => {
+      p.closeAll();
+      $('settings').hidden = false;
+    });
+    sheet.append(b);
+  }
+});
 $('stage').addEventListener('click', (e) => void routeStageTap(e.clientX, e.clientY));
 mountPanels();
+if (/[#&]g=/.test(location.hash)) setTimeout(() => panels()?.openGift(), 1200); // 收到礼物链接:直接打开礼物页
 initFtue(awayAtBoot);
 if (app.DEBUG) {
   setupDebug();

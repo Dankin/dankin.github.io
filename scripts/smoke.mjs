@@ -73,7 +73,7 @@ async function tapStage(n = 1) {
   }
 }
 const num = async (expr) => Number(await G(expr));
-const openSettings = () => click('#btnSettings');
+const openSettings = async () => { await click('#btnSettings'); await sleep(250); await click('#btnMoreSettings'); }; // ⚙ → 新面板 → 更多 → 旧抽屉
 const dbgBtn = (label) => ev(`[...document.querySelectorAll('#debug button')].find(b=>b.textContent==='${label}').click()`);
 
 await send('Runtime.enable'); await send('Page.enable');
@@ -98,7 +98,10 @@ for (const [nm, w, h] of VIEWS) {
   check(`${nm} 画布非空(有深色线条像素)`, px > 300 || px === -1, `(${px})`);
   if (nm === 'land') await shot('land_light'); else if (nm === 'port') await shot('port_light'); else await shot('desk_light');
   if (nm === 'land') {
-    await openSettings(); await sleep(200);
+    await click('#btnSettings'); await sleep(300);
+    check('⚙ 打开新设置面板(含导出/导入/重置)', (await ev('!!document.getElementById("panel-settings")')) === true && /导出/.test(await ev('document.getElementById("panel-settings").innerText')));
+    await click('#btnMoreSettings'); await sleep(200);
+    check('「更多」进入旧设置抽屉', (await ev('document.getElementById("settings").hidden')) === false);
     await click('#btnTheme'); await click('#btnTheme'); // 自动 → 浅 → 深
     check('主题切到深色', (await ev('document.documentElement.classList.contains("dark")')) === true, `(${await text('#btnTheme')})`);
     await click('#btnCloseSettings'); await sleep(400);
@@ -258,6 +261,9 @@ for (const [date, sealed] of [['2026-12-23', true], ['2026-12-24', false]]) {
   await sleep(1500);
   const has = await ev('!!document.getElementById("ending")');
   check(`${date} 达成目标后出现结局`, has === true);
+  await click('#btnGift'); await sleep(400);
+  check(`${date} 结局「礼物盒」按钮打开礼物页`, (await ev('!!document.querySelector("#panel-gift, .panel-gift-sheet")')) === true);
+  await ev('document.querySelector(".panel-x")?.click()');
   const seal = await ev('!!document.getElementById("sealed")');
   check(`${date} ${sealed ? '显示 SEALED' : '不显示 SEALED'}`, seal === sealed, `(sealed=${seal})`);
   if (date === '2026-12-23') {

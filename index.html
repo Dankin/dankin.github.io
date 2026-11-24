@@ -93,7 +93,6 @@
   var $=function(i){return document.getElementById(i)};
   var s=$('settings'),gp=$('gatePick'),bp=$('branchPick');
   function closeAll(){s.hidden=true;gp.hidden=true;bp.hidden=true}
-  $('btnSettings').addEventListener('click',function(){s.hidden=!s.hidden});
   $('btnCloseSettings').addEventListener('click',function(){s.hidden=true});
   $('gatePickClose').addEventListener('click',function(){gp.hidden=true});
   $('branchCancel').addEventListener('click',function(){bp.hidden=true});

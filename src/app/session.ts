@@ -87,6 +87,14 @@ export function win(): void {
     // 礼物位:12 月 24 日起开放,内容以后放这里。
     box.id = 'giftSlot';
   }
+  const gb = document.createElement('button');
+  gb.type = 'button';
+  gb.className = 'main';
+  gb.id = 'btnGift';
+  gb.textContent = '礼物盒';
+  gb.style.cssText = 'margin:6px 0';
+  gb.addEventListener('click', () => panels()?.openGift());
+  box.append(gb);
   card.insertBefore(box, card.lastElementChild);
 }
 
