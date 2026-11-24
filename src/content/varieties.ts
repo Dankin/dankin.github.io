@@ -157,3 +157,8 @@ export const VARIETY_ORDER: VarietyId[] = [
   'fuji', 'goldenDel', 'granny', 'delicious', 'pinkLady', 'redStreak', 'caramel', 'purple',
   'silver', 'worm', 'giant', 'golden', 'forbidden', 'poison', 'kent',
 ];
+
+/** 与 src/core/sys/varieties.ts 的 AppleKind 对齐的查表(desc 一句图鉴描述;其余字段同 VARIETY_TEXTS) */
+export const VARIETY_TEXT: Record<VarietyId, VarietyText> = Object.fromEntries(
+  VARIETY_TEXTS.map((v) => [v.id, v]),
+) as Record<VarietyId, VarietyText>;
