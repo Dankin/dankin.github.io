@@ -1,11 +1,11 @@
 // 故事主线文案(纯数据)。
-// 用途:开场电话、6 张时代明信片、旁白条触发表、结局文本。
+// 用途:开场电话、旁白条触发表(6 张时代明信片的内容已并入各时代 era-enter 旁白,信箱/明信片已删除)、结局文本。
 // 故事:平安夜吃苹果,取"平安"。今年圣诞老人腰疼,雪橇限重,82 亿份平安果外包给匿名的"你"(摇树人)。
 //       搭档老徐(退休,嘴硬心软)。阻碍:乌鸦帮、督察小满、海关老海、外星人嘟嘟、门童。最大的对手是日历。
 // 主角匿名,旁白称"你"。圣诞老人是主要角色。
 //
 // 约束:
-//   - 旁白每句 ≤24 字,每条 ≤2 句;明信片正文 ≤80 字;
+//   - 旁白每句 ≤24 字,每条 ≤2 句;
 //   - 旁白节流(NARRATION_LIMITS):两条间隔 ≥45 秒,每小时 ≤40 条,连摇中/弹窗中不出;设置可选 全/少/关;
 //   - 礼物祝福由用户亲自写,不在此处代写。结局只放固定句 + {{GIFT_TEXT}} 占位 + 落款占位。
 //
@@ -18,73 +18,16 @@ export const STORY = {
   premise: '平安夜吃苹果,取"平安"。圣诞老人今年闹腰疼,雪橇限重,82 亿份平安果外包给你。每人一个,不多不少。',
   total: 8_200_000_000,
   rival: '日历',
-  /** 各时代剧情节拍(与 postcards 对应,仅作策划备忘) */
+  /** 各时代剧情节拍(v6:树原地进化,时代 = 产出线/运输线的大阶段,仅作策划备忘) */
   beats: [
-    '一棵树/篮子:圣诞老人来电求助。老徐路过,说帮你摇,不收钱。',
-    '小果园/小推车:邻居入伙,乌鸦帮开始顺苹果,老徐搬凳子站岗。',
-    '果山/卡车:小满来查摇树许可证,被牛顿砸中的苹果收买。',
-    '果城/货船:果城开业,老海点数点到睡着,果多多想收购你。',
-    '果星/飞机:嘟嘟登陆,把苹果当货币,开通航线。',
-    '苹果之门/传送门:门童说最后一道门只收"最后一个"。老徐想起圣诞节还有件事没办。',
+    '小树/篮子:圣诞老人来电求助。老徐路过,说帮你摇,不收钱。',
+    '老树/挑担工:邻居围观,乌鸦帮开始顺苹果,老徐搬凳子站岗。',
+    '巨树/卡车:小满来查摇树许可证,被牛顿砸中的苹果收买。老徐顺着软梯爬上树屋。',
+    '云树/货船:货船靠岸,老海点数点到睡着,果多多想收购你。',
+    '星树/飞机:嘟嘟登陆,把苹果当货币,开通航线。树上亮起星灯。',
+    '终点/传送门:门童说最后一道门只收"最后一个"。老徐想起圣诞节还有件事没办。',
   ],
 } as const;
-
-// ───────────────────────── 明信片(每个时代进入时弹 1 张,点任意处关闭) ─────────────────────────
-export interface Postcard {
-  id: string;
-  /** 进入的时代(0 = 开局,1..5 = 升到该时代) */
-  era: 0 | 1 | 2 | 3 | 4 | 5;
-  title: string;
-  /** ≤80 字 */
-  body: string;
-  /** 署名(卡片右下) */
-  sign: string;
-}
-
-export const POSTCARDS: Postcard[] = [
-  {
-    id: 'pc-0',
-    era: 0,
-    title: '平安夜前的一通电话',
-    body: '喂,是摇树的吗?我是圣诞老人,腰扭了,雪橇也限重。今年的平安果,八十二亿份,能不能请你摇一摇?每人一个,不多不少。',
-    sign: '圣诞老人(叉着腰)',
-  },
-  {
-    id: 'pc-1',
-    era: 1,
-    title: '邻居们来了',
-    body: '邻居看你摇得挺开心,把自家的树也带来了。乌鸦在篱笆上点人头。老徐搬了条凳子:我不是帮你,我是路过。凳子是他自带的。',
-    sign: '老徐(路过)',
-  },
-  {
-    id: 'pc-2',
-    era: 2,
-    title: '摇树许可证',
-    body: '山上来了位戴帽子的督察,问你要摇树许可证。你没有。她没收了一个苹果当证据,当场吃了半个。牛顿在树下睡午觉,又被砸醒了。',
-    sign: '督察小满(已盖章)',
-  },
-  {
-    id: 'pc-3',
-    era: 3,
-    title: '果城开业',
-    body: '果城开业了。码头来了位海关老海,苹果数到一半睡着了。果多多路过,出价三个橘子,你婉拒。圣诞老人来电:还剩多少?',
-    sign: '老海(数到一半)',
-  },
-  {
-    id: 'pc-4',
-    era: 4,
-    title: '天上的客人',
-    body: '一艘圆圆的船降在果星上,嘟嘟走出来:地球货币!好吃!他把苹果当钱,开通了航线。老徐问:这算外贸吗?没人回答。',
-    sign: '嘟嘟!',
-  },
-  {
-    id: 'pc-5',
-    era: 5,
-    title: '最后一道门',
-    body: '门童说,最后一道门,只收"最后一个"。老徐看了眼日历,忽然想起圣诞节还有件事没办。远处,雪橇的铃声已经很近了。',
-    sign: '老徐',
-  },
-];
 
 // ───────────────────────── 旁白条 ─────────────────────────
 export type NarrationTrigger = 'era-enter' | 'milestone' | 'idle-return' | 'egg';
@@ -98,7 +41,7 @@ export interface NarrationLine {
   speaker?: CharId;
   /** era-enter:对应时代 0..5 */
   era?: 0 | 1 | 2 | 3 | 4 | 5;
-  /** era-enter:进入该时代后多少秒再出(0 = 紧跟明信片关闭后) */
+  /** era-enter:进入该时代后多少秒再出(0 = 一进入该时代就出) */
   delaySec?: number;
   /** milestone:送达进度百分比 10/25/50/75/90/99/100 */
   pct?: 10 | 25 | 50 | 75 | 90 | 99 | 100;
@@ -118,36 +61,44 @@ export const NARRATION_LIMITS = {
 } as const;
 
 export const NARRATION: NarrationLine[] = [
-  // ── 时代 0:一棵树 / 篮子 ──
-  { id: 'nr-e0-1', trigger: 'era-enter', era: 0, delaySec: 0, speaker: 'santa', text: '喂,是摇树的吗?我腰疼,拜托你了。' },
+  // ── 时代 0:小树 / 篮子(原明信片「平安夜前的一通电话」并入 e0-1/e0-5) ──
+  { id: 'nr-e0-1', trigger: 'era-enter', era: 0, delaySec: 0, speaker: 'santa', text: '喂,是摇树的吗?我是圣诞老人。' },
+  { id: 'nr-e0-5', trigger: 'era-enter', era: 0, delaySec: 12, speaker: 'santa', text: '腰扭了,雪橇也限重。八十二亿份平安果,能请你摇一摇吗?' },
   { id: 'nr-e0-2', trigger: 'era-enter', era: 0, delaySec: 40, text: '有位大爷在树下站了会儿,没说话。' },
   { id: 'nr-e0-3', trigger: 'era-enter', era: 0, delaySec: 90, speaker: 'santa', text: '每人一个,不多不少。慢慢来,别伤着手。' },
   { id: 'nr-e0-4', trigger: 'era-enter', era: 0, delaySec: 150, text: '苹果落地的声音,很像鼓掌。' },
-  // ── 时代 1:小果园 / 小推车 ──
-  { id: 'nr-e1-1', trigger: 'era-enter', era: 1, delaySec: 0, text: '邻居家的树也来了。乌鸦在篱笆上点人头。' },
+  // ── 时代 1:老树 / 挑担工(原「邻居们来了」) ──
+  { id: 'nr-e1-1', trigger: 'era-enter', era: 1, delaySec: 0, text: '树长粗了。邻居来围观,乌鸦在篱笆上点人头。' },
   { id: 'nr-e1-2', trigger: 'era-enter', era: 1, delaySec: 40, speaker: 'laoxu', text: '我不是帮你,我是路过。凳子是自带的。' },
   { id: 'nr-e1-3', trigger: 'era-enter', era: 1, delaySec: 90, speaker: 'crow', text: '有些苹果少了。老黑说:是借的。' },
   { id: 'nr-e1-4', trigger: 'era-enter', era: 1, delaySec: 150, text: '凳子吱呀一声,乌鸦抬头看了一眼。' },
-  // ── 时代 2:果山 / 卡车 ──
-  { id: 'nr-e2-1', trigger: 'era-enter', era: 2, delaySec: 0, text: '山来了。督察小满也来了,问你要许可证。' },
+  { id: 'nr-e1-5', trigger: 'era-enter', era: 1, delaySec: 200, text: '树干上多了块木牌:请勿摇晃。树假装没看见。' },
+  // ── 时代 2:巨树 / 卡车(原「摇树许可证」) ──
+  { id: 'nr-e2-1', trigger: 'era-enter', era: 2, delaySec: 0, text: '树大了,督察小满来了。问你要摇树许可证。' },
   { id: 'nr-e2-2', trigger: 'era-enter', era: 2, delaySec: 40, speaker: 'xiaoman', text: '证件呢?苹果证也行。' },
   { id: 'nr-e2-3', trigger: 'era-enter', era: 2, delaySec: 90, text: '牛顿又被砸了。小满收下那颗苹果,当证据。' },
+  { id: 'nr-e2-5', trigger: 'era-enter', era: 2, delaySec: 120, text: '她当场吃了半个。证据,少了一半。' },
   { id: 'nr-e2-4', trigger: 'era-enter', era: 2, delaySec: 150, text: '卡车喇叭响起,树吓了一跳。' },
-  // ── 时代 3:果城 / 货船 ──
-  { id: 'nr-e3-1', trigger: 'era-enter', era: 3, delaySec: 0, text: '果城开业。老海在码头点数,点着点着睡了。' },
+  { id: 'nr-e2-6', trigger: 'era-enter', era: 2, delaySec: 200, text: '软梯垂下来了。老徐:我先上。' },
+  // ── 时代 3:云树 / 货船(原「果城开业」) ──
+  { id: 'nr-e3-1', trigger: 'era-enter', era: 3, delaySec: 0, text: '货船靠岸了。老海在码头点数,点着点着睡了。' },
   { id: 'nr-e3-2', trigger: 'era-enter', era: 3, delaySec: 40, speaker: 'duoduo', text: '我出三个橘子。' },
   { id: 'nr-e3-3', trigger: 'era-enter', era: 3, delaySec: 90, text: '货船上的苹果晕船,船长递来塑料袋。' },
   { id: 'nr-e3-4', trigger: 'era-enter', era: 3, delaySec: 150, text: '海风里有咸味,也有苹果味。' },
-  // ── 时代 4:果星 / 飞机 ──
-  { id: 'nr-e4-1', trigger: 'era-enter', era: 4, delaySec: 0, text: '嘟嘟降落了。他喊:地球货币,好吃!' },
+  { id: 'nr-e3-5', trigger: 'era-enter', era: 3, delaySec: 200, speaker: 'santa', text: '圣诞老人来电:还剩多少?' },
+  { id: 'nr-e3-6', trigger: 'era-enter', era: 3, delaySec: 240, text: '树冠钻进了云里。飞机请绕行。' },
+  // ── 时代 4:星树 / 飞机(原「天上的客人」) ──
+  { id: 'nr-e4-1', trigger: 'era-enter', era: 4, delaySec: 0, text: '一艘圆圆的船降落了。嘟嘟喊:地球货币,好吃!' },
   { id: 'nr-e4-2', trigger: 'era-enter', era: 4, delaySec: 40, text: '航线开通。老徐问:这算外贸吗?' },
-  { id: 'nr-e4-3', trigger: 'era-enter', era: 4, delaySec: 90, text: '天上长满苹果,天文学家睡不着。' },
+  { id: 'nr-e4-3', trigger: 'era-enter', era: 4, delaySec: 90, text: '树上挂满星灯,天文学家睡不着。' },
   { id: 'nr-e4-4', trigger: 'era-enter', era: 4, delaySec: 150, text: '月亮上有个红点。是苹果。' },
-  // ── 时代 5:苹果之门 / 传送门 ──
+  { id: 'nr-e4-5', trigger: 'era-enter', era: 4, delaySec: 200, speaker: 'laoxu', text: '苹果自己会发光。老徐说:省了灯泡。' },
+  // ── 时代 5:终点 / 传送门(原「最后一道门」) ──
   { id: 'nr-e5-1', trigger: 'era-enter', era: 5, delaySec: 0, speaker: 'doorman', text: '最后一道门,只收"最后一个"。' },
   { id: 'nr-e5-2', trigger: 'era-enter', era: 5, delaySec: 40, text: '老徐看了一眼日历。圣诞节,还有件事没办。' },
   { id: 'nr-e5-3', trigger: 'era-enter', era: 5, delaySec: 90, text: '雪橇的铃声,已经很近了。' },
   { id: 'nr-e5-4', trigger: 'era-enter', era: 5, delaySec: 150, text: '门缝里透出光,是红色的。' },
+  { id: 'nr-e5-5', trigger: 'era-enter', era: 5, delaySec: 200, text: '收货站的灯亮着。小精灵排好了队。' },
 
   // ── 里程碑(占总目标 82 亿的百分比) ──
   { id: 'nr-m10-1', trigger: 'milestone', pct: 10, text: '十分之一了。老徐说:才十分之一。', speaker: 'laoxu' },
