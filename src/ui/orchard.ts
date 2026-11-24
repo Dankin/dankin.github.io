@@ -3,6 +3,7 @@ import { APPLE, GOLDC, P, TAU, apple, circ, clamp, ease, lerp, pen, poly, rect, 
 import { EMIT, PILE_MAX, SRC_NAMES, drawGift, drawPile, drawSource, drawShakeMeter } from './sources.ts';
 import { LANE_OF, RT_NAMES, TRIP_SEC, drawBead, drawCrates, drawDock, drawGate, drawPortalRing, drawVehicle, gateBadge } from './route.ts';
 import { fmt } from './format.ts';
+import { ArtScene } from './scene-art.ts';
 
 type C = CanvasRenderingContext2D;
 
@@ -34,6 +35,25 @@ export interface WorldView {
   perTrip?: number;
   /** 各槽当前是否买得起(可选;缺省视为买得起 → 圈会呼吸) */
   gateCan?: boolean[];
+  /** —— v5 新美术字段(全部可选) —— */
+  /** 世界时钟 0..24:驱动天空昼夜;缺省按 dark 取 23/12 */
+  hour?: number;
+  /** 季节 0..3(春夏秋冬;预留) */
+  season?: number;
+  /** 天气 'clear' | 'rain' | 'snow' */
+  weather?: 'clear' | 'rain' | 'snow' | string;
+  /** 建筑外观变体(0|1) */
+  srcVariant?: number;
+  /** 帮手(老徐)数量,>0 时堆场旁显示老徐 */
+  helpers?: number;
+  /** 害虫(只含已出场的):pos 0..1 = 从屏幕边缘(0)爬向树(1) */
+  pests?: Array<{ id: number; kind: string; side: -1 | 1; pos: number }>;
+  /** 顾客订单(码头旁排队,最多画 3 个) */
+  orders?: Array<{ id: number; customer: number; want: string; qty: number; expiresIn: number }>;
+  /** 烂果数(堆场上画几颗烂苹果) */
+  rot?: number;
+  /** 树顶是否有金苹果 */
+  gold?: boolean;
 }
 
 export const EMPTY_WORLD: WorldView = {
@@ -50,11 +70,16 @@ export const EMPTY_WORLD: WorldView = {
   carry: 1,
   shake: 0,
   combo: 0,
+  helpers: 0,
+  rot: 0,
 };
 
 const GATE_NAME: Record<string, string> = { wash: '洗果', wax: '打蜡', juice: '榨汁', pack: '包装', cold: '冷链', rush: '加急', string: '红绳', belt: '传送带', glove: '手套', chant: '号子', brand: '吊牌' };
 /** 同屏最多画几辆(其余以 ×N 表示) */
-const VIS_MAX = [3, 3, 3, 3, 3, 10];
+/** rtTier 0..8(9 档运输);旧画法只有 0..5 档,>5 时按 5 画 */
+const VIS_MAX = [3, 3, 3, 3, 3, 10, 3, 3, 3];
+/** ?art=0 → 旧美术 */
+const USE_ART = typeof location === 'undefined' || !/[?&]art=0(?:&|$)/.test(location.search);
 const MAX_PARTS = 56;
 const MAX_FLY = 14;
 
@@ -145,6 +170,8 @@ export class Orchard {
   private lay!: Lay;
   private wv: WorldView = { ...EMPTY_WORLD };
   private dark_ = false;
+  /** v5 新美术场景;?art=0 时为 null(走旧绘制) */
+  private art: ArtScene | null = null;
   private t = 0;
   private lastInput = -99;
   private acc = 0;
@@ -225,6 +252,7 @@ export class Orchard {
     cv.addEventListener('pointermove', (e) => this.move(e));
     cv.addEventListener('pointerup', (e) => this.up(e));
     cv.addEventListener('pointercancel', (e) => this.up(e, true));
+    if (USE_ART) this.art = new ArtScene(this.c);
     this.resize();
   }
 
@@ -236,9 +264,11 @@ export class Orchard {
     if (v === this.dark_) return;
     this.dark_ = v;
     setTheme(v);
+    if (this.art) this.art.dark = v;
     this.bgKey = '';
   }
   eventActive(): boolean {
+    if (this.art) return this.art.eventActive();
     return this.ev !== null;
   }
 
@@ -255,6 +285,7 @@ export class Orchard {
     this.cv.width = Math.round(this.w * this.dpr);
     this.cv.height = Math.round(this.h * this.dpr);
     this.layout();
+    this.art?.resize(this.w, this.h, this.dpr, this.insL, this.insR);
     this.bgKey = '';
     this.lastInput = this.t;
   }
@@ -264,6 +295,10 @@ export class Orchard {
    * (1e-9 → 0,1 → 1),所以早期每一档增长都看得见;frac ≥ 1 时礼物盒打开。
    */
   setProgress(frac: number): void {
+    if (this.art) {
+      this.art.setProgress(frac);
+      return;
+    }
     const f = Math.max(0, Math.min(1, frac || 0));
     const p = f <= 1e-9 ? 0 : (Math.log10(f) + 9) / 9;
     if (p - this.progT > 0.02) this.giftPop = 1;
@@ -277,6 +312,13 @@ export class Orchard {
   }
 
   setWorld(wv: WorldView): void {
+    if (this.art) {
+      const m = { ...EMPTY_WORLD, ...wv, srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
+      this.art.setWorld(m);
+      this.wv = m;
+      this.lastInput = this.t;
+      return;
+    }
     const o = this.wv;
     const first = this.firstWorld;
     this.firstWorld = false;
@@ -307,7 +349,7 @@ export class Orchard {
         }
       }
     }
-    this.wv = { ...EMPTY_WORLD, ...wv, srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
+    this.wv = { ...EMPTY_WORLD, ...wv, rtTier: Math.min(5, wv.rtTier ?? 0), srcUnits: wv.srcUnits ?? EMPTY_WORLD.srcUnits, srcBranch: wv.srcBranch ?? EMPTY_WORLD.srcBranch };
     this.syncVehs();
     this.syncSS();
     this.lastInput = this.t;
@@ -315,6 +357,11 @@ export class Orchard {
 
   /** 外部"摇一摇":树/生产线抖动并弹出几个苹果 */
   poke(n = 2): void {
+    if (this.art) {
+      this.art.poke(n);
+      this.lastInput = this.t;
+      return;
+    }
     this.sway = Math.min(1, this.sway + 0.7);
     this.emitFlash = 1;
     const e = this.emit();
@@ -325,16 +372,30 @@ export class Orchard {
 
   /** 连击飞果:从生产线弹出 n 个苹果越过路线飞向码头 */
   burst(n = 3): void {
+    if (this.art) {
+      this.art.burst(n);
+      this.lastInput = this.t;
+      return;
+    }
     const e = this.emit();
     for (let i = 0; i < n; i++) this.spawnFly(e.x, e.y, this.lay.dockX + (Math.random() - 0.5) * 10, this.lay.dockY - 8, 1 + Math.random() * 0.4, 26 + Math.random() * 14, 1);
     this.lastInput = this.t;
   }
 
   floatText(s: string, wx?: number, wy?: number): void {
+    if (this.art) {
+      this.art.floatText(s, wx, wy);
+      return;
+    }
     this.say(s, wx ?? this.lay.srcX, wy ?? this.lay.srcY - 40, P.ink);
   }
 
   spawnEvent(kind: EventKind, cb: (hit: boolean) => void): void {
+    if (this.art) {
+      this.art.spawnEvent(kind, cb);
+      this.lastInput = this.t;
+      return;
+    }
     if (this.ev) return;
     const L = this.lay;
     const dur = kind === 'meteor' ? 5 : kind === 'bird' ? 9 : 12;
@@ -343,8 +404,28 @@ export class Orchard {
     this.lastInput = this.t;
   }
 
+  /* ---- v5 新增 API(新美术;?art=0 时为空操作) ---- */
+  /** 摇树掉落一个苹果:kind=APPLE_KINDS id(如 'fuji'),state='fresh'|'ripe'|'wormy'|'shiny'|'rotten'。从树冠落下→弹一下→滚进堆场 */
+  dropApple(kind: string, state: string, golden = false): void {
+    this.art?.dropApple(kind, state, golden);
+    this.lastInput = this.t;
+  }
+  /** 场景边缘出现一个访客角色(id = src/art/things 的 CharKind:xu/newton/santa/cust1..3/crow/manman/haihai/dudu/doorman/duoduo;未知 id 忽略),ttlSec 秒后离开 */
+  addVisitor(id: string, ttlSec = 8): void {
+    this.art?.addVisitor(id, ttlSec);
+    this.lastInput = this.t;
+  }
+  clearVisitors(): void {
+    this.art?.clearVisitors();
+  }
+  /** 画布 CSS 像素 → 热点 id:sys 的 TAP_TARGETS / 'pest:<id>' / 'order:<id>' / 'rot';没有则 null */
+  tapTarget(px: number, py: number): string | null {
+    return this.art ? this.art.tapTarget(px, py) : null;
+  }
+
   /** 屏幕坐标 → 是否命中某物(供 main.ts 预判,可选) */
   hitTest(px: number, py: number): Hit {
+    if (this.art) return this.art.hit(px, py);
     const [x, y] = this.toWorld(px, py);
     if (this.ev && this.evHit(x, y)) return 'event';
     const L = this.lay;
@@ -356,6 +437,7 @@ export class Orchard {
 
   /** 命中哪个关卡圈(世界坐标)。圈 ≥44px:半径取 max(徽章半径, 23/s)+余量 */
   private gateAt(x: number, y: number): number {
+    if (this.art) return this.art.gateAt(x, y);
     const L = this.lay;
     const { r, by } = gateBadge(22 / L.s);
     for (let i = 0; i < Math.min(3, this.wv.gatesUnlocked); i++) {
@@ -367,11 +449,13 @@ export class Orchard {
 
   /** 世界坐标(用于 float 位置) */
   worldPos(): { src: [number, number]; dock: [number, number]; gates: Array<[number, number]> } {
+    if (this.art) return this.art.worldPos();
     const L = this.lay;
     return { src: [L.srcX, L.srcY], dock: [L.dockX, L.dockY], gates: L.gateU.map((u) => { const q = this.at(u); return [q.x, q.y] as [number, number]; }) };
   }
   /** 门槛槽的屏幕坐标(CSS px),供 DOM 抽屉定位 */
   gateScreen(slot: number): { x: number; y: number } {
+    if (this.art) return this.art.gateScreen(slot);
     const q = this.at(this.lay.gateU[slot]);
     return { x: q.x * this.lay.s + this.lay.ox, y: (q.y - 12) * this.lay.s + this.lay.oy };
   }
@@ -385,6 +469,12 @@ export class Orchard {
     const dt = Math.min(0.1, this.acc);
     this.acc = 0;
     this.t += dt;
+    if (this.art) {
+      this.art.reduced = this.reducedMotion;
+      this.art.update(dt);
+      this.art.draw(!this.everShook);
+      return;
+    }
     this.update(dt);
     this.draw();
   }
@@ -479,6 +569,7 @@ export class Orchard {
     return { x: this.lay.srcX + e[0] * this.lay.ss, y: this.lay.srcY + e[1] * this.lay.ss };
   }
   private toWorld(px: number, py: number): [number, number] {
+    if (this.art) return [px, py];
     return [(px - this.lay.ox) / this.lay.s, (py - this.lay.oy) / this.lay.s];
   }
 
@@ -491,7 +582,7 @@ export class Orchard {
     const [x, y] = this.pos(e);
     this.lastInput = this.t;
     const [wx, wy] = this.toWorld(x, y);
-    const evh = !!this.ev && this.evHit(wx, wy);
+    const evh = this.art ? this.art.evHit(wx, wy) : !!this.ev && this.evHit(wx, wy);
     const g = evh ? -1 : this.gateAt(wx, wy);
     if (evh || g >= 0) {
       // 事件/关卡圈:抬起时才生效(只跟踪一根手指)
@@ -528,13 +619,16 @@ export class Orchard {
     const [x, y] = this.pos(e);
     const [wx, wy] = this.toWorld(x, y);
     this.lastInput = this.t;
-    if (kind === 1 && this.ev && this.evHit(wx, wy)) this.catchEv(wx, wy);
+    if (kind === 1 && this.art) {
+      if (this.art.evHit(wx, wy)) this.art.catchEv();
+    } else if (kind === 1 && this.ev && this.evHit(wx, wy)) this.catchEv(wx, wy);
     else if (kind === 2 && this.gateAt(wx, wy) === this.tapGate && this.tapGate >= 0) this.onGate(this.tapGate);
   }
 
   /** 摇一下:树轻晃 + 回调(苹果由 main 调 poke 弹出) */
   shakeTap(): void {
     this.sway = Math.min(1, this.sway + 0.45);
+    this.art?.kick(0.45);
     this.lastInput = this.t;
     if (!this.everShook) {
       this.everShook = true;
