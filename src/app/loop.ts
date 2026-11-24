@@ -4,6 +4,7 @@ import { app, hooks } from './ctx.ts';
 import { catchUp, persist } from './session.ts';
 import { sysFrame } from './sys.ts';
 import { checkGiftRim } from './chars.ts';
+import { stageCardTick } from './stages.ts';
 
 // ───────────── 主循环 ─────────────
 let lastTs = performance.now();
@@ -37,6 +38,7 @@ export function loop(ts: number): void {
     slowAcc = 0;
     hooks.render();
     checkGiftRim();
+    stageCardTick();
   }
   if (saveAcc >= 15) {
     saveAcc = 0;

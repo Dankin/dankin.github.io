@@ -18,6 +18,8 @@ import { pushNews, setNewsSource } from './ticker.ts';
 import { toast, toastIdle } from './toasts.ts';
 import { laoxuLines, type LaoxuLevel, type LaoxuState } from '../content/laoxu.ts';
 import { fmt } from '../ui/format.ts';
+import { fxOf, traitOf } from '../core/sys/varieties.ts';
+import { playSfx } from './chars.ts';
 
 const rnd = Math.random;
 
@@ -131,6 +133,9 @@ export function rollShake(r: ShakeResult, force?: 'kent'): void {
   bus.emit({ t: 'apple', kind: a.kind, state: a.state, value: a.value });
   if (a.kind === 'poison') app.audio.sfx.play('spoil');
   else if (a.value >= 3) app.audio.sfx.play('rareApple');
+  // 品种特性音效(落地时响):金色/弹跳/震地/滚走/冒烟…
+  const traitSfx = traitOf(a.kind, a.state) ? fxOf(a.kind, a.state).sfx : '';
+  if (traitSfx && a.kind !== 'poison') setTimeout(() => playSfx(traitSfx), 520);
   emitSys({ t: 'shake', combo: r.combo, apple: { kind: a.kind, state: a.state } });
 }
 
