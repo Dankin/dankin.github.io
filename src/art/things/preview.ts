@@ -8,6 +8,7 @@ import { drawApple } from './apple.ts';
 import { drawLaoXu, drawStool, drawBench, drawBottle, drawTeaCup, drawRadio, drawRecliner, drawApprentice, LAOXU_STATES, LAOXU_STATE_NAMES, LAOXU_LEVEL_NAMES } from './laoxu.ts';
 import { drawTransport8, drawFleet, runPhase, TRANSPORT8_NAMES, TRANSPORT8_BRANCH_NAMES, TRANSPORT8_W, TRANSPORT8_FLIES } from './transports8.ts';
 import { drawSantaDepot } from './depot.ts';
+import { drawBird, birdFlight, BIRD_STATES, BIRD_KINDS } from './bird.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -278,6 +279,39 @@ addSection({
     lv.forEach((l, i) => drawSantaDepot(c, 70 + i * 195, 120, 0.62, { ...o, t, level: l, receive: i === 1 ? (t * 0.5) % 1 : 0, seed: 2 }));
     const tk = [0.0, 0.35, 0.7];
     tk.forEach((v, i) => drawSantaDepot(c, 90 + i * 260, 290, 0.62, { ...o, t, level: 1, takeoff: v, seed: 2 }));
+  },
+});
+
+addSection({
+  id: 'bird',
+  title: '鸟:3 种 × 5 状态(站/飞/起飞/降落/被点中,p 取 0.15/0.4/0.65/0.9)+ 下排弧线巡游(起飞→弧线飞→降落)',
+  w: 800,
+  h: 420,
+  draw(c, t, o) {
+    c.fillStyle = INKC;
+    c.font = '9px sans-serif';
+    c.textAlign = 'center';
+    BIRD_KINDS.forEach((kd, r) => {
+      BIRD_STATES.forEach((st, i) => {
+        const ps = [0.15, 0.4, 0.65, 0.9];
+        const n = st === 'perch' || st === 'fly' ? 1 : 4;
+        for (let j = 0; j < n; j++) {
+          const bx = 40 + i * 152 + (n === 1 ? 40 : j * 38 - 20);
+          c.fillStyle = 'rgba(0,0,0,0.05)';
+          c.fillRect(bx - 12, 60 + r * 60, 24, 1);
+          drawBird(c, bx, 60 + r * 60, 1.5, { ...o, t: t + j * 0.13, kind: kd, state: st, p: n === 1 ? undefined : ps[j], seed: r + 1 });
+        }
+        if (r === 0) { c.fillStyle = INKC; c.fillText(st, 40 + i * 152 + 40, 10); }
+      });
+    });
+    c.fillStyle = 'rgba(0,0,0,0.12)';
+    c.fillRect(40, 300, 720, 1);
+    for (let b = 0; b < 3; b++) {
+      const u = ((t * 0.18 + b / 3) % 1);
+      const f = birdFlight(u, 60, 300, 740, 300, 60);
+      drawBird(c, f.x, f.y, 1.6, { ...o, t: t + b, kind: BIRD_KINDS[b], state: f.state, p: f.p, dir: f.dir, seed: b + 3 });
+    }
+    drawBird(c, 750, 300, 1.6, { ...o, t, state: 'perch', dir: -1, kind: 'dove' });
   },
 });
 
