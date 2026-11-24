@@ -5,6 +5,7 @@ import { CHAR_KINDS, CHAR_NAMES, drawCharacter } from './characters.ts';
 import { drawPanel, drawButton, drawPin, drawIcon, PANEL_KINDS, PANEL_NAMES, ICON_IDS, ICON_NAMES } from './ui.ts';
 import { drawFlight, drawGoldHalo, drawFirework, drawGiftBox } from './fx.ts';
 import { drawApple } from './apple.ts';
+import { drawLaoXu, drawStool, drawBench, drawBottle, drawTeaCup, drawRadio, drawRecliner, drawApprentice, LAOXU_STATES, LAOXU_STATE_NAMES, LAOXU_LEVEL_NAMES } from './laoxu.ts';
 import type { Pose, ThingOpt } from './types.ts';
 
 type C = CanvasRenderingContext2D;
@@ -73,6 +74,68 @@ addSection({
     }
   },
 });
+
+addSection({
+  id: 'laoxu',
+  title: '老徐 v2:8 级(idle)/ 12 状态(lv=o.load*7+1 或 lv=3)/ 掏马扎过渡 / 道具',
+  w: 780,
+  h: 760,
+  draw(c, t, o) {
+    c.fillStyle = INKC;
+    c.font = '9px sans-serif';
+    c.textAlign = 'center';
+    const lvSel = o.load === undefined || o.load >= 0.99 ? 3 : Math.max(1, Math.min(8, Math.round(1 + o.load * 7)));
+    // 行1:8 级
+    for (let i = 0; i < 8; i++) {
+      drawLaoXu(c, 50 + i * 95, 90, 1, { lv: i + 1, state: 'idle', t, seed: 5 });
+      c.fillText('Lv' + (i + 1) + ' ' + LAOXU_LEVEL_NAMES[i + 1], 50 + i * 95, 108);
+    }
+    // 12 状态(4 列 × 3 行)
+    LAOXU_STATES.forEach((st, i) => {
+      const cx = 100 + (i % 4) * 190, cy = 210 + Math.floor(i / 4) * 105;
+      c.fillStyle = 'rgba(0,0,0,0.03)';
+      c.fillRect(cx - 90, cy - 80, 180, 100);
+      c.fillStyle = INKC;
+      c.fillText(st + ' ' + LAOXU_STATE_NAMES[st], cx, cy + 16);
+      drawLaoXu(c, cx - (st === 'retire' ? 8 : 0), cy, 0.95, { lv: lvSel, state: st, t, seed: 5, p: (o.unload ?? 0) > 0 ? o.unload : undefined });
+    });
+    // 过渡:掏马扎
+    c.fillStyle = INKC;
+    c.fillText('掏马扎过渡 p=0.1/0.3/0.4/0.55/0.7/0.85/1', 390, 540);
+    [0.1, 0.3, 0.4, 0.55, 0.7, 0.85, 1].forEach((p, i) => drawLaoXu(c, 55 + i * 108, 610, 0.95, { lv: 3, state: 'sit', t, seed: 5, p }));
+    // 道具
+    c.fillStyle = INKC;
+    c.fillText('道具:马扎(折/半/开) 小板凳 快乐水瓶 茶杯 收音机 徒弟(摇/站/欢呼) 躺椅', 390, 640);
+    drawStool(c, 40, 700, 1.3, { open: 0 });
+    drawStool(c, 90, 700, 1.3, { open: 0.5 });
+    drawStool(c, 150, 700, 1.3, { open: 1 });
+    drawBench(c, 215, 700, 1.3, {});
+    drawBottle(c, 265, 700, 2, { t, fizz: 0.6 });
+    drawBottle(c, 305, 700, 2, { t, tilt: 0.7 });
+    drawTeaCup(c, 345, 700, 2, { t });
+    drawRadio(c, 395, 700, 1.4, { t });
+    drawApprentice(c, 440, 700, 1.4, { t, pose: 'shake' });
+    drawApprentice(c, 480, 700, 1.4, { t, pose: 'idle' });
+    drawApprentice(c, 520, 700, 1.4, { t, pose: 'cheer' });
+    drawRecliner(c, 620, 705, 1.4, {});
+  },
+});
+
+for (const [id, y0, h] of [['lx1', 0, 130], ['lx2', 170, 200], ['lx3', 360, 190], ['lx4', 520, 240]] as const) {
+  addSection({
+    id,
+    title: '老徐裁切 ' + id,
+    w: 780,
+    h,
+    draw(c, t, o, z) {
+      const base = secs.find((q) => q.id === 'laoxu');
+      c.save();
+      c.translate(0, -y0);
+      base?.draw(c, t, o, z);
+      c.restore();
+    },
+  });
+}
 
 addSection({
   id: 'ui',

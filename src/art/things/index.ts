@@ -7,5 +7,6 @@ export * from './transport-extra.ts';
 export * from './transports.ts';
 export * from './docks.ts';
 export * from './characters.ts';
+export * from './laoxu.ts';
 export * from './ui.ts';
 export * from './fx.ts';

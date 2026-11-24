@@ -1,6 +1,8 @@
 // 角色:分件(腿/身/臂/头/配件)+ 代码动画(待机/摇/接/庆祝/被砸)。(x,y)=脚底中心,约 2.2 头身,s=1 时高约 40 单位。
 // o.pose: idle|shake|catch|cheer|hit;o.p 为一次性姿态进度 0..1(不给则自循环);o.t 动画秒;o.dir=-1 朝左。
 // 黑白手绘 + 点缀色。身体每帧现画(便宜:~15 个小图形),确定性抖动(同 seed 同形)。
+import { drawLaoXu } from './laoxu.ts';
+import type { LaoXuState } from './laoxu.ts';
 import { drawApple } from './apple.ts';
 import { F, INK, Ink, TAU, clamp, ease, lerp, sparkle } from './ink.ts';
 import type { C, Pt } from './ink.ts';
@@ -185,7 +187,7 @@ function drawBiped(ctx: C, sp: Spec, x: number, y: number, s: number, o: ThingOp
   ctx.save();
   ctx.translate(0, -29.2 + r.hdy);
   ctx.rotate(r.tilt);
-  const hs = sp.hs ?? 1;
+  const hs = sp.hs ?? 1.16;
   ctx.scale(hs, hs);
   sp.headBack?.(c);
   k.ell(0, 0, 9.4, 9, { fill: sp.skin, shade: F.shade, lw: 2, j: 0.22 });
@@ -626,6 +628,10 @@ export const drawCrow: ThingFn = (ctx, x, y, s, o = {}) => {
 /** 通用入口:kind 取 CHAR_KINDS */
 export function drawCharacter(ctx: C, kind: CharKind, x: number, y: number, s: number, o: ThingOpt = {}): void {
   if (kind === 'crow') return drawCrow(ctx, x, y, s, o);
+  if (kind === 'xu') {
+    const map: Record<string, LaoXuState> = { idle: 'idle', shake: 'shake', catch: 'help', cheer: 'cheer', hit: 'wake' };
+    return drawLaoXu(ctx, x, y, s * 0.62, { ...o, state: (o.state as LaoXuState | undefined) ?? map[o.pose ?? 'idle'] ?? 'idle' });
+  }
   const sp = SPECS[kind];
   if (sp) drawBiped(ctx, sp, x, y, s, o);
 }
