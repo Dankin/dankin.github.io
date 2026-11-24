@@ -245,6 +245,12 @@ const t1 = await num('g.state.playSec');
 check('×3600 游戏时间快速推进', t1 - t0 > 3 * 3600 * 0.5, `(+${Math.round(t1 - t0)}s 游戏时间)`);
 check('×3600 无报错', errors.length === 0, errors.slice(0, 2).join(' | '));
 
+// ───────── 3b. 果城档(第 3 档)与深色截图 ─────────
+await view(844, 390); await open('?debug=1');
+await G('(g.state.source.tier=3, g.state.route.tier=3, g.state.source.units[3]=6, g.state.route.units[3]=6, g.state.delivered=3e8, g.state.coins=1e12, 0)'); await sleep(1500);
+await shot('land_city');
+check('果城档无报错', errors.length === 0, errors.join(' | '));
+
 // ───────── 4. 结局与 SEALED ─────────
 for (const [date, sealed] of [['2026-12-23', true], ['2026-12-24', false]]) {
   await open(`?debug=1&date=${date}`);
@@ -254,6 +260,12 @@ for (const [date, sealed] of [['2026-12-23', true], ['2026-12-24', false]]) {
   check(`${date} 达成目标后出现结局`, has === true);
   const seal = await ev('!!document.getElementById("sealed")');
   check(`${date} ${sealed ? '显示 SEALED' : '不显示 SEALED'}`, seal === sealed, `(sealed=${seal})`);
+  if (date === '2026-12-23') {
+    await sleep(1300);
+    const lay = await J(`(()=>{const r=e=>{const b=document.querySelector(e).getBoundingClientRect();return {t:b.top,b:b.bottom,l:b.left,r:b.right}};return {keep:r('#endKeep'),rs:r('#endRestart'),sealed:r('#sealed'),right:r('#ending .r'),ih:innerHeight,iw:innerWidth}})()`);
+    check('结局(844×390):按钮离底边 ≥12px、不被裁', lay.keep.b <= lay.ih - 12 && lay.rs.b <= lay.ih - 12, `(keep.b ${Math.round(lay.keep.b)} / ih ${lay.ih})`);
+    check('结局:SEALED 盒子在文字列里、不单占一栏', lay.sealed.l >= lay.right.l - 1 && lay.sealed.r <= lay.right.r + 1, `(sealed ${Math.round(lay.sealed.l)}-${Math.round(lay.sealed.r)} / r ${Math.round(lay.right.l)}-${Math.round(lay.right.r)})`);
+  }
   if (date === '2026-12-23') { await shot('land_ending'); await view(390, 844); await sleep(300); await shot('port_ending'); await view(844, 390); }
   if (has) { await click('#endKeep'); await sleep(400); check(`${date} 关闭结局后继续游戏`, (await ev('!document.getElementById("ending")')) === true); }
 }

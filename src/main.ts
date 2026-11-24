@@ -120,6 +120,7 @@ function buildWorld(th: Throughput): WorldView {
     rtVehicles: Math.max(1, Math.round(rt.units[rt.tier])),
     rtBranch: rt.branch[rt.tier],
     gates: s.gates.map((g) => (g === 'red' ? 'string' : g)),
+    gateCan: s.gates.map((g) => g === null && s.gatesUnlocked.some((u) => !s.gates.includes(u))),
     gatesUnlocked: GATE_SLOTS,
     stock01: stockFill(s),
     produce: th.produce,
@@ -584,7 +585,7 @@ function renderAll(): void {
   if (!bp.hidden) fillBranch();
 
   orchard.setWorld(buildWorld(th));
-  (orchard as unknown as { setProgress?: (f: number) => void }).setProgress?.(progress(s)); // 礼物盒:进度越高越满
+  orchard.setProgress(progress(s)); // 礼物盒:进度越高越满
   const e = era(s);
   if (e !== lastEra) {
     lastEra = e;
@@ -616,13 +617,13 @@ function win(): void {
     },
     () => resetGame(),
   );
-  const card = document.querySelector('#ending .card');
+  const card = document.querySelector('#ending .card .r');
   if (!card) return;
   const box = document.createElement('div');
   if (!giftOpen(nowMs())) {
     box.id = 'sealed';
     box.className = 'sealed';
-    box.style.cssText = 'margin:14px 0;padding:10px;border:1px dashed #666;border-radius:8px;font-size:14px';
+    box.style.cssText = 'margin:8px 0;padding:6px 10px;border:1px dashed #666;border-radius:8px;font-size:13px';
     for (const line of SEALED) {
       const p = document.createElement('p');
       p.textContent = line;

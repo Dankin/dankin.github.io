@@ -10,13 +10,16 @@
 #btnHelper.no { opacity: 0.6; }
 
 /* 结局卡:内容超高(横屏手机)时要能滚到顶,不能被 flex 居中裁掉 */
-body #ending { align-items: flex-start; padding: 16px; }
-body #ending .card { margin: auto; }
+body #ending { align-items: flex-start; padding: 16px 16px max(28px, calc(16px + env(safe-area-inset-bottom))); }
+body #ending .card { margin: auto; width: 100%; max-width: 760px; }
+body #ending .r { min-width: 0; }
 @media (max-height: 480px) {
   body #ending .apple { width: 36px; height: 36px; margin-bottom: 8px; }
   body #ending h2 { margin-bottom: 6px; }
   body #ending p { margin: 2px 0; line-height: 1.5; }
   body #ending .stats { margin: 8px 0; padding: 6px; }
+  body #ending .card { column-gap: 28px; grid-template-columns: 110px 1fr; }
+  body #ending #sealed p { margin: 1px 0; }
 }
 
 /* 设置里的小字 */
