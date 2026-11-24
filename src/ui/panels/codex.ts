@@ -240,7 +240,9 @@ export function openCodex(ctx: PanelCtx, prefs: PanelPrefs, onChange: () => void
       tabs.append(b);
     }
     if (deps?.openStageCards) {
-      const r = h('button', 'panel-tab panel-tab-stage', STAGE_CARD_UI.replay);
+      const r = h('button', 'panel-tab panel-tab-stage', '说明卡');
+      r.title = STAGE_CARD_UI.replay;
+      r.setAttribute('aria-label', STAGE_CARD_UI.replay);
       r.type = 'button';
       r.addEventListener('click', () => deps.openStageCards());
       tabs.append(r);
