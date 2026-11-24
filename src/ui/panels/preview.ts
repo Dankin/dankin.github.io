@@ -26,7 +26,7 @@ s.orders.list = [
 ];
 if (scene !== 'codex-empty') {
   for (const k of ['fuji', 'goldenDel', 'granny', 'pinkLady', 'redStreak', 'purple', 'worm'] as const) s.codex.kinds[k] = { at: 100, n: 3 };
-  for (const e of ['jobs', 'newton']) s.codex.eggs[e] = { at: 200, n: 1 };
+  for (const e of ['turtleneck', 'newton', 'elf-wave', 'snow-white']) s.codex.eggs[e] = { at: 200, n: 1 };
   for (const a of Object.keys(s.codex.ach).length ? [] : ['first']) s.codex.ach[a] = 300;
 }
 
@@ -65,6 +65,8 @@ const go = async (): Promise<void> => {
     case 'narr-long': api.say('这一棵树,已经替你送出了三千二百个苹果。老徐说,够吃到过年了,但是你好像并不打算停下来。', 'xu', { force: true }); break;
     case 'codex': case 'codex-empty': api.openCodex('varieties'); break;
     case 'codex-eggs': api.openCodex('eggs'); break;
+    case 'codex-var': api.openCodex('varieties'); setTimeout(() => document.querySelectorAll<HTMLButtonElement>('.panel-cell.on')[2]?.click(), 200); break;
+    case 'codex-egg': api.openCodex('eggs'); setTimeout(() => document.querySelectorAll<HTMLButtonElement>('.panel-cell.on')[1]?.click(), 200); break;
     case 'codex-ach': api.openCodex('achievements'); break;
     case 'orders': api.openOrders(); break;
     case 'stage-src': api.showStageCard('src-3'); break;
