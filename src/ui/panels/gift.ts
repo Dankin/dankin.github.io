@@ -138,7 +138,7 @@ export function createGift(ctx: PanelCtx, onChange: () => void): Gift {
         if (p >= 1) burst = -1;
       }
       const pulse = !unlocked || openAmt > 0 || reduced ? 0 : ((t % 4) / 4 > 0.85 ? ((t % 4) / 4 - 0.85) / 0.15 : 0);
-      drawGiftBox(g, W / 2, H - 8, 3.6, { open: openAmt, progress: unlocked ? 1 : 0.7, t: t + wobble, pulse });
+      drawGiftBox(g, W / 2, H - 6, 2.35, { open: openAmt, progress: unlocked ? 1 : 0.7, t: t + wobble, pulse });
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);

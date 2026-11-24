@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>panels 预览</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#cfe6ef;font:14px/1.4 -apple-system,"PingFang SC",sans-serif;color:#1b1410}
+  #fake-top{position:fixed;left:0;right:0;top:0;height:34px;background:#f6efdc;border-bottom:3px solid #1b1410;display:flex;align-items:center;padding:0 10px;gap:14px;z-index:5}
+  #fake-news{position:fixed;left:0;right:0;top:34px;height:24px;background:#e8dcc0;border-bottom:2px solid #1b1410;font-size:12px;padding:2px 10px;z-index:5}
+  #fake-bar{position:fixed;left:0;right:0;bottom:0;height:64px;background:#f6efdc;border-top:3px solid #1b1410;z-index:5}
+  #fake-tree{position:fixed;left:50%;top:40%;width:90px;height:150px;transform:translate(-50%,0);background:#7fa86a;border:3px solid #1b1410;border-radius:50% 50% 12px 12px;opacity:.75}
+  #fake-ground{position:fixed;left:0;right:0;bottom:64px;height:60px;background:#b7d19a}
+</style>
+</head>
+<body>
+<div id="fake-ground"></div><div id="fake-tree"></div>
+<div id="fake-top"><b>🍎 128</b><span>已送出 3,200 / 82亿</span><span style="margin-left:auto">⚙</span></div>
+<div id="fake-news">新闻条:邻居说今年的苹果比去年圆。</div>
+<div id="fake-bar"></div>
+<script type="module" src="/src/ui/panels/preview.ts"></script>
+</body>
+</html>
