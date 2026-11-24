@@ -80,6 +80,11 @@ export interface Sheet {
 }
 
 let openSheets: Sheet[] = [];
+let sheetHook: ((open: boolean) => void) | null = null;
+/** 弹层开/关时回调(旁白条据此暂停) */
+export const onSheetChange = (fn: ((open: boolean) => void) | null): void => {
+  sheetHook = fn;
+};
 export const anySheetOpen = (): boolean => openSheets.length > 0;
 export function closeAllSheets(): void {
   for (const s of [...openSheets]) s.close();
@@ -129,11 +134,13 @@ export function openSheet(
       if (reducedMotion(ctx)) gone();
       else setTimeout(gone, 160);
       openSheets = openSheets.filter((s) => s !== sheet);
+      sheetHook?.(openSheets.length > 0);
       o.onClose?.();
     },
   };
   openSheets.push(sheet);
   root.append(veil);
+  sheetHook?.(true);
   sfx(ctx, 'modal');
   (card.querySelector('.panel-x') as HTMLElement | null)?.focus({ preventScroll: true });
   return sheet;
